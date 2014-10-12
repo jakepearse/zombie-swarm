@@ -3,5 +3,4 @@ zombie-swarm
 
 co600 zombie swarm project
 
-I couldn't understand my java-erlang program, but here's a generic erlang http server thats easier to understand anyway.
-Just start it in the erlang shell with start(port) and then you can hit it with a browser or curl or whatever.
+All the documentation is in latex files you can build them into a pdf using pdflatex document.tex or into html using htlatex document.tex
