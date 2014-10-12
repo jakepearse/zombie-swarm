@@ -1,12 +1,19 @@
-\documentclass[a4paper,12pt]{article}
+\documentclass{article}
 \usepackage{times}
 \usepackage{mystyle}
- 
+\usepackage{ifpdf}
 \begin{document}
+\title{Realistic Concurrent Zombie Horde Simulation}
+\author{J.~Pearse}
+\maketitle
+
+\ifx\HCode\undefined \else
+\CutAt{section}    % tell is to cut as if we did "htm,2", make
+\fi                % section separate
 
 \tableofcontents
-\listoffigures
-\listoftables
+%\listoffigures
+%\listoftables
 
 \input{./tex/project_outline.tex}
 \input{./tex/zombies.tex}
