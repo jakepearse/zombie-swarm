@@ -1,0 +1,19 @@
+<!DOCTYPE HTML>  
+<html>  
+<head>  
+<script type="text/javascript">  
+socket= new WebSocket('ws://localhost:8080/websocket');
+socket.onopen= function() {
+    socket.send('JavaScript says Hello');
+};
+socket.onmessage= function(s) {
+	var keys = [];
+	 for ( var key in s ) {
+		 keys.push(key);
+	 }
+    alert('got reply '+ s.data);
+};
+</script>
+</head>  
+    <body></body>
+    </html>
