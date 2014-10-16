@@ -5,7 +5,7 @@ co600 zombie swarm project
 
 user the included rebar to build the application
 
-swarmer/rebar get_deps
+swarmer/rebar get-deps
 
 swarmer/rebar compile
 
