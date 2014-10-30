@@ -1,22 +1,31 @@
 \documentclass{article}
 \usepackage{times}
 \usepackage{mystyle}
-\usepackage{ifpdf}
+%\usepackage{ifpdf}
+\includeonly{project_ouline.tex}
 \begin{document}
 \title{Realistic Concurrent Zombie Horde Simulation}
-\author{J.~Pearse}
+
 \maketitle
 
-\ifx\HCode\undefined \else
-\CutAt{section}    % tell is to cut as if we did "htm,2", make
-\fi                % section separate
+%\ifx\HCode\undefined \else
+%\CutAt{section}    % tell is to cut as if we did "htm,2", make
+%\fi                % section separate
 
 \tableofcontents
 %\listoffigures
 %\listoftables
-
+\clearpage
 \input{./tex/project_outline.tex}
+\input{./tex/Requirements_Specification.tex}
+\input{./tex/Languages_Research.tex}
+\input{./tex/Concurrency_Feasibility_Research.tex}
+\input{./tex/Coding_Standards.tex}
+\input{./tex/Risk_Assessment.tex}
 \input{./tex/zombies.tex}
 \input{./tex/biology.tex}
+
+\input{./tex/Testing_Plan.tex}
+
 
 \end{document}

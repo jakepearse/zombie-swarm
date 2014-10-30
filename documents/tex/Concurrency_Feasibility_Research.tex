@@ -1,22 +1,11 @@
-\documentclass[a4paper,12pt]{article}
-\usepackage{times}
-
 \pagestyle{empty}
-
-\begin{document}
-
-\title{Concurrent Languages Feasibility Research}
-\author{R.~Hales\\{\small\tt rsjh3@kent.ac.uk}}
-\date{October 12,2014}
-
-\maketitle
-
-\section{Introduction}
+\section{Concurrent Languages Feasibility Research\\{\small\tt R.~Hayles}}
 For our project we wanted to create a simulation of Zombie swarm behaviour using a concurrent language. Before we started programming we needed to ensure that concurrent programming is  feasible, both in general and for the purpose of our project.
 
 \subsection{General Feasibility}
 To see if concurrent languages were a viable means of programming we compared the performance of programs written in both concurrent and non-concurrent languages. We looked at the web server software Apache for non-concurrent and Yaws for concurrent, from the information we found Yaws was more stable than Apache when faced with a large amount of concurrent connections and was faster when dealing with a small amount of requests, while Apache overtook Yaws in terms of speed for a high amount of requests. This shows that concurrent programs are competitive with non-concurrent programs and therefore programming in a concurrent language is feasible.
+
 \subsection{Concurrent Swarm Simulation Feasibility}
 We also wanted to check if concurrent languages can be used to simulate swarms as we intended. To do this we researched into past attempts at creating swarm simulations using concurrent languages. We decided to look for the Boids simulation since it is a popular model for simulation, we managed to find successful versions in both Erlang and Occam proving that swarm simulation with concurrent languages is possible.
-\end{document}
+\clearpage
 \endinput
