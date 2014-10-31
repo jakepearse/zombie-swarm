@@ -11,6 +11,9 @@
 % gen_server requirements
 -behaviour(gen_server).
 
+-type entity() :: {atom(),{integer(),integer()}}.
+-type tile() :: {atom(),list(entity())}.
+
 % don't need unit tests for these
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
 handle_info/2,init/1,terminate/2]).
@@ -26,7 +29,9 @@ handle_info/2,init/1,terminate/2]).
 % Start link returns a handle to this viewer
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
+
 %change the data in the viewer
+-spec update()
 update(Pid,{Tile,Entities}) ->
   gen_server:cast(Pid,{update,{Tile,Entities}}).
 
