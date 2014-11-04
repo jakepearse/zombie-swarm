@@ -21,7 +21,7 @@
 -define(SERVER, ?MODULE).
 
 %%%% zombieList : a list of all the Zombies on the current tile
--record(tile_state,{entityList=[]}).
+-record(tile_state,{entityDict=dict:new()}).
 
 %%%%%%=============================================================================
 %%%%%% API
@@ -43,16 +43,18 @@ init([]) ->
     {ok, #tile_state{}}.
 
 %%%%%% calls
-handle_call(get_population, _From, State) ->
-    {reply, State#tile_state.entityList, State}.
+handle_call(get_population,_From,State) ->
+    {reply,State#tile_state.entityDict,State}.
 
 
 %%%%%% casts
-handle_cast({summon_entity, Entity}, State) when State#tile_state.entityList =/= [] ->
-    {noreply, State#tile_state{entityList=add_unique(State#tile_state.entityList,Entity)}};
-handle_cast({summon_entity, Entity}, State) when State#tile_state.entityList == [] ->
-    {noreply, State#tile_state{entityList=State#tile_state.entityList++[Entity]}}.
 
+% needs to capture entities PID
+% need to pass that
+% check X and Y
+handle_cast({summon_entity, Entity}, State) ->
+    {ID,{X,Y}} = Entity,
+    {noreply,State#tile_state{entityDict = dict:store(ID,{X,Y},State#tile_state.entityDict)}}.
 
 handle_info(Info, State) ->
     {noreply, State}.
@@ -77,21 +79,6 @@ summon_entity(Pid, Entity) ->
 
 
 %%%%%% functions
-check_list([],_) -> false;
-check_list({E1,{X1,Y1}},[{_,{X2,Y2}}|Xs]) ->
-    if (X1=/=X2) or (Y1=/=Y2) ->
-        check_list({E1,{X1,Y1}}, Xs);
-        true -> true
-    end.
-
-add_unique(List,Entity) ->
-    case check_list(List, Entity) of
-        false ->
-            List++[Entity];
-        true ->
-            {E,{X,Y}} = Entity,
-            add_unique(List,{E,{X+1,Y+1}})
-    end.
 
 
 % types and specs
