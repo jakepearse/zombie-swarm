@@ -42,17 +42,20 @@ start_link() ->
 init([]) ->
     {ok, #tile_state{}}.
 
-%%%%%% calls
+%%%%%% Calls
 handle_call(get_population,_From,State) ->
     {reply,State#tile_state.entityDict,State}.
 
 
-%%%%%% casts
+%%%%%% Casts
 
 % needs to capture entities PID
 % need to pass that
 % check X and Y
-handle_cast({summon_entity, Entity}, State) ->
+handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =/= 0 ->
+    {ID,{X,Y}} = Entity,
+    {noreply,State#tile_state{entityDict = add_unique(ID,{X,Y},State#tile_state.entityDict)}};
+handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =:= 0 ->
     {ID,{X,Y}} = Entity,
     {noreply,State#tile_state{entityDict = dict:store(ID,{X,Y},State#tile_state.entityDict)}}.
 
@@ -69,17 +72,36 @@ code_change(_OldVsn, State, _Extra) ->
 %%%%%% Internal Functions
 %%%%%%=============================================================================
 
-%%%%%% calls
+%%%%%% Calls
 get_population(Pid) ->
     gen_server:call(Pid, get_population).
 
-%%%%%% casts
+%%%%%% Casts
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
 
 
-%%%%%% functions
+%%%%%% Functions
 
+%% Ensure new entity is in an untaken position
+add_unique(ID, Pos, Dict) ->
+    {X,Y} = Pos,
+    List = dict:to_list(Dict),
+    case check_dict(List, ID, Pos) of
+        false ->
+            NewDict = dict:store(ID, {X,Y}, dict:from_list(List));
+        true ->
+            add_unique(ID, {X+1,Y+1}, Dict)
+    end.
+
+%% Check dictinary for current postion
+check_dict([],_,_) -> false;
+check_dict([X|Xs],ID,{X2,Y2}) ->
+    {_,{X1,Y1}} = X,
+    if (X1=/=X2) or (Y1=/=Y2) ->
+        check_dict(Xs, ID, {X2,Y2});
+        true -> true
+    end.
 
 % types and specs
 % translate list to dicts
