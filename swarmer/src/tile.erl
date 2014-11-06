@@ -16,7 +16,8 @@
 
 %%%% tile functions
 -export([get_population/1,
-        summon_entity/2]).
+        summon_entity/2,
+        update_entity/2]).
 
 -define(SERVER, ?MODULE).
 
@@ -57,7 +58,15 @@ handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDic
     {noreply,State#tile_state{entityDict = add_unique(ID,{X,Y},State#tile_state.entityDict)}};
 handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =:= 0 ->
     {ID,{X,Y}} = Entity,
-    {noreply,State#tile_state{entityDict = dict:store(ID,{X,Y},State#tile_state.entityDict)}}.
+    {noreply,State#tile_state{entityDict = dict:store(ID,{X,Y},State#tile_state.entityDict)}};
+handle_cast({update_entity, Entity}, State) ->
+    case in_dict(Entity, dict:to_list(entityDict)) of
+        true ->
+            {ID,{X,Y}} = Entity,
+            {noreply,State#tile_state{entityDict = update_pos(ID,{X,Y},State#tile_state.entityDict)}};
+        false ->
+            {noreply,State#tile_state{entityDict = summon_entity(State, Entity)}}
+    end.
 
 handle_info(Info, State) ->
     {noreply, State}.
@@ -80,6 +89,8 @@ get_population(Pid) ->
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
 
+update_entity(Pid, Entity) ->
+    gen_server:cast(Pid, {update_entity, Entity}).
 
 %%%%%% Functions
 
@@ -89,12 +100,13 @@ add_unique(ID, Pos, Dict) ->
     List = dict:to_list(Dict),
     case check_dict(List, ID, Pos) of
         false ->
-            NewDict = dict:store(ID, {X,Y}, dict:from_list(List));
+            list = dict:store(ID, {X,Y}, dict:from_list(List));
         true ->
             add_unique(ID, {X+1,Y+1}, Dict)
     end.
 
 %% Check dictinary for current postion
+-spec check_dict(list(),_,_ ) ->  boolean().
 check_dict([],_,_) -> false;
 check_dict([X|Xs],ID,{X2,Y2}) ->
     {_,{X1,Y1}} = X,
@@ -102,6 +114,15 @@ check_dict([X|Xs],ID,{X2,Y2}) ->
         check_dict(Xs, ID, {X2,Y2});
         true -> true
     end.
+
+% need a update_pos
+% not done
+update_pos(ID, Pos, Dict) ->
+    [].
+
+% not done
+in_dict(Entity, List) ->
+    [].
 
 % types and specs
 % translate list to dicts
