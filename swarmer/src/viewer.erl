@@ -15,17 +15,17 @@
 % don't need unit tests for these
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
 handle_info/2,init/1,terminate/2]).
-
+%-define(SERVER, ?MODULE).
 % my stuff
 
 % unit test these
--export([start_link/0,stop_viewer/1, add_tile/2,get_population/1,update/2,get_tiles/1]).
+-export([start_link/1,stop_viewer/1, add_tile/2,get_population/1,update/2,get_tiles/1]).
 
 % record for server state, tileDict : a dict to hold tile:entities
--record(state, {tileDict=dict:new()}).
+-record(state, {name,tileDict=dict:new()}).
 
 % Start link returns a handle to this viewer
-start_link() -> gen_server:start_link(?MODULE, [], []).
+start_link(Id) -> gen_server:start_link({local,Id}, ?MODULE, [], []).
 
 
 %change the data in the viewer
@@ -49,8 +49,8 @@ stop_viewer(_Pid) ->
     gen_server:terminate(normal).
     
 % gen server stuff
-init([]) -> 
-   {ok, #state{}}. %new state record with default values
+init(Name) -> 
+   {ok, #state{name=Name}}. %new state record with default values
 
 %handle_call/2
 
