@@ -17,7 +17,7 @@
 %%%% tile functions
 -export([get_population/1,
         summon_entity/2,
-        update_entity/2]).
+        update_entity/3]).
 
 -define(SERVER, ?MODULE).
 
@@ -59,13 +59,16 @@ handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDic
 handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =:= 0 ->
     {ID,{X,Y}} = Entity,
     {noreply,State#tile_state{entityDict = dict:store(ID,{X,Y},State#tile_state.entityDict)}};
-handle_cast({update_entity, Entity}, State) ->
+%%%%%%%%%%%% SEMI BROKEN
+handle_cast({update_entity, Entity, Pos}, State) ->
+%%%%%%%%%%%% Any idea how I could do this without having to go to a list? 
+%%%%%%%%%%%% Couldn't find a find_in_dict method or something similar
     case in_dict(Entity, dict:to_list(entityDict)) of
         true ->
             {ID,{X,Y}} = Entity,
-            {noreply,State#tile_state{entityDict = update_pos(ID,{X,Y},State#tile_state.entityDict)}};
+            {noreply,State#tile_state{entityDict = update_pos(ID,Pos,State#tile_state.entityDict)}};
         false ->
-            {noreply,State#tile_state{entityDict = summon_entity(State, Entity)}}
+            {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
     end.
 
 handle_info(Info, State) ->
@@ -89,18 +92,19 @@ get_population(Pid) ->
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
 
-update_entity(Pid, Entity) ->
-    gen_server:cast(Pid, {update_entity, Entity}).
+update_entity(Pid, Entity, Pos) ->
+    gen_server:cast(Pid, {update_entity, Entity, Pos}).
 
 %%%%%% Functions
 
 %% Ensure new entity is in an untaken position
+%% a bit ugly, but it works
 add_unique(ID, Pos, Dict) ->
     {X,Y} = Pos,
     List = dict:to_list(Dict),
     case check_dict(List, ID, Pos) of
         false ->
-            list = dict:store(ID, {X,Y}, dict:from_list(List));
+            dict:store(ID, {X,Y}, dict:from_list(List));
         true ->
             add_unique(ID, {X+1,Y+1}, Dict)
     end.
@@ -115,14 +119,23 @@ check_dict([X|Xs],ID,{X2,Y2}) ->
         true -> true
     end.
 
-% need a update_pos
-% not done
+% Updates the position of an entity
+%%%%%%%%%%%% THIS IS BROKEN, ANY IDEA WHY?
 update_pos(ID, Pos, Dict) ->
-    [].
+   Dict = dict:update(ID, Pos).
 
-% not done
-in_dict(Entity, List) ->
-    [].
+% Check if an entity exists currently before updating
+in_dict(Entity, [X|Xs]) ->
+    {ID,{X,Y}} = Entity,
+    if 
+        ID =/= X ->
+            in_dict(Entity, Xs);
+        ID =:= X ->
+            true;
+        true ->
+            false
+    end.
+
 
 % types and specs
 % translate list to dicts
