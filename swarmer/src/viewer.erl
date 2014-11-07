@@ -11,8 +11,6 @@
 % gen_server requirements
 -behaviour(gen_server).
 
--type entity() :: {atom(),{integer(),integer()}}.
--type tile() :: {atom(),list(entity())}.
 
 % don't need unit tests for these
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
@@ -21,7 +19,7 @@ handle_info/2,init/1,terminate/2]).
 % my stuff
 
 % unit test these
--export([start_link/0, add_tile/2,get_population/1,update/2,get_tiles/1]).
+-export([start_link/0,stop_viewer/1, add_tile/2,get_population/1,update/2,get_tiles/1]).
 
 % record for server state, tileDict : a dict to hold tile:entities
 -record(state, {tileDict=dict:new()}).
@@ -31,7 +29,6 @@ start_link() -> gen_server:start_link(?MODULE, [], []).
 
 
 %change the data in the viewer
--spec update()
 update(Pid,{Tile,Entities}) ->
   gen_server:cast(Pid,{update,{Tile,Entities}}).
 
@@ -48,8 +45,8 @@ get_population(Pid) ->
 get_tiles(Pid) ->
   gen_server:call(Pid,get_tiles).
 
-stop_viewer(Pid) ->
-    gen_server:call(Pid,terminate).
+stop_viewer(_Pid) ->
+    gen_server:terminate(normal).
     
 % gen server stuff
 init([]) -> 
