@@ -1,6 +1,6 @@
 -module(viewer_tests).
 -include_lib("eunit/include/eunit.hrl").
--import(viewer,[start_link/1,stop_viewer/1,add_tile/2,update/2,get_tiles/1,get_population/1]).
+-import(viewer,[start_link/0,stop_viewer/1,add_tile/2,update/2,get_tiles/1,get_population/1]).
 
 add_data_test_() ->
     {setup,
@@ -9,7 +9,7 @@ add_data_test_() ->
     fun add_data/1}.
 
 start() ->
-    {ok,Pid} = viewer:start_link(),
+    {ok,Pid} = start_link(),
     Pid.
     
 stop(Pid) -> 
