@@ -7,15 +7,15 @@ handle_info/2,init/1,terminate/2]).
 -define(SERVER, ?MODULE).
 % my stuff
 
--export([start_link/0,make_grid/4,get_grid/1]).
+-export([start_link/0,make_grid/4,get_grid/1,get_state/1]).
 
 -record(state,{
   tileList=[],
   tileSize=25,
   tileMatrix=3,
   viewerDict=dict:new(),
-  %tileSup=tile_sup:start_link([]),
-  viewerSup=viewer_sup:start_link([])
+  viewerSup
+  %tileSup=tile_sup:start_link([]), -------this will only work if tile_sup returns a pid not {ok,Pid}
   }).
 
 % start_link, you know what to do
@@ -44,6 +44,8 @@ make_row(TileCounter,RowCounter,ColumnCounter,_Rows,Columns,TileSize,Row) ->
   %make_row(RowCounter,ColumnCounter +1,_Rows,Columns,TileSize,Row++[supervisor:start_child(State#state.tileSup,[RowCounter,ColumnCounter,TileSize])].
   make_row(TileCounter +1, RowCounter,ColumnCounter +1,_Rows,Columns,TileSize,Row++[{RowCounter,ColumnCounter,{ColumnCounter*TileSize,RowCounter*TileSize},TileSize}]).
 
+
+%%% TODO %%%
 % test if a tile is in range for the viewer
 %find_viewers(_,[]) -> [],
 %find_viewers(OriginTile,Grid)->
@@ -55,10 +57,9 @@ make_row(TileCounter,RowCounter,ColumnCounter,_Rows,Columns,TileSize,Row) ->
 
 get_grid(Pid) ->
   gen_server:call(Pid,get_grid).
+get_state(Pid) ->
+gen_server:call(Pid,get_state).
 
-%new_tile() ->
-  %{ok,TilePid} = tile:start_link().
-  %%TilePid.
 
 % enxpected message
 handle_info(Msg,State) ->
@@ -72,24 +73,40 @@ code_change(_OldVsn, State,_Extra) ->
     {ok,State}.
 
 % gen_server callbacks
-% gen server stuff
+
 init([]) -> 
-   {ok, #state{}}. %new state record with default values
+  {ok,V} = viewer_sup:start_link([]),
+   {ok, #state{viewerSup=V}}. %new state record with default values
 
-
-%junk form viewer.erl
-% get tiles - dump the keys in the state dict
 handle_call(get_grid,_From,State) ->
-  {reply,State#state.tileList,State}.
+  {reply,State#state.tileList,State};
+
+handle_call(get_state,_From,State) ->
+    {reply,State,State}.
 
 handle_call(terminate,State) ->
   {stop,normal,State}.
 
-%handle_cast/2
-%fun(Tile) -> append_element(Tile,[supervisor:start_child(State#state.viewerSup,[])] end)
-
-%callback for add_tile
+%% callback for make_grid - tile viewer is assigned here %%
 handle_cast({make_grid,Grid},State) ->
-FlatGrid=lists:flatten(Grid),
-ViewerGrid=lists:map(fun(X) -> erlang:append_element(X,[supervisor:start_child(State#state.viewerSup,[])]) end,FlatGrid),
-{noreply,State#state{tileList=ViewerGrid}}.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% I'm not sure if we want all the tiles in a 2D matrix or a flat list %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%  The next 2 functions flatten it %%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%FlatGrid=lists:flatten(Grid),
+%ViewerGrid=lists:map(fun(X) -> {ok,VPid} = supervisor:start_child(State#state.viewerSup,[]), erlang:append_element(X,VPid) end,FlatGrid),
+%{noreply,State#state{tileList=ViewerGrid}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%% otherwise keep it as a 2d matrix %%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+DeepGrid=lists:map(fun(X) ->
+    lists:map(fun(Y) ->
+        {ok,VPid} = supervisor:start_child(State#state.viewerSup,[]), erlang:append_element(Y,VPid) end,X)
+    end,Grid),
+{noreply,State#state{tileList=DeepGrid}}.
