@@ -17,12 +17,22 @@
 %%%% tile functions
 -export([get_population/1,
         summon_entity/2,
-        update_entity/3]).
+        update_entity/3,
+        set_geometry/4,
+        get_geometry/1]).
 
 -define(SERVER, ?MODULE).
 
+-type   coord() ::  pos_integer().
+
 %%%% zombieList : a list of all the Zombies on the current tile
--record(tile_state,{entityDict=dict:new()}).
+%-record(tile_state,{entityDict=dict:new(),tileGeometry=dict:new()}).
+-record(tile_state, {entityDict=dict:new(),
+                    xorigin  ::  coord(),
+                    yorigin  ::  coord(),
+                    xlimit  ::  coord(),
+                    ylimit  ::  coord(),
+                    coords  ::  tuple()}).  
 
 %%%%%%=============================================================================
 %%%%%% API
@@ -45,8 +55,9 @@ init([]) ->
 
 %%%%%% Calls
 handle_call(get_population,_From,State) ->
-    {reply,State#tile_state.entityDict,State}.
-
+    {reply,State#tile_state.entityDict,State};
+handle_call(get_geometry,_From,State) ->
+    {reply,State#tile_state.coords, State}.
 
 %%%%%% Casts
 
@@ -88,12 +99,18 @@ code_change(_OldVsn, State, _Extra) ->
 get_population(Pid) ->
     gen_server:call(Pid, get_population).
 
+get_geometry(Pid) ->
+    gen_server:call(Pid, get_geometry).
+
 %%%%%% Casts
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
 
 update_entity(Pid, Entity, Pos) ->
     gen_server:cast(Pid, {update_entity, Entity, Pos}).
+
+set_geometry(Pid,Xorigin,Yorigin,Size) ->
+    gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
 
 %%%%%% Functions
 
