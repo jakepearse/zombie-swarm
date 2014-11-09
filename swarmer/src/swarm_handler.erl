@@ -11,6 +11,8 @@
 -export([websocket_info/3]).
 -export([websocket_terminate/3]).
 
+-record(state, {enviroment_server}).
+
 % take any request from tcp or http and push it to websockets
 init({tcp,http},_Req,_Opts) ->
 	error_logger:error_report("init started"),
@@ -23,11 +25,18 @@ init({tcp,http},_Req,_Opts) ->
 
 websocket_init(_TransportName, Req, _Opts) ->
   error_logger:error_report("ws init started"),
-  {ok, Req, undefined_state}.
+  {ok,E}=enviroment:start_link(),
+  {ok, Req, #state{enviroment_server=E}}.
 
+%websocket_handle({text, Msg}, Req, State) ->
+  %error_logger:error_report("ws handle1 started"),
+  %{reply, [{text, << "erlang responding to ", Msg/binary >>}], Req, State};
+  
 websocket_handle({text, Msg}, Req, State) ->
   error_logger:error_report("ws handle1 started"),
-  {reply, [{text, << "erlang responding to ", Msg/binary >>}], Req, State};
+  Report=json2:encode(enviroment:report(State#sate.enviroment)),
+  {reply, [{text, << "report", Report/binary >>}], Req, State};
+
 
 websocket_handle(_Any, Req, State) ->
   error_logger:error_report("ws handle1 started"),
