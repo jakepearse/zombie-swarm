@@ -6,8 +6,8 @@
 %%% API
 -export([start_link/0,make_grid/4,get_grid/1,report/1]).
 
-%%%% for debugging
--export([get_state/1]).
+%%%% internal functions for debugging these can be deleted later
+-export([get_state/1,integer_list/1]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
@@ -95,7 +95,8 @@ init([]) ->
    
 handle_call(report,_From,State) ->
     %here's a dummy callback for json testing
-    Report=lists:filter(fun(X)->is_integer(X) end,lists:flatten(State#state.tileList)),
+    %Report=lists:filter(fun(X)->is_integer(X) end,lists:flatten(State#state.tileList)),
+    Report=integer_list(State#state.tileList),
     {reply,Report,State};
 
 handle_call(get_grid,_From,State) ->
@@ -153,3 +154,6 @@ make_row(TileCounter,RowCounter,ColumnCounter,_Rows,Columns,TileSize,Row) ->
   %make_row(RowCounter,ColumnCounter +1,_Rows,Columns,TileSize,Row++[supervisor:start_child(State#state.tileSup,[RowCounter,ColumnCounter,TileSize])].
   make_row(TileCounter +1, RowCounter,ColumnCounter +1,_Rows,Columns,TileSize,Row++[[RowCounter,ColumnCounter,[ColumnCounter*TileSize,RowCounter*TileSize],TileSize]]).
 
+integer_list([]) -> [];
+integer_list([X|Xs]) ->
+  [lists:filter(fun(Element) -> is_integer(Element) end,X)] ++ integer_list(Xs).
