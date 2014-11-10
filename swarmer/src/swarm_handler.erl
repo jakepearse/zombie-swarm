@@ -11,7 +11,7 @@
 -export([websocket_info/3]).
 -export([websocket_terminate/3]).
 
--record(state, {enviroment_server}).
+-record(state, {enviroment}).
 
 % take any request from tcp or http and push it to websockets
 init({tcp,http},_Req,_Opts) ->
@@ -26,7 +26,8 @@ init({tcp,http},_Req,_Opts) ->
 websocket_init(_TransportName, Req, _Opts) ->
   error_logger:error_report("ws init started"),
   {ok,E}=enviroment:start_link(),
-  {ok, Req, #state{enviroment_server=E}}.
+  enviroment:make_grid(E,3,3,25),
+  {ok, Req, #state{enviroment=E}}.
 
 %websocket_handle({text, Msg}, Req, State) ->
   %error_logger:error_report("ws handle1 started"),
@@ -34,8 +35,8 @@ websocket_init(_TransportName, Req, _Opts) ->
   
 websocket_handle({text, Msg}, Req, State) ->
   error_logger:error_report("ws handle1 started"),
-  Report=json2:encode(enviroment:report(State#sate.enviroment)),
-  {reply, [{text, << "report", Report/binary >>}], Req, State};
+  Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
+  {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 
 websocket_handle(_Any, Req, State) ->
