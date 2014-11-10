@@ -17,6 +17,7 @@
 %%%% tile functions
 -export([get_population/1,
         summon_entity/2,
+        remove_entity/2,
         update_entity/3,
         set_geometry/4,
         get_geometry/1]).
@@ -25,8 +26,10 @@
 
 -type   coord() ::  pos_integer().
 
-%%%% zombieList : a list of all the Zombies on the current tile
-%-record(tile_state,{entityDict=dict:new(),tileGeometry=dict:new()}).
+%%%% entityDict - a dictonary of entities within the tile
+%%%% x and y origin - the origin of the tile
+%%%% x and y limit - the edge of the tile
+%%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 -record(tile_state, {entityDict=dict:new(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
@@ -61,26 +64,31 @@ handle_call(get_geometry,_From,State) ->
 
 %%%%%% Casts
 
+%%%% Handle summon entity, ensure that no entities end up on the same coordinate
 % needs to capture entities PID
 % need to pass that
-% check X and Y
 handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =/= 0 ->
     {ID,{X,Y}} = Entity,
     {noreply,State#tile_state{entityDict = add_unique(ID,{X,Y},State#tile_state.entityDict)}};
 handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =:= 0 ->
     {ID,{X,Y}} = Entity,
     {noreply,State#tile_state{entityDict = dict:store(ID,{X,Y},State#tile_state.entityDict)}};
-%%%%%%%%%%%% SEMI BROKEN
+%%%% Handle delete entity calls
+handle_cast({remove_entity, Entity}, State) ->
+    {ID,{_,_}} = Entity,
+    {noreply,State#tile_state{entityDict = dict:erase(ID,State#tile_state.entityDict)}};
+%%%% Handle update entity calls
 handle_cast({update_entity, Entity, Pos}, State) ->
-%%%%%%%%%%%% Any idea how I could do this without having to go to a list? 
-%%%%%%%%%%%% Couldn't find a find_in_dict method or something similar
-    case in_dict(Entity, dict:to_list(entityDict)) of
+    {ID,{_,_}} = Entity,
+    case dict:is_key(ID,State#tile_state.entityDict) of
         true ->
-            {ID,{X,Y}} = Entity,
-            {noreply,State#tile_state{entityDict = update_pos(ID,Pos,State#tile_state.entityDict)}};
+            {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
         false ->
             {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
-    end.
+    end;  
+%%%% Handle set geometry calls
+handle_cast({set_geometry, X, Y, Size}, State) ->
+    {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size, ylimit = Y+Size, coords = {X,Y,X+Size,Y+Size}}}.
 
 handle_info(Info, State) ->
     {noreply, State}.
@@ -105,6 +113,9 @@ get_geometry(Pid) ->
 %%%%%% Casts
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
+
+remove_entity(Pid, Entity) ->
+    gen_server:cast(Pid, {remove_entity, Entity}).
 
 update_entity(Pid, Entity, Pos) ->
     gen_server:cast(Pid, {update_entity, Entity, Pos}).
@@ -135,24 +146,3 @@ check_dict([X|Xs],ID,{X2,Y2}) ->
         check_dict(Xs, ID, {X2,Y2});
         true -> true
     end.
-
-% Updates the position of an entity
-%%%%%%%%%%%% THIS IS BROKEN, ANY IDEA WHY?
-update_pos(ID, Pos, Dict) ->
-   Dict = dict:update(ID, Pos).
-
-% Check if an entity exists currently before updating
-in_dict(Entity, [X|Xs]) ->
-    {ID,{X,Y}} = Entity,
-    if 
-        ID =/= X ->
-            in_dict(Entity, Xs);
-        ID =:= X ->
-            true;
-        true ->
-            false
-    end.
-
-
-% types and specs
-% translate list to dicts
