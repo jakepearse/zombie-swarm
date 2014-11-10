@@ -18,7 +18,7 @@
 -export([get_population/1,
         summon_entity/2,
         remove_entity/2,
-        update_entity/3,
+        update_entity/5,
         set_geometry/4,
         get_geometry/1,
         set_viewer/2,
@@ -90,11 +90,16 @@ handle_cast({remove_entity, Entity}, State) ->
     {ID,{_,_}} = Entity,
     {noreply,State#tile_state{entityDict = dict:erase(ID,State#tile_state.entityDict)}};
 %%%% Handle update entity calls
-handle_cast({update_entity, Entity, Pos}, State) ->
+handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
     {ID,{_,_}} = Entity,
     case dict:is_key(ID,State#tile_state.entityDict) of
         true ->
-            {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+            case Heading of
+                n ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+                e ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+                s ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+                w ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}}
+            end;
         false ->
             {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
     end;  
@@ -144,7 +149,7 @@ summon_entity(Pid, Entity) ->
 remove_entity(Pid, Entity) ->
     gen_server:cast(Pid, {remove_entity, Entity}).
 
-update_entity(Pid, Entity, Pos) ->
+update_entity(Pid, Entity, Pos, Heading, _Speed) ->
     gen_server:cast(Pid, {update_entity, Entity, Pos}).
 
 set_geometry(Pid,Xorigin,Yorigin,Size) ->
@@ -196,3 +201,5 @@ update_viewers(State, []) -> update_viewers(State);
 update_viewers(State, [X|Xs]) ->
     viewer:update(X,{self(),State#tile_state.entityDict}),
     update_viewers(State, Xs).
+
+% Still need to figure out how to update a zombies viewer
