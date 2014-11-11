@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%%% API
--export([start_link/0]).
+-export([start_link/0,start_link/1]).
 
 %%%% gen_server callbacks
 -export([init/1,
@@ -34,6 +34,8 @@
 %%%% x and y origin - the origin of the tile
 %%%% x and y limit - the edge of the tile
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
+%%%% viewer - the viewer of the process
+%%%% neighbours - a list of neighbouring tile-viewers
 -record(tile_state, {entityDict=dict:new(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
@@ -55,11 +57,15 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+start_link(S) -> gen_server:start_link(?MODULE, [S], []).
+
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
 
-init([]) ->
+% look on learn you an erlang for dealing with S
+init([S]) ->
+    io:format(S),
     {ok, #tile_state{}};
 init([X,Y,Size]) ->
     set_geometry(self(),X,Y,Size),
@@ -92,7 +98,7 @@ handle_cast({remove_entity, Entity}, State) ->
 %%%% Handle update entity calls
 handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
     {ID,{_,_}} = Entity,
-    case dict:is_key(ID,State#tile_state.entityDict) of
+    case dict:is_key(ID,State#tile_state.entityDict) of 
         true ->
             case Heading of
                 n ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
@@ -141,11 +147,11 @@ get_viewer(Pid) ->
 
 get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
-
-%%%%%% Casts
+% needs to be a call
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
 
+%%%%%% Casts
 remove_entity(Pid, Entity) ->
     gen_server:cast(Pid, {remove_entity, Entity}).
 
@@ -203,3 +209,6 @@ update_viewers(State, [X|Xs]) ->
     update_viewers(State, Xs).
 
 % Still need to figure out how to update a zombies viewer
+
+%start supervisor S (S=Pid)
+%supervisor:start_child(S, other stuff)
