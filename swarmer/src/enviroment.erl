@@ -156,4 +156,5 @@ make_row(TileCounter,RowCounter,ColumnCounter,_Rows,Columns,TileSize,Row) ->
 
 integer_list([]) -> [];
 integer_list([X|Xs]) ->
-  [lists:filter(fun(Element) -> is_integer(Element) end,X)] ++ integer_list(Xs).
+  lists:filter(fun(Element) -> is_integer(Element) end,X) ++ integer_list(Xs).
+  
