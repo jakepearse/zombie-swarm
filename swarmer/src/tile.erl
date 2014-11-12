@@ -24,7 +24,8 @@
         set_viewer/2,
         get_viewer/1,
         set_neighbours/2,
-        get_neighbours/1]).
+        get_neighbours/1,
+        reply_entity/3]).
 
 -define(SERVER, ?MODULE).
 
@@ -49,6 +50,43 @@
 %%%%%% API
 %%%%%%=============================================================================
 
+%%%%%% Calls
+get_population(Pid) ->
+    gen_server:call(Pid, get_population).
+
+get_geometry(Pid) ->
+    gen_server:call(Pid, get_geometry).
+
+get_viewer(Pid) ->
+    gen_server:call(Pid, get_viewer).
+
+get_neighbours(Pid) ->
+    gen_server:call(Pid, get_neighbours).
+
+reply_entity(Pid, State, Entity) ->
+    gen_server:call(Pid, {reply_entity, State, Entity}).
+
+%%%%%% Casts
+%make this also call a reply
+summon_entity(Pid, Entity) ->
+    gen_server:cast(Pid, {summon_entity, Entity}).
+
+remove_entity(Pid, Entity) ->
+    gen_server:cast(Pid, {remove_entity, Entity}).
+
+update_entity(Pid, Entity, Pos, Heading, _Speed) ->
+    gen_server:cast(Pid, {update_entity, Entity, Pos}).
+
+set_geometry(Pid,Xorigin,Yorigin,Size) ->
+    gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
+
+set_viewer(Pid, ViewerPid) ->
+    gen_server:cast(Pid, {set_viewer, ViewerPid}).
+
+set_neighbours(Pid, NeighbourPids) ->
+    gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
+
+
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Start the server.
@@ -64,6 +102,8 @@ start_link(S) -> gen_server:start_link(?MODULE, [S], []).
 %%%%%%=============================================================================
 
 % look on learn you an erlang for dealing with S
+%init([]) ->
+%    {ok, #tile_state{}};
 init([S]) ->
     io:format(S),
     {ok, #tile_state{}};
@@ -80,11 +120,15 @@ handle_call(get_geometry,_From,State) ->
 handle_call(get_viewer,_From,State) ->
     {reply,State#tile_state.viewer};
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#tile_state.neighbours}.
+    {reply,State#tile_state.neighbours};
+handle_call({reply_entity, State, Entity} ,_From, State) ->
+    %{ID,{Pos}} = Entity,
+    {reply,State#tile_state.entityDict, State}.
 
 %%%%%% Casts
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
+% needs to call reply_entity
 handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =/= 0 ->
     {ID,{X,Y}} = Entity,
     {noreply,State#tile_state{entityDict = add_unique(ID,{X,Y},State#tile_state.entityDict)}};
@@ -135,38 +179,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%%%% Internal Functions
 %%%%%%=============================================================================
 
-%%%%%% Calls
-get_population(Pid) ->
-    gen_server:call(Pid, get_population).
-
-get_geometry(Pid) ->
-    gen_server:call(Pid, get_geometry).
-
-get_viewer(Pid) ->
-    gen_server:call(Pid, get_viewer).
-
-get_neighbours(Pid) ->
-    gen_server:call(Pid, get_neighbours).
-% needs to be a call
-summon_entity(Pid, Entity) ->
-    gen_server:cast(Pid, {summon_entity, Entity}).
-
-%%%%%% Casts
-remove_entity(Pid, Entity) ->
-    gen_server:cast(Pid, {remove_entity, Entity}).
-
-update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-    gen_server:cast(Pid, {update_entity, Entity, Pos}).
-
-set_geometry(Pid,Xorigin,Yorigin,Size) ->
-    gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
-
-set_viewer(Pid, ViewerPid) ->
-    gen_server:cast(Pid, {set_viewer, ViewerPid}).
-
-set_neighbours(Pid, NeighbourPids) ->
-    gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
-
 %% A function to periodically update the viewers
 %% Currently this is carried out every 5 seconds, this is just an arbitratry value
 %% until a more permanent solution is decided upon
@@ -210,5 +222,8 @@ update_viewers(State, [X|Xs]) ->
 
 % Still need to figure out how to update a zombies viewer
 
-%start supervisor S (S=Pid)
-%supervisor:start_child(S, other stuff)
+% get pid of registered process wheris(module)
+
+% observer:start().
+
+% sys:get_state(Pid).
