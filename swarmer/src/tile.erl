@@ -24,8 +24,7 @@
         set_viewer/2,
         get_viewer/1,
         set_neighbours/2,
-        get_neighbours/1,
-        reply_entity/3]).
+        get_neighbours/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -61,8 +60,8 @@ get_viewer(Pid) ->
 get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
 
-reply_entity(Pid, State, Entity) ->
-    gen_server:call(Pid, {reply_entity, State, Entity}).
+%reply_entity(Pid, State, Entity) ->
+%    gen_server:call(Pid, {reply_entity, State, Entity}).
 
 %%%%%% Casts
 %make this also call a reply
@@ -97,13 +96,6 @@ start_link(X,Y,Size) -> %I've had to change this??? I don't know whats going on 
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
 
-
-% look on learn you an erlang for dealing with S
-%init([]) ->
-%    {ok, #tile_state{}};
-%init([S]) ->
-    %io:format(S),
-    %{ok, #tile_state{}};
 init([X,Y,Size]) ->
     set_geometry(self(),X,Y,Size),
     {ok, #tile_state{}}.
@@ -119,10 +111,10 @@ handle_call(get_geometry,_From,State) ->
 handle_call(get_viewer,_From,State) ->
     {reply,State#tile_state.viewer};
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#tile_state.neighbours};
-handle_call({reply_entity, State, Entity} ,_From, State) ->
-    %{ID,{Pos}} = Entity,
-    {reply,State#tile_state.entityDict, State}.
+    {reply,State#tile_state.neighbours}.
+%handle_call({reply_entity, State, Entity} ,_From, State) ->
+%    %{ID,{Pos}} = Entity,
+%    {reply,State#tile_state.entityDict, State}.
 
 %%%%%% Casts
 
