@@ -110,8 +110,10 @@ init([X,Y,Size]) ->
 
 %%%%%% Calls
 
+%handle_call(get_population,_From,State) ->
+%    {reply,State#tile_state.entityDict,State};
 handle_call(get_population,_From,State) ->
-    {reply,State#tile_state.entityDict,State};
+    {reply, makeUsable(dict:to_list(State#tile_state.entityDict),[]),State};
 handle_call(get_geometry,_From,State) ->
     {reply,State#tile_state.coords, State};
 handle_call(get_viewer,_From,State) ->
@@ -217,6 +219,16 @@ update_viewers(State, [X|Xs]) ->
     viewer:update(X,{self(),State#tile_state.entityDict}),
     update_viewers(State, Xs).
 
+% Turn the dictionary into something usable by the client
+makeUsable([],[]) -> [];
+makeUsable([],A) -> A;
+makeUsable([L|Ls],A) ->
+    {Id,{X,Y}} = L,
+    B = [[Id,X,Y]] ++ A,
+    makeUsable(Ls,B).
+
+
+
 % Still need to figure out how to update a zombies viewer
 
 
@@ -226,3 +238,7 @@ update_viewers(State, [X|Xs]) ->
 
 % sys:get_state(Pid).
 
+% eventually, entityDict needs to be a list of lists
+%   when this is done, replace z1,z2,z3 etc etc with the Pid of the entities
+%       entities in the list will be in the format [[id,x,y],[id,x,y]]
+%           id = "pid", x = int, y = int
