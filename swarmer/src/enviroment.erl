@@ -78,7 +78,8 @@ init([]) ->
 handle_call(report,_From,State) ->
     %here's a dummy callback for json testing
     %Report=lists:filter(fun(X)->is_integer(X) end,lists:flatten(State#state.tileList)),
-    Report=integer_list(State#state.tileList),
+    %Report=State#state.tileList,
+    Report = [[1,0,0],[2,0,25],[3,0,50],[4,25,0],[5,25,25],[6,25,50]],
     {reply,Report,State};
 
 handle_call(get_grid,_From,State) ->
