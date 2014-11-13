@@ -1,24 +1,26 @@
 -module(zombie_fsm).
+-author("Robert Hales rsjh3@kent.ac.uk").
 -behaviour(gen_fsm).
 
 %gen_fsm implementation
 -export([code_change/4,handle_event/3,handle_sync_event/4,handle_info/3,init/1,terminate/3]).
 
--export([start_link/1,update/3,initial_state/2,aimless/2]).
+-export([start_link/4,update/1,aimless/2]).
 -record(state, {tile,viewer,speed,direction,x,y}).
 
-start_link(A) -> 
-gen_fsm:start_link({local,?MODULE},?MODULE,A,[]).
+start_link(X,Y,Tile,Viewer) -> 
+gen_fsm:start_link({local,?MODULE},?MODULE,[X,Y,Tile,Viewer],[]).
 
-init(A) ->
-	{ok,initial_state,#state{tile=A}}.
-		
-initial_state({update,Newx,Newy,Pid},A) ->
-	{next_state,aimless,A#state{x=Newx,y=Newy,tile=Pid}}.
-aimless({update,Newx,Newy,Pid},A) ->
-	{next_state,aimless,A#state{x=Newx,y=Newy,tile=Pid}}.
-update(Newx,Newy,Pid) ->
-	gen_fsm:send_event(zombie_fsm,{update,Newx,Newy,Pid}).
+init([X,Y,Tile,Viewer]) ->
+	{ok,aimless,#state{tile = Tile,viewer = Viewer, x = X, y = Y}}.
+
+%States of fsm.	
+aimless({update,[Newx,Newy,Pid]},State) ->
+	{next_state,aimless,State#state{x=Newx,y=Newy,tile=Pid}}.
+
+%Events for fsm.	
+update([Newx,Newy,Pid]) ->
+	gen_fsm:send_event(zombie_fsm,{update,[Newx,Newy,Pid]}).
 
 	
 %stuff for gen_fsm.
