@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%% API
--export([start_link/0,make_grid/4,get_grid/1,report/1]).
+-export([start_link/0,make_grid/5,get_grid/1,report/1]).
 
 %%%% internal functions for debugging these can be deleted later
 -export([get_state/1,integer_list/1]).
@@ -17,9 +17,11 @@ handle_info/2,init/1,terminate/2]).
 
 -record(state,{
   tileList=[],
+  swarm = [],
   viewerPropList,
   viewerSup,
-  tileSup
+  tileSup,
+  zombieSup
   }).
 
 %%%%%%=============================================================================
@@ -55,8 +57,8 @@ get_state(Pid) ->
 %%%% Make a new tile grid, stored in #state
 %%%% @end
 %%%%------------------------------------------------------------------------------
-make_grid(Pid,Rows,Columns,TileSize) ->
-  gen_server:cast(Pid,{make_grid,{Rows,Columns,TileSize}}).
+make_grid(Pid,Rows,Columns,TileSize,Entities) ->
+  gen_server:cast(Pid,{make_grid,{Rows,Columns,TileSize,Entities}}).
 
 
 
@@ -73,7 +75,8 @@ report(Pid) ->
 init([]) -> 
   {ok,V} = viewer_sup:start_link([]),
   {ok,T} = tile_sup:start_link([]),
-   {ok, #state{viewerSup=V,tileSup=T}}. %new state record with default values
+  {ok,Z} = zombie_sup:start_link([]),
+   {ok, #state{viewerSup=V,tileSup=T, zombieSup=Z}}. %new state record with default values
    
 handle_call(report,_From,State) ->
     %here's a dummy callback for json testing
@@ -92,11 +95,12 @@ handle_call(terminate,State) ->
   {stop,normal,State}.
 
 %% callback for make_grid - tile viewer is assigned here %%
-handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
+handle_cast({make_grid,{Rows,Columns,TileSize,Entities}},State) ->
 Grid = populate_grid(State#state.tileSup,Rows,Columns,TileSize),
 Viewers=add_viewers(State#state.viewerSup,Grid),
+Zombies=create_swarm(State#state.zombieSup,State#state.tileSup,Entities),
 %setNeighbours(Viewers),
-{noreply,State#state{tileList=Grid,viewerPropList=Viewers}}. 
+{noreply,State#state{tileList=Grid,viewerPropList=Viewers,swarm=Zombies}}. 
 
 
 handle_info(Msg,State) ->
@@ -152,7 +156,12 @@ add_viewers(Sup,Grid,Viewers) ->
   %[{Tile,Viewer}|T] = Viewers,
   %find_viewers(Tile,Viewers)
   
-
+create_swarm(Zsup,Tsup,[]) -> [];
+create_swarm(Zsup,Tsup,[X|Xs]) -> 
+  {ok,Z}=supervisor:start_child(Zsup,[X]),
+  % tell the Tsup to add it to a tile
+  create_swarm(Zsup,Tsup,Xs).
+  
 %%test if a tile is in range for the viewer
 %find_viewers(_,[]) -> [],
 %find_viewers(OriginTile,Grid)->
