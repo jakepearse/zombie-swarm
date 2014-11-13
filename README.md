@@ -23,6 +23,7 @@ Enter from Erlang Shell
 
 Open file /zombie-swarmer/client/swarmclient.html
 
-
+Documentation
+=============
 
 All the corpus type documentation is in latex files you can build them into a pdf using pdflatex document.tex or into html using htlatex document.tex
