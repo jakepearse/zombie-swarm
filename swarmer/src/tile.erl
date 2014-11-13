@@ -24,8 +24,7 @@
         set_viewer/2,
         get_viewer/1,
         set_neighbours/2,
-        get_neighbours/1,
-        reply_entity/3]).
+        get_neighbours/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -61,8 +60,8 @@ get_viewer(Pid) ->
 get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
 
-reply_entity(Pid, State, Entity) ->
-    gen_server:call(Pid, {reply_entity, State, Entity}).
+%reply_entity(Pid, State, Entity) ->
+%    gen_server:call(Pid, {reply_entity, State, Entity}).
 
 %%%%%% Casts
 %make this also call a reply
@@ -97,30 +96,25 @@ start_link(X,Y,Size) -> %I've had to change this??? I don't know whats going on 
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
 
-
-% look on learn you an erlang for dealing with S
-%init([]) ->
-%    {ok, #tile_state{}};
-%init([S]) ->
-    %io:format(S),
-    %{ok, #tile_state{}};
 init([X,Y,Size]) ->
     set_geometry(self(),X,Y,Size),
     {ok, #tile_state{}}.
 
 %%%%%% Calls
 
+%handle_call(get_population,_From,State) ->
+%    {reply,State#tile_state.entityDict,State};
 handle_call(get_population,_From,State) ->
-    {reply,State#tile_state.entityDict,State};
+    {reply, makeUsable(dict:to_list(State#tile_state.entityDict),[]),State};
 handle_call(get_geometry,_From,State) ->
     {reply,State#tile_state.coords, State};
 handle_call(get_viewer,_From,State) ->
     {reply,State#tile_state.viewer};
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#tile_state.neighbours};
-handle_call({reply_entity, State, Entity} ,_From, State) ->
-    %{ID,{Pos}} = Entity,
-    {reply,State#tile_state.entityDict, State}.
+    {reply,State#tile_state.neighbours}.
+%handle_call({reply_entity, State, Entity} ,_From, State) ->
+%    %{ID,{Pos}} = Entity,
+%    {reply,State#tile_state.entityDict, State}.
 
 %%%%%% Casts
 
@@ -217,6 +211,16 @@ update_viewers(State, [X|Xs]) ->
     viewer:update(X,{self(),State#tile_state.entityDict}),
     update_viewers(State, Xs).
 
+% Turn the dictionary into something usable by the client
+makeUsable([],[]) -> [];
+makeUsable([],A) -> A;
+makeUsable([L|Ls],A) ->
+    {Id,{X,Y}} = L,
+    B = [[Id,X,Y]] ++ A,
+    makeUsable(Ls,B).
+
+
+
 % Still need to figure out how to update a zombies viewer
 
 
@@ -226,3 +230,7 @@ update_viewers(State, [X|Xs]) ->
 
 % sys:get_state(Pid).
 
+% eventually, entityDict needs to be a list of lists
+%   when this is done, replace z1,z2,z3 etc etc with the Pid of the entities
+%       entities in the list will be in the format [[id,x,y],[id,x,y]]
+%           id = "pid", x = int, y = int
