@@ -9,7 +9,7 @@
 -record(state, {tile,viewer,speed,direction,x,y}).
 
 start_link(X,Y,Tile,Viewer) -> 
-gen_fsm:start_link({local,?MODULE},?MODULE,[X,Y,Tile,Viewer],[]).
+gen_fsm:start_link(?MODULE,[X,Y,Tile,Viewer],[]).
 
 init([X,Y,Tile,Viewer]) ->
 	{ok,aimless,#state{tile = Tile,viewer = Viewer, x = X, y = Y}}.

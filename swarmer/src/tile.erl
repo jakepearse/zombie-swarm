@@ -212,12 +212,14 @@ update_viewers(State, [X|Xs]) ->
     update_viewers(State, Xs).
 
 % Turn the dictionary into something usable by the client
-makeUsable([],[]) -> [];
-makeUsable([],A) -> A;
-makeUsable([L|Ls],A) ->
-    {Id,{X,Y}} = L,
-    B = [[Id,X,Y]] ++ A,
-    makeUsable(Ls,B).
+makeUsable(A,B) ->
+    makeUsable(A,B,0).
+makeUsable([],[],_) -> [];
+makeUsable([],A,_) -> A;
+makeUsable([L|Ls],A,Num) ->
+    {_Id,{X,Y}} = L,
+    B = [[Num,X,Y]] ++ A,
+    makeUsable(Ls,B,Num+1).
 
 
 

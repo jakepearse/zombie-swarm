@@ -4,10 +4,10 @@
 -behaviour(gen_server).
 
 %%% API
--export([start_link/0,make_grid/5,get_grid/1,report/1]).
+-export([start_link/0,make_grid/4,get_grid/1,report/1]).
 
 %%%% internal functions for debugging these can be deleted later
--export([get_state/1,integer_list/1]).
+-export([get_state/1,integer_list/1,set_swarm/2]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
@@ -21,7 +21,10 @@ handle_info/2,init/1,terminate/2]).
   viewerPropList,
   viewerSup,
   tileSup,
-  zombieSup
+  zombieSup,
+  rows,
+  columns,
+  tileSize
   }).
 
 %%%%%%=============================================================================
@@ -57,8 +60,8 @@ get_state(Pid) ->
 %%%% Make a new tile grid, stored in #state
 %%%% @end
 %%%%------------------------------------------------------------------------------
-make_grid(Pid,Rows,Columns,TileSize,Entities) ->
-  gen_server:cast(Pid,{make_grid,{Rows,Columns,TileSize,Entities}}).
+make_grid(Pid,Rows,Columns,TileSize) ->
+  gen_server:cast(Pid,{make_grid,{Rows,Columns,TileSize}}).
 
 
 
@@ -82,7 +85,10 @@ handle_call(report,_From,State) ->
     %here's a dummy callback for json testing
     %Report=lists:filter(fun(X)->is_integer(X) end,lists:flatten(State#state.tileList)),
     %Report=State#state.tileList,
-    Report = [[1,0,0],[2,0,25],[3,0,50],[4,25,0],[5,25,25],[6,25,50]],
+    
+    %Report = [[1,0,0],[2,0,25],[3,0,50],[4,25,0],[5,25,25],[6,25,50]],
+
+    Report = make_report(State#state.tileList), 
     {reply,Report,State};
 
 handle_call(get_grid,_From,State) ->
@@ -95,12 +101,15 @@ handle_call(terminate,State) ->
   {stop,normal,State}.
 
 %% callback for make_grid - tile viewer is assigned here %%
-handle_cast({make_grid,{Rows,Columns,TileSize,Entities}},State) ->
+handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
 Grid = populate_grid(State#state.tileSup,Rows,Columns,TileSize),
 Viewers=add_viewers(State#state.viewerSup,Grid),
-Zombies=create_swarm(State#state.zombieSup,State#state.tileSup,Entities),
 %setNeighbours(Viewers),
-{noreply,State#state{tileList=Grid,viewerPropList=Viewers,swarm=Zombies}}. 
+{noreply,State#state{tileList=Grid,viewerPropList=Viewers,rows=Rows,columns=Columns,tileSize=TileSize}};
+
+handle_cast({swarm,Num},State) ->
+  Swarm=create_swarm(State,Num),
+  {noreply,State#state{swarm=Swarm}}.
 
 
 handle_info(Msg,State) ->
@@ -156,12 +165,53 @@ add_viewers(Sup,Grid,Viewers) ->
   %[{Tile,Viewer}|T] = Viewers,
   %find_viewers(Tile,Viewers)
   
-create_swarm(Zsup,Tsup,[]) -> [];
-create_swarm(Zsup,Tsup,[X|Xs]) -> 
-  {ok,Z}=supervisor:start_child(Zsup,[X]),
-  % tell the Tsup to add it to a tile
-  create_swarm(Zsup,Tsup,Xs).
+%create_swarm(Pid,[]) -> [];
+set_swarm(Pid,Num) -> 
+  gen_server:cast(Pid,{swarm,Num}).
+
+
+create_swarm(State,Num) ->
+  create_swarm(State,Num,[]).
+create_swarm(_State,0,List) -> List;
+create_swarm(State,Num,List) ->
+  GridXSize=State#state.tileSize*State#state.columns,
+  GridYSize=State#state.tileSize*State#state.rows,
+  Xpos = random:uniform(GridXSize),
+  Ypos= random:uniform(GridYSize),
+  {Tile,Viewer} = get_tile(Xpos,Ypos,State#state.tileList,State),
+  {ok,Zombie}=supervisor:start_child(State#state.zombieSup,[Xpos,Ypos,Tile,Viewer]),
+  tile:summon_entity(Tile,{Zombie,{Xpos,Ypos}}),
+  create_swarm(State,Num-1,List++[Zombie]).
+
   
+get_tile(_Xpos,_Ypos,[],State) -> 
+  [{Tile,Viewer}|_T] = State#state.viewerPropList,
+  {Tile,Viewer};
+get_tile(Xpos,Ypos,TL,State) ->
+  [H|T] = TL,
+  case in_tile(Xpos,Ypos,tile:get_geometry(H)) of
+    true -> {H,proplists:get_value(H,State#state.viewerPropList)};
+    false -> get_tile(Xpos,Ypos,T,State)
+  end.
+
+in_tile(Xpos,Ypos,Geom) ->
+ {Xt,Yt,Xl,Yl,_Size}=Geom,
+ ((Xpos =< Xt) and (Xpos >= Xl)) and ((Ypos =< Yt) and (Ypos >= Yl)).
+
+
+
+
+make_report(TileList) -> 
+  make_report(TileList, []).
+
+make_report([],PopList) -> 
+  PopList;
+make_report(TileList,PopList) ->
+  [X|Xs] = TileList,
+  NewPopList = PopList ++ tile:get_population(X),
+  make_report(Xs,NewPopList).
+
+
 %%test if a tile is in range for the viewer
 %find_viewers(_,[]) -> [],
 %find_viewers(OriginTile,Grid)->
