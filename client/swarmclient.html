@@ -1,0 +1,40 @@
+<HTML>
+<head>
+<LINK REL=StyleSheet HREF="css/stupid.css" TYPE="text/css" MEDIA=screen>
+<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script type="text/javascript">
+  function update_circles(data) {
+var svg = d3.select("svg");
+    svg.selectAll("circle")
+    .data(data)
+    .enter().append("circle")
+    .style("fill", "steelblue")
+    .attr("r", 5)
+    .attr("cx", function(d) { console.log(d[1]);return d[1]; })
+    .attr("cy", function(d) { return d[2]; });
+}
+</script>
+<script type="text/javascript">  
+socket= new WebSocket('ws://localhost:8080/websocket');
+socket.onopen= function() {
+    socket.send("initial");
+  };
+  socket.onmessage = function(s) {
+    var keys = [];
+    for ( var key in s ) {
+      keys.push(key) 
+    };
+    var data = JSON.parse(s.data);
+    update_circles(data);
+};
+</script>
+<body>
+<svg width="720" height="120">
+
+</svg>
+</body>
+
+
+<script type="text/javascript">
+</script>
+</HTML>
