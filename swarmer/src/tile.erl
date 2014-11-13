@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%%% API
--export([start_link/0]).
+-export([start_link/3]).
 
 %%%% gen_server callbacks
 -export([init/1,
@@ -90,8 +90,8 @@ set_neighbours(Pid, NeighbourPids) ->
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link(X,Y,Size) -> %I've had to change this??? I don't know whats going on here
+    gen_server:start_link(?MODULE, [X,Y,Size], []).
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -101,9 +101,9 @@ start_link() ->
 % look on learn you an erlang for dealing with S
 %init([]) ->
 %    {ok, #tile_state{}};
-init([S]) ->
-    io:format(S),
-    {ok, #tile_state{}};
+%init([S]) ->
+    %io:format(S),
+    %{ok, #tile_state{}};
 init([X,Y,Size]) ->
     set_geometry(self(),X,Y,Size),
     {ok, #tile_state{}}.
@@ -176,38 +176,37 @@ code_change(_OldVsn, State, _Extra) ->
 %%%%%% Internal Functions
 %%%%%%=============================================================================
 
-<<<<<<< HEAD
 %%%%%% Calls
-get_population(Pid) ->
-    gen_server:call(Pid, get_population).
+%get_population(Pid) ->
+    %gen_server:call(Pid, get_population).
 
-get_geometry(Pid) ->
-    gen_server:call(Pid, get_geometry).
+%get_geometry(Pid) ->
+    %gen_server:call(Pid, get_geometry).
 
-get_viewer(Pid) ->
-    gen_server:call(Pid, get_viewer).
+%get_viewer(Pid) ->
+    %gen_server:call(Pid, get_viewer).
 
-get_neighbours(Pid) ->
-    gen_server:call(Pid, get_neighbours).
+%get_neighbours(Pid) ->
+    %gen_server:call(Pid, get_neighbours).
 
-%%%%%% Casts
-summon_entity(Pid, Entity) ->
-    gen_server:cast(Pid, {summon_entity, Entity}).
+%%%%%%% Casts
+%summon_entity(Pid, Entity) ->
+    %gen_server:cast(Pid, {summon_entity, Entity}).
 
-remove_entity(Pid, Entity) ->
-    gen_server:cast(Pid, {remove_entity, Entity}).
+%remove_entity(Pid, Entity) ->
+    %gen_server:cast(Pid, {remove_entity, Entity}).
 
-update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-    gen_server:cast(Pid, {update_entity, Entity, Pos}).
+%update_entity(Pid, Entity, Pos, Heading, _Speed) ->
+    %gen_server:cast(Pid, {update_entity, Entity, Pos}).
 
-set_geometry(Pid,Xorigin,Yorigin,Size) ->
-    gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
+%set_geometry(Pid,Xorigin,Yorigin,Size) ->
+    %gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
 
-set_viewer(Pid, ViewerPid) ->
-    gen_server:cast(Pid, {set_viewer, ViewerPid}).
+%set_viewer(Pid, ViewerPid) ->
+    %gen_server:cast(Pid, {set_viewer, ViewerPid}).
 
-set_neighbours(Pid, NeighbourPids) ->
-    gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
+%set_neighbours(Pid, NeighbourPids) ->
+    %gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
 
 
 %% A function to periodically update the viewers
