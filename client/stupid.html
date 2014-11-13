@@ -6,7 +6,7 @@
 <script type="text/javascript">  
 socket= new WebSocket('ws://localhost:8080/websocket');
 socket.onopen= function() {
-    socket.send('report');
+    socket.send("initial");
 };
 socket.onmessage= function(s) {
 	var keys = [];

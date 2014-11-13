@@ -26,18 +26,28 @@ init({tcp,http},_Req,_Opts) ->
 websocket_init(_TransportName, Req, _Opts) ->
   error_logger:error_report("ws init started"),
   {ok,E}=enviroment:start_link(),
-  enviroment:make_grid(E,3,3,25),
   {ok, Req, #state{enviroment=E}}.
 
 %websocket_handle({text, Msg}, Req, State) ->
   %error_logger:error_report("ws handle1 started"),
   %{reply, [{text, << "erlang responding to ", Msg/binary >>}], Req, State};
   
-websocket_handle({text, Msg}, Req, State) ->
+websocket_handle({text, <<"initial">>}, Req, State) ->
   error_logger:error_report("ws handle1 started"),
+  enviroment:make_grid(State#state.enviroment,3,3,25),
+  Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
+  error_logger:error_report(Report),
+  {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
+
+websocket_handle({text, <<"update">>}, Req, State) ->
+  error_logger:error_report("ws2 handle started"),
   Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
   {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
+websocket_handle({text, Msg}, Req, State) ->
+  error_logger:error_report(Msg),
+  Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
+  {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 websocket_handle(_Any, Req, State) ->
   error_logger:error_report("ws handle1 started"),
