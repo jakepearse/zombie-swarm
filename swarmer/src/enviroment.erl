@@ -137,15 +137,15 @@ populate_grid(TileSup,RowCounter,Rows,Columns,TileSize,Grid) ->
   populate_grid(TileSup,RowCounter +1,Rows,Columns,TileSize,Grid++make_row(TileSup,RowCounter,Columns,0,TileSize)).
 
 
-%add_viewers(Sup,Grid) ->
- %add_viewers(Sup,Grid,[]).
-%add_viewers(_,[],Viewers) ->
-  %Viewers;
-%add_viewers(Sup,Grid,Viewers) ->
-  %[H|T]=Grid,
-  %{ok,V}=supervisor:start_child(Sup,[]),
-  %tile:set_viewer(H,V),
-  %add_viewers(Sup,T,Viewers ++ [{H,V}]).
+add_viewers(Sup,Grid) ->
+ add_viewers(Sup,Grid,[]).
+add_viewers(_,[],Viewers) ->
+  Viewers;
+add_viewers(Sup,Grid,Viewers) ->
+  [H|T]=Grid,
+  {ok,V}=supervisor:start_child(Sup,[]),
+  tile:set_viewer(H,V),
+  add_viewers(Sup,T,Viewers ++ [{H,V}]).
 
 %setNeighbours(Viewers) ->
   %[{Tile,Viewer}|T] = Viewers,

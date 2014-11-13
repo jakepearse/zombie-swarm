@@ -25,7 +25,8 @@
         get_viewer/1,
         set_neighbours/2,
         get_neighbours/1,
-        reply_entity/3]).
+        reply_entity/3,
+        start_link/3]).
 
 -define(SERVER, ?MODULE).
 

@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%%% API
--export([start_link/0,stop_viewer/1, add_tile/2,get_population/1,update/2,get_tiles/1]).
+-export([start_link/0, add_tile/2,get_population/1,update/2,get_tiles/1]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
@@ -21,7 +21,7 @@ handle_info/2,init/1,terminate/2]).
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-%start_link(Id) -> gen_server:start_link({local,Id}, ?MODULE, [Id], []).
+%start_link([Id]) -> gen_server:start_link({local,Id}, ?MODULE, [Id], []).
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
 %change the data in the viewer
@@ -41,8 +41,8 @@ get_population(Pid) ->
 get_tiles(Pid) ->
   gen_server:call(Pid,get_tiles).
 
-stop_viewer(_Pid) ->
-    gen_server:terminate(normal).
+%stop_viewer(_Pid) ->
+    %gen_server:terminate(normal).
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
