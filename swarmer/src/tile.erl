@@ -25,8 +25,7 @@
         get_viewer/1,
         set_neighbours/2,
         get_neighbours/1,
-        reply_entity/3,
-        start_link/3]).
+        reply_entity/3]).
 
 -define(SERVER, ?MODULE).
 
@@ -153,7 +152,7 @@ handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
     end;  
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
-    {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size, ylimit = Y+Size, coords = {X,Y,X+Size,Y+Size}}};
+    {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size, ylimit = Y+Size, coords = {X,Y,X+Size,Y+Size,Size}}};
 %%%% Handles setting of tiles viewer
 handle_cast({set_viewer, ViewerPid}, State) ->
     {noreply,State#tile_state{viewer = ViewerPid}};
@@ -176,39 +175,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%%%%=============================================================================
 %%%%%% Internal Functions
 %%%%%%=============================================================================
-
-%%%%%% Calls
-%get_population(Pid) ->
-    %gen_server:call(Pid, get_population).
-
-%get_geometry(Pid) ->
-    %gen_server:call(Pid, get_geometry).
-
-%get_viewer(Pid) ->
-    %gen_server:call(Pid, get_viewer).
-
-%get_neighbours(Pid) ->
-    %gen_server:call(Pid, get_neighbours).
-
-%%%%%%% Casts
-%summon_entity(Pid, Entity) ->
-    %gen_server:cast(Pid, {summon_entity, Entity}).
-
-%remove_entity(Pid, Entity) ->
-    %gen_server:cast(Pid, {remove_entity, Entity}).
-
-%update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-    %gen_server:cast(Pid, {update_entity, Entity, Pos}).
-
-%set_geometry(Pid,Xorigin,Yorigin,Size) ->
-    %gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
-
-%set_viewer(Pid, ViewerPid) ->
-    %gen_server:cast(Pid, {set_viewer, ViewerPid}).
-
-%set_neighbours(Pid, NeighbourPids) ->
-    %gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
-
 
 %% A function to periodically update the viewers
 %% Currently this is carried out every 5 seconds, this is just an arbitratry value
