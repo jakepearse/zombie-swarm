@@ -32,6 +32,19 @@ socket.onopen= function() {
 <svg width="1125" height="1125">
 
 </svg>
+<script type="text/javascript">
+  // This sends the "update" message to the socket every 1000ms
+  // and updates the circles with the recived data
+  setInterval(function() {socket.send("update")},1000);
+    socket.onmessage = function(t) {
+      var keys = [];
+      for ( var key in t ) {
+        keys.push(key) 
+      }
+  var updatedata = JSON.parse(t.data);
+  update_circles(updatedata);
+  };
+</script>
 </body>
 
 
