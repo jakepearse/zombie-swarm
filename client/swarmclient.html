@@ -1,7 +1,7 @@
 <HTML>
 <head>
 <LINK REL=StyleSheet HREF="css/stupid.css" TYPE="text/css" MEDIA=screen>
-<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+<script src="js/d3.v3.min.js" charset="utf-8"></script>
 <script type="text/javascript">
   function update_circles(data) {
 var svg = d3.select("svg");
@@ -10,8 +10,8 @@ var svg = d3.select("svg");
     .enter().append("circle")
     .style("fill", "steelblue")
     .attr("r", 5)
-    .attr("cx", function(d) { console.log(d[1]);return d[1]; })
-    .attr("cy", function(d) { return d[2]; });
+    .attr("cx", function(d) { return d[1]*5; })
+    .attr("cy", function(d) { return d[2]*5; });
 }
 </script>
 <script type="text/javascript">  
@@ -29,7 +29,7 @@ socket.onopen= function() {
 };
 </script>
 <body>
-<svg width="720" height="120">
+<svg width="1125" height="1125">
 
 </svg>
 </body>

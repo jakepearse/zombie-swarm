@@ -32,7 +32,7 @@ websocket_init(_TransportName, Req, _Opts) ->
   %error_logger:error_report("ws handle1 started"),
   %{reply, [{text, << "erlang responding to ", Msg/binary >>}], Req, State};
 
-websocket_handle({text, <<"initial">>}, Req, State) when State#state.enviroment > 0->
+websocket_handle({text, <<"initial">>}, Req, State) when State#state.enviroment =/= 0->
     error_logger:error_report("ws handle1 when started"),
     Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
         {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
@@ -41,7 +41,7 @@ websocket_handle({text, <<"initial">>}, Req, State) ->
     error_logger:error_report("ws handle1 started"),
     {ok,E}=enviroment:start_link(),
     enviroment:make_grid(E,3,3,25),
-    enviroment:set_swarm(E,100),
+    enviroment:set_swarm(E,50),
     Report=mochijson2:encode(enviroment:report(E)),
     {reply, [{text, Report}], Req, State#state{enviroment=E}}; % << "report", Report/binary >>
 

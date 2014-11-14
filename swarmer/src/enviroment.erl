@@ -196,7 +196,7 @@ get_tile(Xpos,Ypos,TL,State) ->
 
 in_tile(Xpos,Ypos,Geom) ->
  {Xt,Yt,Xl,Yl,_Size}=Geom,
- ((Xpos =< Xt) and (Xpos >= Xl)) and ((Ypos =< Yt) and (Ypos >= Yl)).
+ ((Xpos >= Xt) and (Xpos =< Xl)) and ((Ypos >= Yt) and (Ypos =< Yl)).
 
 
 
