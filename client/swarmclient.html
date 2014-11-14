@@ -10,15 +10,15 @@ var svg = d3.select("svg");
     .enter().append("circle")
     .style("fill", "steelblue")
     .attr("r", 5)
-    .attr("cx", function(d) { return d[1]*5; })
-    .attr("cy", function(d) { return d[2]*5; });
+    .transition().attr("cx", function(d) { return d[1]*5; })
+    .transition().attr("cy", function(d) { return d[2]*5; });
 }
 </script>
 <script type="text/javascript">  
-socket= new WebSocket('ws://localhost:8080/websocket');
-socket.onopen= function() {
+  socket= new WebSocket('ws://localhost:8080/websocket');
+  socket.onopen= function() {
     socket.send("initial");
-  };
+    };
   socket.onmessage = function(s) {
     var keys = [];
     for ( var key in s ) {
@@ -26,9 +26,13 @@ socket.onopen= function() {
     };
     var data = JSON.parse(s.data);
     update_circles(data);
-};
+  };
 </script>
 <body>
+<!--
+TODO: the hardcoded values for svg.width and svg.height need to be dynamicly
+set by data from the socket
+-->
 <svg width="1125" height="1125">
 
 </svg>
@@ -36,13 +40,13 @@ socket.onopen= function() {
   // This sends the "update" message to the socket every 1000ms
   // and updates the circles with the recived data
   setInterval(function() {socket.send("update")},1000);
-    socket.onmessage = function(t) {
-      var keys = [];
-      for ( var key in t ) {
-        keys.push(key) 
-      }
-  var updatedata = JSON.parse(t.data);
-  update_circles(updatedata);
+  socket.onmessage = function(t) {
+    var keys = [];
+    for ( var key in t ) {
+      keys.push(key) 
+    }
+    var updatedata = JSON.parse(t.data);
+    update_circles(updatedata);
   };
 </script>
 </body>
