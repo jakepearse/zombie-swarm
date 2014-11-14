@@ -60,6 +60,9 @@ get_viewer(Pid) ->
 get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
 
+update_entity(Pid, Entity, NPos, Heading, _Speed) ->
+    gen_server:call(Pid, {update_entity, Entity, NPos, Heading, _Speed}).
+
 %reply_entity(Pid, State, Entity) ->
 %    gen_server:call(Pid, {reply_entity, State, Entity}).
 
@@ -71,8 +74,10 @@ summon_entity(Pid, Entity) ->
 remove_entity(Pid, Entity) ->
     gen_server:cast(Pid, {remove_entity, Entity}).
 
-update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-    gen_server:cast(Pid, {update_entity, Entity, Pos}).
+%update_entity(Pid, Entity, Pos, Heading, _Speed) ->
+%    gen_server:cast(Pid, {update_entity, Entity, Pos}).
+
+%tile:update_entity(TilePid, {id,{x,y}}, {nx,ny}, n/e/s/w,_)
 
 set_geometry(Pid,Xorigin,Yorigin,Size) ->
     gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
@@ -111,10 +116,20 @@ handle_call(get_geometry,_From,State) ->
 handle_call(get_viewer,_From,State) ->
     {reply,State#tile_state.viewer};
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#tile_state.neighbours}.
+    {reply,State#tile_state.neighbours};
 %handle_call({reply_entity, State, Entity} ,_From, State) ->
 %    %{ID,{Pos}} = Entity,
 %    {reply,State#tile_state.entityDict, State}.
+
+handle_call({update_entity,Entity,NPos,_Heading,_Speed},_From,State) ->
+    {ID,{_,_}} = Entity,
+    case dict:is_key(ID,State#tile_state.entityDict) of
+        true ->
+            {reply,NPos,State#tile_state{entityDict = dict:store(ID,NPos,State#tile_state.entityDict)}};
+        false ->
+            {reply,NPos,State#tile_state{entityDict = summon_entity(State,Entity)}}
+    end.
+    %{reply,dict:fetch(ID,State#tile_state.entityDict),State}.
 
 %%%%%% Casts
 
@@ -131,19 +146,19 @@ handle_cast({remove_entity, Entity}, State) ->
     {ID,{_,_}} = Entity,
     {noreply,State#tile_state{entityDict = dict:erase(ID,State#tile_state.entityDict)}};
 %%%% Handle update entity calls
-handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
-    {ID,{_,_}} = Entity,
-    case dict:is_key(ID,State#tile_state.entityDict) of
-        true ->
-            case Heading of
-                n ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                e ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                s ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                w ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}}
-            end;
-        false ->
-            {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
-    end;  
+%handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
+%    {ID,{_,_}} = Entity,
+%    case dict:is_key(ID,State#tile_state.entityDict) of
+%        true ->
+%            case Heading of
+%                n ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+%                e ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+%                s ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+%                w ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}}
+%            end;
+%        false ->
+%            {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
+%    end;  
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
     {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size, ylimit = Y+Size, coords = {X,Y,X+Size,Y+Size,Size}}};
@@ -221,8 +236,6 @@ makeUsable([L|Ls],A,Num) ->
     B = [[Num,X,Y]] ++ A,
     makeUsable(Ls,B,Num+1).
 
-
-
 % Still need to figure out how to update a zombies viewer
 
 
@@ -236,3 +249,8 @@ makeUsable([L|Ls],A,Num) ->
 %   when this is done, replace z1,z2,z3 etc etc with the Pid of the entities
 %       entities in the list will be in the format [[id,x,y],[id,x,y]]
 %           id = "pid", x = int, y = int
+
+% update_entity needs to be a call
+
+% tiles within tiles?
+%   quadtree like datastructure
