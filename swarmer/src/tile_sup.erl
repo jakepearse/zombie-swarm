@@ -14,6 +14,3 @@ init([]) ->
 	{ok,{{simple_one_for_one,1,60},
   		[{normal_tile, {tile,start_link,[]},
     	permanent,1000,worker,[tile]}]}}.
-
-%start_child(?MODULE,[]) ->
-%	supervisor:start_child({local,?MODULE}, ?MODULE, [X,Y,Size]).
