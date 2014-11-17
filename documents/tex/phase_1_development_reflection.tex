@@ -1,0 +1,23 @@
+\pagestyle{empty}
+\section{Phase 1 Development Evaluation\\{\small\tt J.~Pearse}}
+After the lengthy research phase the whole team were keen to begin programming, this first development cycle was conceived as something of a experimental/prototyping exercise and a chance to get to grips with the Open Telecommunications Protocol (OTP). We distributed the development of the modules specified in the first draft among the team members.
+Throughout the two week iteration it became clear that we had underestimated the high level of dependencies among the modules especially with regard to integration, but by maintaining a good level of contact we were able to exceed our target for this iteration in all but one area. This success despite the difficulty of learning to satisfy the constraints of OTP development left the team in positive spirits with good morale going into the next phase.
+The knock-on effect of the unexpected programming difficulty was that the code QA fell short of our intended targets with methods uncommented and messy source files, in response we have decided to take a short break from coding at the end of this cycle and do a mini documentation and code clean-up iteration before we begin the next cycle.\vspace{1 em}
+
+\begin{tabular}{l|l|l}
+\textbf{Target} & \textbf{Status} & \textbf{Notes} \\
+Environment server & Complete & Additional OTP supervisor module also created \\
+Tile Server & Complete & OTP supervisor \\
+Viewer Server & Complete & OTP supervisor\\
+Zombie State Machine & Unfinished & OTP supervisor present \\
+\end{tabular}
+
+\vspace{1 em}As well as the unexpected supervisor modules we also implemented;
+\begin{itemize}
+\item A basic but fuctional websocket server,
+\item a JSON library for Erlang researched, compared and integrated,
+\item a basic JavaScript Client implemented with the D3.js data visualisation library.
+\end{itemize}
+Although we had hoped to have a visualisation of Zombies moving moving around at the end of this iteration, given the difficulty we were pleased to have them visualised, albeit static. 
+\clearpage
+\endinput
