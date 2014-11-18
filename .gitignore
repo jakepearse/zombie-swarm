@@ -1,10 +1,8 @@
-.eunit
-deps
+swarmer/.eunit
+swarmer/deps
 *.o
 *.beam
 *.plt
-erl_crash.dump
-ebin
-rel/example_project
-.concrete/DEV_MODE
-.rebar
+swarmer/erl_crash.dump
+swarmer/ebin
+swarmer.rebar
