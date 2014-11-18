@@ -77,7 +77,8 @@ remove_entity(Pid, Entity) ->
 
 -spec update_entity(pid(),entity(),pos(),_,_) -> ok.
 update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-    gen_server:cast(Pid, {update_entity, Entity, Pos}).
+    gen_server:cast(Pid, {update_entity, Entity, Pos, Heading, _Speed}).
+
 
 -spec set_geometry(pid(),coord(),coord(),pos_integer()) -> ok.
 set_geometry(Pid,Xorigin,Yorigin,Size) ->
@@ -121,16 +122,7 @@ handle_call(get_viewer,_From,State) ->
     {reply,State#tile_state.viewer};
 
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#tile_state.neighbours};
-
-handle_call({update_entity,Entity,NPos,_Heading,_Speed},_From,State) ->
-    {ID,{_,_}} = Entity,
-    case dict:is_key(ID,State#tile_state.entityDict) of
-        true ->
-            {reply,NPos,State#tile_state{entityDict = dict:store(ID,NPos,State#tile_state.entityDict)}};
-        false ->
-            {reply,NPos,State#tile_state{entityDict = summon_entity(State,Entity)}}
-    end.
+    {reply,State#tile_state.neighbours}.
 
 %%%%%% Casts
 
@@ -147,20 +139,20 @@ handle_cast({remove_entity, Entity}, State) ->
     {ID,{_,_}} = Entity,
     {noreply,State#tile_state{entityDict = dict:erase(ID,State#tile_state.entityDict)}};
 
-%%%% Handle update entity calls
+ 
 handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
     {ID,{_,_}} = Entity,
     case dict:is_key(ID,State#tile_state.entityDict) of
         true ->
             case Heading of
-                n ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                e ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                s ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                w ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}}
+                n -> {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+                e -> {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+                s -> {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
+                w -> {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}}
             end;
         false ->
             {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
-    end;  
+    end; 
 
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
