@@ -3,13 +3,20 @@
 <LINK REL=StyleSheet HREF="css/stupid.css" TYPE="text/css" MEDIA=screen>
 <script src="js/d3.v3.min.js" charset="utf-8"></script>
 <script type="text/javascript">
-  function update_circles(data) {
+  function draw_circles(data) {
 var svg = d3.select("svg");
     svg.selectAll("circle")
     .data(data)
     .enter().append("circle")
     .style("fill", "steelblue")
     .attr("r", 5)
+    .attr("cx", function(d) { return d[1]*5; })
+    .attr("cy", function(d) { return d[2]*5; });
+}
+  function update_circles(data) {
+var svg = d3.select("svg");
+    svg.selectAll("circle")
+    .data(data)
     .transition().attr("cx", function(d) { return d[1]*5; })
     .transition().attr("cy", function(d) { return d[2]*5; });
 }
@@ -18,15 +25,16 @@ var svg = d3.select("svg");
   socket= new WebSocket('ws://localhost:8080/websocket');
   socket.onopen= function() {
     socket.send("initial");
-    };
+    
   socket.onmessage = function(s) {
     var keys = [];
     for ( var key in s ) {
       keys.push(key) 
     };
     var data = JSON.parse(s.data);
-    update_circles(data);
+    draw_circles(data);
   };
+};
 </script>
 <body>
 <!--
@@ -39,15 +47,19 @@ set by data from the socket
 <script type="text/javascript">
   // This sends the "update" message to the socket every 1000ms
   // and updates the circles with the recived data
-  setInterval(function() {socket.send("update")},1000);
-  socket.onmessage = function(t) {
+  setInterval(function() {doUpdate()},1000);
+  function doUpdate() {
+    socket.send("update");
+    socket.onmessage = function(t) {
     var keys = [];
     for ( var key in t ) {
       keys.push(key) 
     }
     var updatedata = JSON.parse(t.data);
+        console.log("ping");
     update_circles(updatedata);
   };
+};
 </script>
 </body>
 
