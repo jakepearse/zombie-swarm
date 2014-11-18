@@ -22,7 +22,7 @@ initial(timeout,State) ->
 aimless(timeout,State) ->
 	X = State#state.x,
 	Y = State#state.y + 1,
-%tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},{X,Y},n,10),
+tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},{X,Y},n,10),
 	{next_state,aimless_search,State#state{x=X,y=Y},300}.
 
 aimless_search(timeout,State) ->
