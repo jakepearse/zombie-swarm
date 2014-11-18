@@ -145,10 +145,10 @@ handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
     case dict:is_key(ID,State#tile_state.entityDict) of
         true ->
             case Heading of
-                n -> {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                e -> {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                s -> {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-                w -> {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}}
+                n -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}};
+                e -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}};
+                s -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}};
+                w -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}}
             end;
         false ->
             {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
