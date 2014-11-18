@@ -66,15 +66,6 @@ get_viewer(Pid) ->
 get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
 
-<<<<<<< HEAD
-=======
-update_entity(Pid, Entity, NPos, Heading, _Speed) ->
-    gen_server:call(Pid, {update_entity, Entity, NPos, Heading, _Speed}).
-
-%reply_entity(Pid, State, Entity) ->
-%    gen_server:call(Pid, {reply_entity, State, Entity}).
->>>>>>> cf477fc304c0344b0e77d3ec9cda19eab0805469
-
 %%%%%% Casts
 -spec summon_entity(pid(),entity()) -> ok.
 summon_entity(Pid, Entity) ->
@@ -84,16 +75,9 @@ summon_entity(Pid, Entity) ->
 remove_entity(Pid, Entity) ->
     gen_server:cast(Pid, {remove_entity, Entity}).
 
-<<<<<<< HEAD
 -spec update_entity(pid(),entity(),pos(),_,_) -> ok.
 update_entity(Pid, Entity, Pos, Heading, _Speed) ->
     gen_server:cast(Pid, {update_entity, Entity, Pos}).
-=======
-%update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-%    gen_server:cast(Pid, {update_entity, Entity, Pos}).
-
-%tile:update_entity(TilePid, {id,{x,y}}, {nx,ny}, n/e/s/w,_)
->>>>>>> cf477fc304c0344b0e77d3ec9cda19eab0805469
 
 -spec set_geometry(pid(),coord(),coord(),pos_integer()) -> ok.
 set_geometry(Pid,Xorigin,Yorigin,Size) ->
@@ -137,14 +121,7 @@ handle_call(get_viewer,_From,State) ->
     {reply,State#tile_state.viewer};
 
 handle_call(get_neighbours,_From,State) ->
-<<<<<<< HEAD
-    {reply,State#tile_state.neighbours}.
-=======
     {reply,State#tile_state.neighbours};
-%handle_call({reply_entity, State, Entity} ,_From, State) ->
-%    %{ID,{Pos}} = Entity,
-%    {reply,State#tile_state.entityDict, State}.
->>>>>>> cf477fc304c0344b0e77d3ec9cda19eab0805469
 
 handle_call({update_entity,Entity,NPos,_Heading,_Speed},_From,State) ->
     {ID,{_,_}} = Entity,
@@ -154,7 +131,6 @@ handle_call({update_entity,Entity,NPos,_Heading,_Speed},_From,State) ->
         false ->
             {reply,NPos,State#tile_state{entityDict = summon_entity(State,Entity)}}
     end.
-    %{reply,dict:fetch(ID,State#tile_state.entityDict),State}.
 
 %%%%%% Casts
 
@@ -172,7 +148,6 @@ handle_cast({remove_entity, Entity}, State) ->
     {noreply,State#tile_state{entityDict = dict:erase(ID,State#tile_state.entityDict)}};
 
 %%%% Handle update entity calls
-<<<<<<< HEAD
 handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
     {ID,{_,_}} = Entity,
     case dict:is_key(ID,State#tile_state.entityDict) of
@@ -187,21 +162,6 @@ handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
             {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
     end;  
 
-=======
-%handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
-%    {ID,{_,_}} = Entity,
-%    case dict:is_key(ID,State#tile_state.entityDict) of
-%        true ->
-%            case Heading of
-%                n ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-%                e ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-%                s ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}};
-%                w ->    {noreply,State#tile_state{entityDict = dict:store(ID,{Pos},State#tile_state.entityDict)}}
-%            end;
-%        false ->
-%            {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
-%    end;  
->>>>>>> cf477fc304c0344b0e77d3ec9cda19eab0805469
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
     {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size, ylimit = Y+Size, coords = {X,Y,X+Size,Y+Size,Size}}};
@@ -281,11 +241,7 @@ make_usable([],A,_) -> A;
 make_usable([L|Ls],A,Num) ->
     {_Id,{X,Y}} = L,
     B = [[Num,X,Y]] ++ A,
-<<<<<<< HEAD
     make_usable(Ls,B,Num+1).
-=======
-    makeUsable(Ls,B,Num+1).
->>>>>>> cf477fc304c0344b0e77d3ec9cda19eab0805469
 
 % Still need to figure out how to update a zombies viewer
 

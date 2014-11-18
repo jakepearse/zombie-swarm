@@ -5,7 +5,7 @@
 \definecolor{Gray}{gray}{0.9} % oh my god! why can't americans spell?
 \begin{document}
 
-\section*{Unit testing QA checklist}
+\section*{Code QA checklist}
 \Large
 \begin{itemize}
 \item Module:
@@ -16,9 +16,10 @@
 \rowcolors{1}{Gray}{white}
 \Large
 \begin{tabularx}{\textwidth}{ X | X }
+module compiles & \\
+compilation warning-free & \\
 test file present & \\
-tests match exports & \\
-all test commented & \\
-all tests passed & \\
+exported functions commented & \\
+exported functions specd & \\
 \end{tabularx}
 \end{document}
