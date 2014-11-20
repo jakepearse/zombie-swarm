@@ -1,0 +1,15 @@
+\pagestyle{empty}
+
+\section{Unit testing standards\\{\small\tt{J.~Pearse}}}
+The importance of unit testing in a complex system cannot be overstated. By ensuring that a comprehensive suite of unit tests exists for each module's interface, we can reduce the risk of problems when we intergrate each iteration and prevent the propagation of bugs from iteration to iteration.
+EUnit is a unit testing library shipped with Erlang, all tests should be written in a seperate module named for the module test suffixed with tests.erl.
+The author of each module is responsible for writing a test for each exported function as a minimum, tests for fuctions which are not exported may be written at the authors discretion.
+At each iteration the Testing manager will be responsible for checking:
+\begin{itemize}
+\item
+Every module has it's matching test file which runs without failures. \item
+producing a QA document for each iteration consisting of a full list of modules with checkboxes for "tests exist" "test passed".
+\end{itemize}
+
+\clearpage
+\endinput
