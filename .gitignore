@@ -6,3 +6,6 @@ swarmer/deps
 swarmer/erl_crash.dump
 swarmer/ebin
 swarmer.rebar
+.rebar
+*.aux
+*.log

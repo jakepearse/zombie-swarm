@@ -7,7 +7,7 @@
 -export([start_link/0,make_grid/4,get_grid/1,report/1]).
 
 %%%% internal functions for debugging these can be deleted later
--export([get_state/1,integer_list/1,set_swarm/2]).
+-export([get_state/1,set_swarm/2]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
@@ -16,14 +16,23 @@ handle_info/2,init/1,terminate/2]).
 -define(SERVER, ?MODULE).
 
 -record(state,{
+% a canonical list of tile PID's
   tileList=[],
+% a canonical list of entities
   swarm = [],
+% map viewer PID's to respective tiles
   viewerPropList,
+% handle to viewer supervisor
   viewerSup,
+% handle to tile supervisor
   tileSup,
+% handle to zombie supervisor
   zombieSup,
+% Number of tile rows
   rows,
+% number of tile columns
   columns,
+% size of each tile  
   tileSize
   }).
 
@@ -36,7 +45,7 @@ handle_info/2,init/1,terminate/2]).
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-start_link() -> gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+start_link() -> gen_server:start_link(?MODULE, [], []).
 
 
 %%%%------------------------------------------------------------------------------
@@ -63,13 +72,23 @@ get_state(Pid) ->
 make_grid(Pid,Rows,Columns,TileSize) ->
   gen_server:cast(Pid,{make_grid,{Rows,Columns,TileSize}}).
 
-
-
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%% retrive the state of the whole enviroment
+%%%% @end
+%%%%------------------------------------------------------------------------------
 report(Pid) ->
-    % eventually this will give the state of the whole enviroment
-    % for now it's a dummy to test json stuff
     gen_server:call(Pid,report).
-    
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%% create Num zombies and add add them to the tiles
+%%%% @end
+%%%%------------------------------------------------------------------------------
+set_swarm(Pid,Num) -> 
+  gen_server:cast(Pid,{swarm,Num}).
+
+
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -80,14 +99,10 @@ init([]) ->
   {ok,T} = tile_sup:start_link([]),
   {ok,Z} = zombie_sup:start_link([]),
    {ok, #state{viewerSup=V,tileSup=T, zombieSup=Z}}. %new state record with default values
-   
-handle_call(report,_From,State) ->
-    %here's a dummy callback for json testing
-    %Report=lists:filter(fun(X)->is_integer(X) end,lists:flatten(State#state.tileList)),
-    %Report=State#state.tileList,
-    
-    %Report = [[1,0,0],[2,0,25],[3,0,50],[4,25,0],[5,25,25],[6,25,50]],
 
+%%% calls
+
+handle_call(report,_From,State) ->
     Report = make_report(State#state.tileList), 
     {reply,Report,State};
 
@@ -100,17 +115,20 @@ handle_call(get_state,_From,State) ->
 handle_call(terminate,State) ->
   {stop,normal,State}.
 
-%% callback for make_grid - tile viewer is assigned here %%
+% casts
+
 handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
-Grid = populate_grid(State#state.tileSup,Rows,Columns,TileSize),
-Viewers=add_viewers(State#state.viewerSup,Grid),
-%setNeighbours(Viewers),
-{noreply,State#state{tileList=Grid,viewerPropList=Viewers,rows=Rows,columns=Columns,tileSize=TileSize}};
+  Grid = populate_grid(State#state.tileSup,Rows,Columns,TileSize),
+  Viewers=add_viewers(State#state.viewerSup,Grid),
+  %setNeighbours(Viewers),
+  {noreply,State#state{tileList=Grid,viewerPropList=Viewers,rows=Rows,columns=Columns,tileSize=TileSize}};
 
 handle_cast({swarm,Num},State) ->
   Swarm=create_swarm(State,Num),
   {noreply,State#state{swarm=Swarm}}.
 
+
+% other gen_server stuff
 
 handle_info(Msg,State) ->
   io:format("Unexpected message: ~p~n",[Msg]),
@@ -126,10 +144,8 @@ code_change(_OldVsn, State,_Extra) ->
 %%%%%% Internal Functions
 %%%%%%=============================================================================
 
-integer_list([]) -> [];
-integer_list([X|Xs]) ->
-  lists:filter(fun(Element) -> is_integer(Element) end,X) ++ integer_list(Xs).
-  
+
+%%%% called by populate grid to make a row of tiles %%%%%%%
 make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize) ->
   make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize,[]).
 make_row(_TileSup,_RowCounter,Columns,ColumnCounter,_TileSize,Row) when ColumnCounter > Columns -1 ->
@@ -142,7 +158,7 @@ make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize,Row) ->
   make_row(TileSup,RowCounter,Columns,ColumnCounter +1,TileSize,
             Row++[Tile]).
   
- 
+%%% populate could be misleading, it means populate a grid with tiles %%%
 populate_grid(TileSup,Rows,Columns,TileSize) ->
   populate_grid(TileSup,0,Rows,Columns,TileSize,[]).
 populate_grid(_TileSup,RowCounter,Rows,_Columns,_TileSize,Grid) when RowCounter > Rows -1 ->
@@ -150,7 +166,7 @@ populate_grid(_TileSup,RowCounter,Rows,_Columns,_TileSize,Grid) when RowCounter 
 populate_grid(TileSup,RowCounter,Rows,Columns,TileSize,Grid) ->
   populate_grid(TileSup,RowCounter +1,Rows,Columns,TileSize,Grid++make_row(TileSup,RowCounter,Columns,0,TileSize)).
 
-
+%%% take a list of tiles and add viewers to each one
 add_viewers(Sup,Grid) ->
  add_viewers(Sup,Grid,[]).
 add_viewers(_,[],Viewers) ->
@@ -165,14 +181,13 @@ add_viewers(Sup,Grid,Viewers) ->
   %[{Tile,Viewer}|T] = Viewers,
   %find_viewers(Tile,Viewers)
   
-%create_swarm(Pid,[]) -> [];
-set_swarm(Pid,Num) -> 
-  gen_server:cast(Pid,{swarm,Num}).
 
-
+%% Spawns Num randomly positioned zombies
 create_swarm(State,Num) ->
   create_swarm(State,Num,[]).
+
 create_swarm(_State,0,List) -> List;
+
 create_swarm(State,Num,List) ->
   GridXSize=State#state.tileSize*State#state.columns,
   GridYSize=State#state.tileSize*State#state.rows,
@@ -183,10 +198,12 @@ create_swarm(State,Num,List) ->
   tile:summon_entity(Tile,{Zombie,{Xpos,Ypos}}),
   create_swarm(State,Num-1,List++[Zombie]).
 
-  
+
+%% search for a tile by X,Y in the viewerPropList
 get_tile(_Xpos,_Ypos,[],State) -> 
   [{Tile,Viewer}|_T] = State#state.viewerPropList,
   {Tile,Viewer};
+
 get_tile(Xpos,Ypos,TL,State) ->
   [H|T] = TL,
   case in_tile(Xpos,Ypos,tile:get_geometry(H)) of
@@ -194,13 +211,12 @@ get_tile(Xpos,Ypos,TL,State) ->
     false -> get_tile(Xpos,Ypos,T,State)
   end.
 
+%% Boolean check of wheter a set of X,Y is within the tile Geom
 in_tile(Xpos,Ypos,Geom) ->
  {Xt,Yt,Xl,Yl,_Size}=Geom,
  ((Xpos >= Xt) and (Xpos =< Xl)) and ((Ypos >= Yt) and (Ypos =< Yl)).
 
-
-
-
+%% Build a list of the population of every tile
 make_report(TileList) -> 
   make_report(TileList, []).
 
