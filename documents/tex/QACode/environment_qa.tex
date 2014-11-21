@@ -1,0 +1,25 @@
+\documentclass[14pt]{article}
+\usepackage{times}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+\definecolor{Gray}{gray}{0.9} % oh my god! why can't americans spell?
+\begin{document}
+
+\section*{Code QA checklist}
+\Large
+\begin{itemize}
+\item Module: environment.erl
+\item Author: J.~Pearse
+\item Checked by: J.~Mitchard
+\item Date:\today
+\end{itemize}
+\rowcolors{1}{Gray}{white}
+\Large
+\begin{tabularx}{\textwidth}{ X | X }
+module compiles & True\\
+compilation warning-free & True\\
+test file present & True\\
+exported functions commented & True\\
+exported functions specd & True\\
+\end{tabularx}
+\end{document}
