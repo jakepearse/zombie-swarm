@@ -41,13 +41,13 @@ websocket_handle({text, <<"initial">>}, Req, State) ->
     error_logger:error_report("ws handle1 started"),
     {ok,E}=enviroment:start_link(),
     enviroment:make_grid(E,10,10,25),
-    enviroment:set_swarm(E,10),
+    enviroment:set_swarm(E,1000),
     Report=mochijson2:encode(enviroment:report(E)),
     {reply, [{text, Report}], Req, State#state{enviroment=E}}; % << "report", Report/binary >>
 
 %  error_logger:error_report(Report),
 
-websocket_handle({text, <<"update">>}, Req, State) ->
+websocket_handle({text, <<"update">>}, Req, State)  ->
   error_logger:error_report("ws2 handle started"),
   Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
   error_logger:error_report(Report),

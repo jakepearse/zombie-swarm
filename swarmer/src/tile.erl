@@ -36,6 +36,8 @@
 %%%% x and y origin - the origin of the tile
 %%%% x and y limit - the edge of the tile
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
+%%%% viewer - the assigned viewer of the tile
+%%%% neihbours - a list of the neighbouring tiles viewers
 -record(tile_state, {entityDict=dict:new(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
@@ -49,58 +51,108 @@
 %%%%%% API
 %%%%%%=============================================================================
 
-%%%%%% Calls
--spec get_population(pid()) -> ok.
-get_population(Pid) ->
-    gen_server:call(Pid, get_population).
-
--spec get_geometry(pid()) -> ok.
-get_geometry(Pid) ->
-    gen_server:call(Pid, get_geometry).
-
--spec get_viewer(pid()) -> ok.
-get_viewer(Pid) ->
-    gen_server:call(Pid, get_viewer).
-
--spec get_neighbours(pid()) -> ok.
-get_neighbours(Pid) ->
-    gen_server:call(Pid, get_neighbours).
-
-%%%%%% Casts
--spec summon_entity(pid(),entity()) -> ok.
-summon_entity(Pid, Entity) ->
-    gen_server:cast(Pid, {summon_entity, Entity}).
-
--spec remove_entity(pid(),entity()) -> ok.
-remove_entity(Pid, Entity) ->
-    gen_server:cast(Pid, {remove_entity, Entity}).
-
--spec update_entity(pid(),entity(),pos(),_,_) -> ok.
-update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-    gen_server:cast(Pid, {update_entity, Entity, Pos, Heading, _Speed}).
-
-
--spec set_geometry(pid(),coord(),coord(),pos_integer()) -> ok.
-set_geometry(Pid,Xorigin,Yorigin,Size) ->
-    gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
-
--spec set_viewer(pid(),pid()) -> ok.
-set_viewer(Pid, ViewerPid) ->
-    gen_server:cast(Pid, {set_viewer, ViewerPid}).
-
--spec set_neighbours(pid(), list()) -> ok.
-set_neighbours(Pid, NeighbourPids) ->
-    gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
-
-
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
 -spec start_link(coord(),coord(),pos_integer()) -> ok.
-start_link(X,Y,Size) -> %I've had to change this??? I don't know whats going on here
+start_link(X,Y,Size) ->
     gen_server:start_link(?MODULE, [X,Y,Size], []).
+
+%%%%-Calls------------------------------------------------------------------------
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Return the population of the tile.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec get_population(pid()) -> ok.
+get_population(Pid) ->
+    gen_server:call(Pid, get_population).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Return the geometry of the tile.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec get_geometry(pid()) -> ok.
+get_geometry(Pid) ->
+    gen_server:call(Pid, get_geometry).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Return the assigned viewer of the tile.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec get_viewer(pid()) -> ok.
+get_viewer(Pid) ->
+    gen_server:call(Pid, get_viewer).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Return a list of the associated viewers from the neighbouring tiles.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec get_neighbours(pid()) -> ok.
+get_neighbours(Pid) ->
+    gen_server:call(Pid, get_neighbours).
+
+%%%%-Casts------------------------------------------------------------------------
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Add an entity to the tile.
+%%%% Entity should be sent in the form of {Pid,{X,Y}}.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec summon_entity(pid(),entity()) -> ok.
+summon_entity(Pid, Entity) ->
+    gen_server:cast(Pid, {summon_entity, Entity}).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Remove an entity from the tile.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec remove_entity(pid(),entity()) -> ok.
+remove_entity(Pid, Entity) ->
+    gen_server:cast(Pid, {remove_entity, Entity}).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Update the entities position on the tile.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec update_entity(pid(),entity(),pos(),_,_) -> ok.
+update_entity(Pid, Entity, Pos, Heading, _Speed) ->
+    gen_server:cast(Pid, {update_entity, Entity, Pos, Heading, _Speed}).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Set the boundaries of the tile.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec set_geometry(pid(),coord(),coord(),pos_integer()) -> ok.
+set_geometry(Pid,Xorigin,Yorigin,Size) ->
+    gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Assign a viewer to the tile.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec set_viewer(pid(),pid()) -> ok.
+set_viewer(Pid, ViewerPid) ->
+    gen_server:cast(Pid, {set_viewer, ViewerPid}).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Assign the neighbouring tiles viewers.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+-spec set_neighbours(pid(), list()) -> ok.
+set_neighbours(Pid, NeighbourPids) ->
+    gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
+
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -110,7 +162,7 @@ init([X,Y,Size]) ->
     set_geometry(self(),X,Y,Size),
     {ok, #tile_state{}}.
 
-%%%%%% Calls
+%%%%-Calls------------------------------------------------------------------------
 
 handle_call(get_population,_From,State) ->
     {reply, make_usable(dict:to_list(State#tile_state.entityDict),[]),State};
@@ -124,7 +176,7 @@ handle_call(get_viewer,_From,State) ->
 handle_call(get_neighbours,_From,State) ->
     {reply,State#tile_state.neighbours}.
 
-%%%%%% Casts
+%%%%-Casts------------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
 handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =/= 0 ->
@@ -151,7 +203,7 @@ handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
                 w -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}}
             end;
         false ->
-            {noreply,State#tile_state{entityDict = summon_entity(State,Entity)}}
+            {noreply,State#tile_state{entityDict = summon_entity(State,{ID,Pos})}}
     end; 
 
 %%%% Handle set geometry calls
@@ -193,8 +245,6 @@ update_viewers(Pid) ->
         gen_server:cast(Pid, {update_viewers})
     end.
 
-%%%%%% Functions
-
 %% Ensure new entity is in an untaken position
 %% a bit ugly, but it works
 add_unique(ID, Pos, Dict) ->
@@ -234,6 +284,8 @@ make_usable([L|Ls],A,Num) ->
     {_Id,{X,Y}} = L,
     B = [[Num,X,Y]] ++ A,
     make_usable(Ls,B,Num+1).
+
+%%%%-Notes------------------------------------------------------------------------
 
 % Still need to figure out how to update a zombies viewer
 
