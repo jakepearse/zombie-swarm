@@ -11,7 +11,7 @@
 -export([websocket_info/3]).
 -export([websocket_terminate/3]).
 
--record(state, {enviroment=0}).
+-record(state, {}).
 
 % take any request from tcp or http and push it to websockets
 init({tcp,http},_Req,_Opts) ->
@@ -32,30 +32,30 @@ websocket_init(_TransportName, Req, _Opts) ->
   %error_logger:error_report("ws handle1 started"),
   %{reply, [{text, << "erlang responding to ", Msg/binary >>}], Req, State};
 
-websocket_handle({text, <<"initial">>}, Req, State) when State#state.enviroment =/= 0->
-    error_logger:error_report("ws handle1 when started"),
-    Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
-        {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
+%websocket_handle({text, <<"initial">>}, Req, State) when State#state.enviroment =/= 0->
+    %error_logger:error_report("ws handle1 when started"),
+    %Report=mochijson2:encode(enviroment:report()),
+        %{reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
         
 websocket_handle({text, <<"initial">>}, Req, State) ->
     error_logger:error_report("ws handle1 started"),
-    {ok,E}=enviroment:start_link(),
-    enviroment:make_grid(E,10,10,25),
-    enviroment:set_swarm(E,1000),
-    Report=mochijson2:encode(enviroment:report(E)),
-    {reply, [{text, Report}], Req, State#state{enviroment=E}}; % << "report", Report/binary >>
+    %{ok,E}=enviroment:start_link(),
+    enviroment:make_grid(10,10,25),
+    enviroment:set_swarm(1000),
+    Report=mochijson2:encode(enviroment:report()),
+    {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 %  error_logger:error_report(Report),
 
 websocket_handle({text, <<"update">>}, Req, State)  ->
   error_logger:error_report("ws2 handle started"),
-  Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
+  Report=mochijson2:encode(enviroment:report()),
   error_logger:error_report(Report),
   {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 websocket_handle({text, Msg}, Req, State) ->
   error_logger:error_report(Msg),
-  Report=mochijson2:encode(enviroment:report(State#state.enviroment)),
+  Report=mochijson2:encode(enviroment:report()),
   {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 websocket_handle(_Any, Req, State) ->

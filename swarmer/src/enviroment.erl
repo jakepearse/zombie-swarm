@@ -4,10 +4,10 @@
 -behaviour(gen_server).
 
 %%% API
--export([start_link/0,make_grid/4,get_grid/1,report/1]).
+-export([start_link/0,make_grid/3,get_grid/0,report/0]).
 
 %%%% internal functions for debugging these can be deleted later
--export([get_state/1,set_swarm/2]).
+-export([get_state/0,set_swarm/1]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
@@ -45,7 +45,7 @@ handle_info/2,init/1,terminate/2]).
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-start_link() -> gen_server:start_link(?MODULE, [], []).
+start_link() -> gen_server:start_link({local,?MODULE},?MODULE, [], []).
 
 
 %%%%------------------------------------------------------------------------------
@@ -53,40 +53,40 @@ start_link() -> gen_server:start_link(?MODULE, [], []).
 %%%% Get the full tileList form the #state record
 %%%% @end
 %%%%------------------------------------------------------------------------------
-get_grid(Pid) ->
-    gen_server:call(Pid,get_grid).
+get_grid() ->
+    gen_server:call(?MODULE,get_grid).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Get the entire #state for debugging
 %%%% @end
 %%%%------------------------------------------------------------------------------
-get_state(Pid) ->
-    gen_server:call(Pid,get_state).
+get_state() ->
+    gen_server:call(?MODULE,get_state).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Make a new tile grid, stored in #state
 %%%% @end
 %%%%------------------------------------------------------------------------------
-make_grid(Pid,Rows,Columns,TileSize) ->
-  gen_server:cast(Pid,{make_grid,{Rows,Columns,TileSize}}).
+make_grid(Rows,Columns,TileSize) ->
+  gen_server:cast(?MODULE,{make_grid,{Rows,Columns,TileSize}}).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %% retrive the state of the whole enviroment
 %%%% @end
 %%%%------------------------------------------------------------------------------
-report(Pid) ->
-    gen_server:call(Pid,report).
+report() ->
+    gen_server:call(?MODULE,report).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %% create Num zombies and add add them to the tiles
 %%%% @end
 %%%%------------------------------------------------------------------------------
-set_swarm(Pid,Num) -> 
-  gen_server:cast(Pid,{swarm,Num}).
+set_swarm(Num) -> 
+  gen_server:cast(?MODULE,{swarm,Num}).
 
 
 
