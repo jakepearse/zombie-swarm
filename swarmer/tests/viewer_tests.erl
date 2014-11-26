@@ -1,6 +1,6 @@
 -module(viewer_tests).
 -include_lib("eunit/include/eunit.hrl").
--import(viewer,[start_link/0,stop_viewer/1,add_tile/2,update/2,get_tiles/1,get_population/1]).
+%-import(viewer,[start_link/0,terminate/2,add_tile/2,update/2,get_tiles/1,get_population/1]).
 
 add_data_test_() ->
     {setup,
@@ -9,19 +9,20 @@ add_data_test_() ->
     fun add_data/1}.
 
 start() ->
-    {ok,Pid} = start_link(),
-    Pid.
+    {ok,VS} = veiwer_sup:start_link([]),
+    {ok,TS}= tile:sup:start_link([]),
+    {ok,Pid}= supervisor:start_child(VS,[]).
     
 stop(Pid) -> 
-    viewer:stop_viewer(Pid).
+    supervisor:terminate_child(VS,Pid).
 
 add_data(Pid) ->
-    Data1 = {data1,[a,b,c]},
-    Data2 = {data2,[x,y,z]},
-    viewer:add_tile(Pid,Data1),
-    viewer:add_tile(Pid,Data2),
-    [?_assert(viewer:get_tiles(Pid)==[data1,data2]),
-    ?_assert(dict:is_key(data1,viewer:get_population(Pid))),
-    ?_assert(dict:fetch(data1,viewer:get_population(Pid))==[a,b,c]),
-    ?_assert(dict:fetch(data2,viewer:get_population(Pid))==[x,y,z])
+    {ok,Tile1} = supervisor:start_child(TS,[0,0,25]),
+    {ok,Tile2 = supervisor:start_child(TS,[26,26,25]),
+    viewer:add_tile(Tile1),
+    viewer:add_tile(Tile2),
+    ?_assert(viewer:get_tiles(V)=:=supervisor:which_children(TS)),
+    ?_assert(dict:is_key(Tile1,viewer:get_population(Pid))),
+    ?_assert(dict:fetch(Tile1,viewer:get_population(Pid))==[]),
+    ?_assert(dict:fetch(data2,viewer:get_population(Pid))==[])
     ].
