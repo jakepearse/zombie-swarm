@@ -24,7 +24,8 @@
         set_viewer/2,
         get_viewer/1,
         set_neighbours/2,
-        get_neighbours/1]).
+        get_neighbours/1,
+        terminate/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -38,14 +39,14 @@
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
--record(tile_state, {entityDict=dict:new(),
+-record(tile_state, {entityDict=dict:new() :: dict:dict(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
                     ylimit  ::  coord(),
                     coords  ::  tuple(),
                     viewer  ::  pid(),
-                    neighbours  ::  []}).  
+                    neighbours  ::  [pid()]}). 
 
 %%%%%%=============================================================================
 %%%%%% API
@@ -153,7 +154,8 @@ set_viewer(Pid, ViewerPid) ->
 set_neighbours(Pid, NeighbourPids) ->
     gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
 
-
+terminate(Pid) ->
+    gen_server:cast(Pid, terminate).
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
@@ -220,7 +222,12 @@ handle_cast({set_neighbours, NeighbourPids}, State) ->
 
 %%%% Handle the cast to update the viewers
 handle_cast({update_viewers}, State) ->
-    {noreply,update_viewers(State#tile_state{}, State#tile_state.neighbours)}.
+    {noreply,update_viewers(State#tile_state{}, State#tile_state.neighbours)};
+
+handle_cast(terminate, State) ->
+    {stop,normal,State}.
+
+%%%%-Gen-Server-API---------------------------------------------------------------
 
 handle_info(Info, State) ->
     {noreply, State}.
