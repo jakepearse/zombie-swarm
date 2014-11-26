@@ -40,7 +40,7 @@ websocket_init(_TransportName, Req, _Opts) ->
 websocket_handle({text, <<"initial">>}, Req, State) ->
     error_logger:error_report("ws handle1 started"),
     %{ok,E}=enviroment:start_link(),
-    enviroment:make_grid(10,10,25),
+    enviroment:make_grid(3,3,25),
     enviroment:set_swarm(1000),
     Report=mochijson2:encode(enviroment:report()),
     {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>

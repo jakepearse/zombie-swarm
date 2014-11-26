@@ -120,7 +120,8 @@ handle_call(terminate,State) ->
 handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
   Grid = populate_grid(State#state.tileSup,Rows,Columns,TileSize),
   Viewers=add_viewers(State#state.viewerSup,Grid),
-  %setNeighbours(Viewers),
+  
+  _=make_neighbourhood(Grid,Viewers),
   {noreply,State#state{tileList=Grid,viewerPropList=Viewers,rows=Rows,columns=Columns,tileSize=TileSize}};
 
 handle_cast({swarm,Num},State) ->
@@ -177,10 +178,6 @@ add_viewers(Sup,Grid,Viewers) ->
   tile:set_viewer(H,V),
   add_viewers(Sup,T,Viewers ++ [{H,V}]).
 
-%setNeighbours(Viewers) ->
-  %[{Tile,Viewer}|T] = Viewers,
-  %find_viewers(Tile,Viewers)
-  
 
 %% Spawns Num randomly positioned zombies
 create_swarm(State,Num) ->
@@ -228,12 +225,39 @@ make_report(TileList,PopList) ->
   make_report(Xs,NewPopList).
 
 
-%%test if a tile is in range for the viewer
-%find_viewers(_,[]) -> [],
-%find_viewers(OriginTile,Grid)->
-    %{X,Y,XL,YL} = tile:get_geometry(OriginTile),
-    %Size = abs(XL-X),
-    %[H|T] = Grid,
-    %{R2,C2,{X2,Y2},S2} = H,
-    %%case (abs(X1-X2) < S1+S2) and (abs(Y1-Y2) < S1+S2) of
-    %%true ->  
+make_neighbourhood(TileList,ViewerPropList) ->
+  ViewerGeomList = setup_neighbours(ViewerPropList),
+  do_make_neighbourhood(TileList,ViewerGeomList).
+do_make_neighbourhood([],_) -> ok;
+do_make_neighbourhood(TileList,ViewerGeomList) ->
+  [T|Ts] = TileList,
+  {Xo,Yo,_,_,_Size} = tile:get_geometry(T),
+  tile:set_neighbours(T,get_neighbours(Xo,Yo,ViewerGeomList)),
+  do_make_neighbourhood(Ts,ViewerGeomList).
+  
+setup_neighbours(ViewerPropList) -> 
+  %reformat the viewer propslist inot one with geometry
+  lists:map(fun({T,V})-> {tile:get_geometry(T),V} end, ViewerPropList).
+
+
+
+get_neighbours(Xo,Yo,ViewersWithGeometry) ->
+  get_neighbours(Xo,Yo,ViewersWithGeometry,[]).
+  
+get_neighbours(_,_,[],NeighbourList) -> NeighbourList;
+get_neighbours(Xo,Yo,ViewersWithGeometry,NeighbourList) ->
+  [V|Vs]=ViewersWithGeometry,
+  {{X,Y,_,_,Size},Viewer} = V,
+  case test_neighbour (Xo,Yo,X,Y,Size) of
+  true ->
+    NewList =NeighbourList ++ [Viewer],
+    get_neighbours(Xo,Yo,Vs,NewList);
+  false -> get_neighbours(Xo,Yo,Vs,NeighbourList)
+  end.
+
+
+
+test_neighbour(Xo,Yo,X,Y,Size) ->
+       (X =:= Xo + Size) or (X =:= Xo) or (X =:= (Xo - Size)
+      andalso
+      Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).

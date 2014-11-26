@@ -24,7 +24,8 @@
         set_viewer/2,
         get_viewer/1,
         set_neighbours/2,
-        get_neighbours/1]).
+        get_neighbours/1,
+        get_state/1]).
 
 -define(SERVER, ?MODULE).
 
@@ -135,6 +136,12 @@ update_entity(Pid, Entity, Pos, Heading, _Speed) ->
 set_geometry(Pid,Xorigin,Yorigin,Size) ->
     gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
 
+% look I added something to your module, Ha!
+get_state(Pid) ->
+  gen_server:call(Pid,get_state).
+  
+  
+  
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Assign a viewer to the tile.
@@ -174,8 +181,10 @@ handle_call(get_viewer,_From,State) ->
     {reply,State#tile_state.viewer};
 
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#tile_state.neighbours}.
+    {reply,State#tile_state.neighbours};
 
+handle_call(get_state,_From,State) ->
+  {reply,State,State}.
 %%%%-Casts------------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
@@ -216,7 +225,7 @@ handle_cast({set_viewer, ViewerPid}, State) ->
 
 %%%% Add nearby tiles viewers
 handle_cast({set_neighbours, NeighbourPids}, State) ->
-    {noreply,State#tile_state{neighbours = State#tile_state.neighbours++NeighbourPids}, update_viewers({State#tile_state{}})};
+    {noreply,State#tile_state{neighbours = NeighbourPids}};
 
 %%%% Handle the cast to update the viewers
 handle_cast({update_viewers}, State) ->
