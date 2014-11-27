@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%% API
--export([start_link/0,make_grid/3,get_grid/0,report/0]).
+-export([start_link/0,make_grid/3,get_grid/0,get_grid_info/0,report/0]).
 
 %%%% internal functions for debugging these can be deleted later
 -export([get_state/0,set_swarm/1]).
@@ -55,6 +55,15 @@ start_link() -> gen_server:start_link({local,?MODULE},?MODULE, [], []).
 %%%%------------------------------------------------------------------------------
 get_grid() ->
     gen_server:call(?MODULE,get_grid).
+
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%%%% Get general information about the grid
+%%%% @end
+%%%%------------------------------------------------------------------------------
+get_grid_info() ->
+    gen_server:call(?MODULE,grid_info).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -108,6 +117,12 @@ handle_call(report,_From,State) ->
 
 handle_call(get_grid,_From,State) ->
   {reply,State#state.tileList,State};
+
+handle_call(grid_info,_From,State) ->
+  Rows = State#state.rows,
+  Columns = State#state.columns,
+  Size = State#state.tileSize,
+  {reply,[{<<"rows">>,Rows},{<<"columns">>,Columns},{<<"tileSize">>,Size}],State};
 
 handle_call(get_state,_From,State) ->
     {reply,State,State}.

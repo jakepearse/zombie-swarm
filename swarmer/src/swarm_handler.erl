@@ -27,25 +27,33 @@ websocket_init(_TransportName, Req, _Opts) ->
   %error_logger:error_report("ws init started"),
 
   {ok, Req, #state{}}.
-
-%websocket_handle({text, Msg}, Req, State) ->
-  %error_logger:error_report("ws handle1 started"),
-  %{reply, [{text, << "erlang responding to ", Msg/binary >>}], Req, State};
-
-%websocket_handle({text, <<"initial">>}, Req, State) when State#state.enviroment =/= 0->
-    %error_logger:error_report("ws handle1 when started"),
-    %Report=mochijson2:encode(enviroment:report()),
-        %{reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
         
-websocket_handle({text, <<"initial">>}, Req, State) ->
-    %error_logger:error_report("ws handle1 started"),
-    %{ok,E}=enviroment:start_link(),
-    enviroment:make_grid(10,10,10),
-    enviroment:set_swarm(250),
-    Report=mochijson2:encode(enviroment:report()),
-    {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
-
-%  error_logger:error_report(Report),
+websocket_handle({text, Json}, Req, State) ->
+    Parsed = jsx:decode(Json),
+    Type = proplists:get_value(<<"type">>,Parsed),
+    case Type of
+      <<"setup">> ->
+      BinArrity = proplists:get_value(<<"arrity">>,Parsed),
+      Arrity = binary_to_integer(BinArrity),
+      BinTileSize = proplists:get_value(<<"tileSize">>,Parsed),
+      TileSize = binary_to_integer(BinTileSize),
+    %error_logger:errort_report(Arrity),
+    enviroment:make_grid(Arrity,Arrity,TileSize),
+    
+    
+    Status=jsx:encode(enviroment:get_grid_info()),
+    {reply, [{text,Status}], Req, State};
+     
+     <<"swarm">> ->
+      BinSize = proplists:get_value(<<"size">>,Parsed),
+      Size = binary_to_integer(BinSize),
+      enviroment:set_swarm(Size),
+      Report = jsx:encode(enviroment:report()),
+      {reply, [{text,Report}], Req, State};
+      _ ->
+    error_logger:error_report({"Unknown message type", Type}),
+              {noreply, Req, State}
+    end;
 
 websocket_handle({text, <<"update">>}, Req, State)  ->
   %error_logger:error_report("ws2 handle started"),
