@@ -25,7 +25,9 @@
         get_viewer/1,
         set_neighbours/2,
         get_neighbours/1,
-        terminate/1]).
+        terminate/1,
+        get_state/1]).
+
 
 -define(SERVER, ?MODULE).
 
@@ -62,6 +64,7 @@ start_link(X,Y,Size) ->
     gen_server:start_link(?MODULE, [X,Y,Size], []).
 
 %%%%-Calls------------------------------------------------------------------------
+
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Return the population of the tile.
@@ -99,6 +102,7 @@ get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
 
 %%%%-Casts------------------------------------------------------------------------
+
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Add an entity to the tile.
@@ -136,6 +140,12 @@ update_entity(Pid, Entity, Pos, Heading, _Speed) ->
 set_geometry(Pid,Xorigin,Yorigin,Size) ->
     gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
 
+% look I added something to your module, Ha!
+get_state(Pid) ->
+  gen_server:call(Pid,get_state).
+  
+  
+  
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Assign a viewer to the tile.
@@ -176,8 +186,11 @@ handle_call(get_viewer,_From,State) ->
     {reply,State#tile_state.viewer};
 
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#tile_state.neighbours}.
+    {reply,State#tile_state.neighbours};
 
+handle_call(get_state,_From,State) ->
+  {reply,State,State}.
+  
 %%%%-Casts------------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
@@ -218,7 +231,7 @@ handle_cast({set_viewer, ViewerPid}, State) ->
 
 %%%% Add nearby tiles viewers
 handle_cast({set_neighbours, NeighbourPids}, State) ->
-    {noreply,State#tile_state{neighbours = State#tile_state.neighbours++NeighbourPids}, update_viewers({State#tile_state{}})};
+    {noreply,State#tile_state{neighbours = NeighbourPids}};
 
 %%%% Handle the cast to update the viewers
 handle_cast({update_viewers}, State) ->
@@ -311,3 +324,8 @@ make_usable([L|Ls],A,Num) ->
 
 % tiles within tiles?
 %   quadtree like datastructure
+
+% list returning in strange order
+% need to fix this
+% binary_to_list for pid
+% need to make  a pid to string function

@@ -4,10 +4,10 @@
 -behaviour(gen_server).
 
 %%% API
--export([start_link/0,make_grid/4,get_grid/1,report/1]).
+-export([start_link/0,make_grid/3,get_grid/0,report/0]).
 
 %%%% internal functions for debugging these can be deleted later
--export([get_state/1,set_swarm/2]).
+-export([get_state/0,set_swarm/1]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
@@ -45,7 +45,7 @@ handle_info/2,init/1,terminate/2]).
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-start_link() -> gen_server:start_link(?MODULE, [], []).
+start_link() -> gen_server:start_link({local,?MODULE},?MODULE, [], []).
 
 
 %%%%------------------------------------------------------------------------------
@@ -53,40 +53,40 @@ start_link() -> gen_server:start_link(?MODULE, [], []).
 %%%% Get the full tileList form the #state record
 %%%% @end
 %%%%------------------------------------------------------------------------------
-get_grid(Pid) ->
-    gen_server:call(Pid,get_grid).
+get_grid() ->
+    gen_server:call(?MODULE,get_grid).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Get the entire #state for debugging
 %%%% @end
 %%%%------------------------------------------------------------------------------
-get_state(Pid) ->
-    gen_server:call(Pid,get_state).
+get_state() ->
+    gen_server:call(?MODULE,get_state).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Make a new tile grid, stored in #state
 %%%% @end
 %%%%------------------------------------------------------------------------------
-make_grid(Pid,Rows,Columns,TileSize) ->
-  gen_server:cast(Pid,{make_grid,{Rows,Columns,TileSize}}).
+make_grid(Rows,Columns,TileSize) ->
+  gen_server:cast(?MODULE,{make_grid,{Rows,Columns,TileSize}}).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %% retrive the state of the whole enviroment
 %%%% @end
 %%%%------------------------------------------------------------------------------
-report(Pid) ->
-    gen_server:call(Pid,report).
+report() ->
+    gen_server:call(?MODULE,report).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %% create Num zombies and add add them to the tiles
 %%%% @end
 %%%%------------------------------------------------------------------------------
-set_swarm(Pid,Num) -> 
-  gen_server:cast(Pid,{swarm,Num}).
+set_swarm(Num) -> 
+  gen_server:cast(?MODULE,{swarm,Num}).
 
 
 
@@ -120,7 +120,8 @@ handle_call(terminate,State) ->
 handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
   Grid = populate_grid(State#state.tileSup,Rows,Columns,TileSize),
   Viewers=add_viewers(State#state.viewerSup,Grid),
-  %setNeighbours(Viewers),
+  
+  _=make_neighbourhood(Grid,Viewers),
   {noreply,State#state{tileList=Grid,viewerPropList=Viewers,rows=Rows,columns=Columns,tileSize=TileSize}};
 
 handle_cast({swarm,Num},State) ->
@@ -177,10 +178,6 @@ add_viewers(Sup,Grid,Viewers) ->
   tile:set_viewer(H,V),
   add_viewers(Sup,T,Viewers ++ [{H,V}]).
 
-%setNeighbours(Viewers) ->
-  %[{Tile,Viewer}|T] = Viewers,
-  %find_viewers(Tile,Viewers)
-  
 
 %% Spawns Num randomly positioned zombies
 create_swarm(State,Num) ->
@@ -228,12 +225,39 @@ make_report(TileList,PopList) ->
   make_report(Xs,NewPopList).
 
 
-%%test if a tile is in range for the viewer
-%find_viewers(_,[]) -> [],
-%find_viewers(OriginTile,Grid)->
-    %{X,Y,XL,YL} = tile:get_geometry(OriginTile),
-    %Size = abs(XL-X),
-    %[H|T] = Grid,
-    %{R2,C2,{X2,Y2},S2} = H,
-    %%case (abs(X1-X2) < S1+S2) and (abs(Y1-Y2) < S1+S2) of
-    %%true ->  
+make_neighbourhood(TileList,ViewerPropList) ->
+  ViewerGeomList = setup_neighbours(ViewerPropList),
+  do_make_neighbourhood(TileList,ViewerGeomList).
+do_make_neighbourhood([],_) -> ok;
+do_make_neighbourhood(TileList,ViewerGeomList) ->
+  [T|Ts] = TileList,
+  {Xo,Yo,_,_,_Size} = tile:get_geometry(T),
+  tile:set_neighbours(T,get_neighbours(Xo,Yo,ViewerGeomList)),
+  do_make_neighbourhood(Ts,ViewerGeomList).
+  
+setup_neighbours(ViewerPropList) -> 
+  %reformat the viewer propslist inot one with geometry
+  lists:map(fun({T,V})-> {tile:get_geometry(T),V} end, ViewerPropList).
+
+
+
+get_neighbours(Xo,Yo,ViewersWithGeometry) ->
+  get_neighbours(Xo,Yo,ViewersWithGeometry,[]).
+  
+get_neighbours(_,_,[],NeighbourList) -> NeighbourList;
+get_neighbours(Xo,Yo,ViewersWithGeometry,NeighbourList) ->
+  [V|Vs]=ViewersWithGeometry,
+  {{X,Y,_,_,Size},Viewer} = V,
+  case test_neighbour (Xo,Yo,X,Y,Size) of
+  true ->
+    NewList =NeighbourList ++ [Viewer],
+    get_neighbours(Xo,Yo,Vs,NewList);
+  false -> get_neighbours(Xo,Yo,Vs,NeighbourList)
+  end.
+
+
+
+test_neighbour(Xo,Yo,X,Y,Size) ->
+       (X =:= Xo + Size) or (X =:= Xo) or (X =:= (Xo - Size)
+      andalso
+      Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
