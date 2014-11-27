@@ -149,8 +149,6 @@ set_geometry(Pid,Xorigin,Yorigin,Size) ->
 get_state(Pid) ->
   gen_server:call(Pid,get_state).
   
-  
-  
 %%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Assign a viewer to the tile.
@@ -169,8 +167,14 @@ set_viewer(Pid, ViewerPid) ->
 set_neighbours(Pid, NeighbourPids) ->
     gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
 
+%%%%----------------------------------------------------------------------------
+%%%% @doc
+%%%% End the tile process.
+%%%% @end
+%%%%----------------------------------------------------------------------------
 terminate(Pid) ->
     gen_server:cast(Pid, terminate).
+
 %%%%%%==========================================================================
 %%%%%% gen_server Callbacks
 %%%%%%==========================================================================
@@ -194,7 +198,7 @@ handle_call(get_neighbours,_From,State) ->
     {reply,State#tile_state.neighbours};
 
 handle_call(get_state,_From,State) ->
-  {reply,State,State}.
+    {reply,State,State}.
   
 %%%%-Casts----------------------------------------------------------------------
 
@@ -216,7 +220,7 @@ handle_cast({remove_entity, Entity}, State) ->
     {noreply,State#tile_state{entityDict = 
         dict:erase(ID,State#tile_state.entityDict)}};
 
- 
+%%%% Updates an entities position on the tile 
 handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
     {ID,{_,_}} = Entity,
     case dict:is_key(ID,State#tile_state.entityDict) of
@@ -253,6 +257,7 @@ handle_cast({set_neighbours, NeighbourPids}, State) ->
 handle_cast({update_viewers}, State) ->
     {noreply,update_viewers(State#tile_state{}, State#tile_state.neighbours)};
 
+%%%% Handle cast to end the system normally
 handle_cast(terminate, State) ->
     {stop,normal,State}.
 
