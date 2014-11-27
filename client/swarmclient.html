@@ -1,86 +1,75 @@
 <HTML>
 <head>
 <LINK REL=StyleSheet HREF="css/stupid.css" TYPE="text/css" MEDIA=screen>
-<script src="js/d3.v3.min.js" charset="utf-8"></script>
-<script type="text/javascript">
-  function dragmove(d) {
-    d3.select(this)
-      .style("top", ((d3.event.sourceEvent.pageY) - this.offsetHeight/2)+"px")
-      .style("left", ((d3.event.sourceEvent.pageX) - this.offsetWidth/2)+"px")
-}
-
-var drag = d3.behavior.drag()
-    .on("drag", dragmove);
-
-  function draw_circles(data) {
-var svg = d3.select("svg");
-    svg.selectAll("circle")
-    .data(data)
-    .enter().append("circle")
-    .style("fill", "steelblue")
-    .attr("r", 5)
-    .attr("cx", function(d) { return d[1]*5; })
-    .attr("cy", function(d) { return d[2]*5; });
-}
-  function update_circles(data) {
-var svg = d3.select("svg");
-    svg.selectAll("circle")
-    .data(data)
-    .transition().attr("cx", function(d) { return d[1]*5; })
-    .transition().attr("cy", function(d) { return d[2]*5; });
-}
-</script>
-<script type="text/javascript">  
-  socket= new WebSocket('ws://localhost:8080/websocket');
-  socket.onopen= function() {
-    socket.send("initial");
-    
-  socket.onmessage = function(evt) {
-    var data = JSON.parse(evt.data);
-    draw_circles(data);
-  };
-};
-</script>
+<script src="js/d3.js" charset="utf-8"></script>
+<script src="js/initial.js" charset="utf-8"></script>
+<script src="js/update.js" charset="utf-8"></script>
 <body>
-
-  <label for="arrity">Grid Arrity</label>
-<input id="arrity" type="range" min="3" max="10" value="3" step="1" >
-  <label for="simspeed">Simulation Speed</label>
-<input id="simspeed" type="range" min="3" max="30" value="3" step="3" >
-  <label for="movespeed">Movement Speed</label>
-<input id="movespeed" type="range" min="3" max="30" value="3" step="3" >
-<button>Start</button>
+  <div id="controls-wrapper" style="width:50%;">
+  <div id="gridControls" style="border: 1px solid red;width:48%;float:left;">
+    <label for="arrity">Grid Arrity</label>
+    <input id="arrity" type="range" min="3" max="10" value="3" step="1" onChange="updateArrity(this.value)">
+  
+    <label for="tileSize">Tile Size</label>
+    <input id="tileSize" type="range" min="10" max="100" value="20" step="10" onChange="updateArrity(this.value)">
+  
+    <label for="gridScale">Grid Scale</label>
+    <input id="gridScale" type="range" min="1" max="10" value="1" step="1" onChange="updateArrity(this.value)">
+  </div>
+  
+  <div id="simControls" style="border:1px solid red;width:48%;float:right;">
+    <label for="swarmSize">Swarm Size</label>
+    <input id="swarmSize" type="range" min="1" max="2000" value="500" step="1" />
+    
+    <label for="simspeed">Simulation Speed</label>
+    <input id="simspeed" type="range" min="3" max="30" value="3" step="3"/>
+    
+    <label for="movespeed">Movement Speed</label>
+    <input id="movespeed" type="range" min="3" max="30" value="3" step="3"/>
+  </div>
+  </div><!-- end control-wrapper -->
+  <button onClick="start()">Start </button>
 <button>Pause</button>
 <button>Reset</button>
 <!--
 TODO: the hardcoded values for svg.width and svg.height need to be dynamicly
 set by data from the socket
 -->
-<div style="height:500px; width:500px; border:1px solid red;">
-<svg width="500" height="500">
-<line x1="50" y1="0" x2="50" y2="500" stroke="lightblue"/> 
-<line x1="100" y1="0" x2="100" y2="500" stroke="lightblue"/>
-<line x1="150" y1="0" x2="150" y2="500" stroke="lightblue"/> 
-<line x1="0" y1="50" x2="500" y2="50" stroke="lightblue"/> 
-<line x1="0" y1="100" x2="500" y2="100" stroke="lightblue"/> 
-<line x1="0" y1="150" x2="500" y2="150" stroke="lightblue"/> 
+
+<svg>
 </svg>
-</div>
+
 <script type="text/javascript">
-  // This sends the "update" message to the socket every 1000ms
-  // and updates the circles with the recived data
-  setInterval(function() {doUpdate()},700);
-  function doUpdate() {
-    socket.send("update");
-    socket.onmessage = function(evt) {
-    var json = JSON.parse(evt.data);
-    update_circles(json);
-  };
-};
+  
 </script>
 </body>
 
+<script type="text/javascript">
+  socket= new WebSocket('ws://localhost:8080/websocket');
+  socket.onopen= function() {
+    var arrity = document.getElementById('arrity').value;
+    var tileSize = document.getElementById('tileSize').value;
+    var json = JSON.stringify({"type":"setup","arrity":arrity,"tileSize":tileSize});
+    socket.send(json);
+    
+    socket.onmessage = function(evt) {
+      var data = JSON.parse(evt.data);
+      arrity = data.rows; // This replaces the value we got from the slider with what came back from erlang whihch should be the same thing
+      var size = data.tileSize;
+      var gridScale = document.getElementById('gridScale').value;
+      setup_grid(arrity,size,gridScale);
+      var swarmSize=document.getElementById("swarmSize").value;
+      var swarm_json = JSON.stringify({"type":"swarm","size":swarmSize});
+      socket.send(swarm_json);
+      socket.onmessage = function(sw) {
+      swarm_data = JSON.parse(sw.data);
+      draw_circles(swarm_data);
+        };
+      };
 
+    };
+
+</script>
 <script type="text/javascript">
 </script>
 </HTML>
