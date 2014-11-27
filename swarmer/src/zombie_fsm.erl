@@ -23,8 +23,8 @@ aimless(timeout,State) ->
 	Bearing = random:uniform(360),
 	{Changex,Changey} = calc_aimlessbearing(Bearing),
 	{X,Y} = {State#state.x + Changex,State#state.y + Changey},
-tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},{X,Y},Bearing,State#state.speed),
-	{next_state,aimless_search,State#state{x=X,y=Y,bearing = Bearing},State#state.timeout}.
+	{NewX,NewY} = tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},{X,Y},Bearing,State#state.speed),
+	{next_state,aimless_search,State#state{x=NewX,y=NewY,bearing = Bearing},State#state.timeout}.
 
 aimless_search(timeout,State) ->
 	{next_state,calc_state(aimless),State,State#state.timeout}.
