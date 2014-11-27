@@ -15,7 +15,7 @@
 
 % take any request from tcp or http and push it to websockets
 init({tcp,http},_Req,_Opts) ->
-	error_logger:error_report("init started"),
+	%error_logger:error_report("init started"),
   {upgrade, protocol, cowboy_websocket}.
 
 % if its any other protocol it should hit here
@@ -24,7 +24,7 @@ init({tcp,http},_Req,_Opts) ->
 %  {ok, Req2, State}.
 
 websocket_init(_TransportName, Req, _Opts) ->
-  error_logger:error_report("ws init started"),
+  %error_logger:error_report("ws init started"),
 
   {ok, Req, #state{}}.
 
@@ -38,36 +38,36 @@ websocket_init(_TransportName, Req, _Opts) ->
         %{reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
         
 websocket_handle({text, <<"initial">>}, Req, State) ->
-    error_logger:error_report("ws handle1 started"),
+    %error_logger:error_report("ws handle1 started"),
     %{ok,E}=enviroment:start_link(),
-    enviroment:make_grid(3,3,25),
-    enviroment:set_swarm(1000),
+    enviroment:make_grid(10,10,10),
+    enviroment:set_swarm(250),
     Report=mochijson2:encode(enviroment:report()),
     {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 %  error_logger:error_report(Report),
 
 websocket_handle({text, <<"update">>}, Req, State)  ->
-  error_logger:error_report("ws2 handle started"),
+  %error_logger:error_report("ws2 handle started"),
   Report=mochijson2:encode(enviroment:report()),
-  error_logger:error_report(Report),
+  %error_logger:error_report(Report),
   {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 websocket_handle({text, Msg}, Req, State) ->
-  error_logger:error_report(Msg),
+  %error_logger:error_report(Msg),
   Report=mochijson2:encode(enviroment:report()),
   {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 websocket_handle(_Any, Req, State) ->
-  error_logger:error_report("ws handle1 started"),
+  %error_logger:error_report("ws handle1 started"),
   {reply, [{text, << "what the duce?" >>}], Req, State}.
 
 websocket_info(_Info, Req, State) ->
-  error_logger:error_report("ws info started"),
+  %error_logger:error_report("ws info started"),
   {ok, Req, State}.
 
 websocket_terminate(_Reason, _Req, _State) ->
-  error_logger:error_report("ws term started"),
+  %error_logger:error_report("ws term started"),
   ok.
 
 terminate(_Reason, _Req, _State) ->

@@ -3,6 +3,15 @@
 <LINK REL=StyleSheet HREF="css/stupid.css" TYPE="text/css" MEDIA=screen>
 <script src="js/d3.v3.min.js" charset="utf-8"></script>
 <script type="text/javascript">
+  function dragmove(d) {
+    d3.select(this)
+      .style("top", ((d3.event.sourceEvent.pageY) - this.offsetHeight/2)+"px")
+      .style("left", ((d3.event.sourceEvent.pageX) - this.offsetWidth/2)+"px")
+}
+
+var drag = d3.behavior.drag()
+    .on("drag", dragmove);
+
   function draw_circles(data) {
 var svg = d3.select("svg");
     svg.selectAll("circle")
@@ -26,38 +35,46 @@ var svg = d3.select("svg");
   socket.onopen= function() {
     socket.send("initial");
     
-  socket.onmessage = function(s) {
-    var keys = [];
-    for ( var key in s ) {
-      keys.push(key) 
-    };
-    var data = JSON.parse(s.data);
+  socket.onmessage = function(evt) {
+    var data = JSON.parse(evt.data);
     draw_circles(data);
   };
 };
 </script>
 <body>
+
+  <label for="arrity">Grid Arrity</label>
+<input id="arrity" type="range" min="3" max="10" value="3" step="1" >
+  <label for="simspeed">Simulation Speed</label>
+<input id="simspeed" type="range" min="3" max="30" value="3" step="3" >
+  <label for="movespeed">Movement Speed</label>
+<input id="movespeed" type="range" min="3" max="30" value="3" step="3" >
+<button>Start</button>
+<button>Pause</button>
+<button>Reset</button>
 <!--
 TODO: the hardcoded values for svg.width and svg.height need to be dynamicly
 set by data from the socket
 -->
-<svg width="1125" height="1125">
-
+<div style="height:500px; width:500px; border:1px solid red;">
+<svg width="500" height="500">
+<line x1="50" y1="0" x2="50" y2="500" stroke="lightblue"/> 
+<line x1="100" y1="0" x2="100" y2="500" stroke="lightblue"/>
+<line x1="150" y1="0" x2="150" y2="500" stroke="lightblue"/> 
+<line x1="0" y1="50" x2="500" y2="50" stroke="lightblue"/> 
+<line x1="0" y1="100" x2="500" y2="100" stroke="lightblue"/> 
+<line x1="0" y1="150" x2="500" y2="150" stroke="lightblue"/> 
 </svg>
+</div>
 <script type="text/javascript">
   // This sends the "update" message to the socket every 1000ms
   // and updates the circles with the recived data
-  setInterval(function() {doUpdate()},1000);
+  setInterval(function() {doUpdate()},700);
   function doUpdate() {
     socket.send("update");
-    socket.onmessage = function(t) {
-    var keys = [];
-    for ( var key in t ) {
-      keys.push(key) 
-    }
-    var updatedata = JSON.parse(t.data);
-        console.log("ping");
-    update_circles(updatedata);
+    socket.onmessage = function(evt) {
+    var json = JSON.parse(evt.data);
+    update_circles(json);
   };
 };
 </script>
