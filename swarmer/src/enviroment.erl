@@ -191,7 +191,8 @@ create_swarm(State,Num,List) ->
   Xpos = random:uniform(GridXSize),
   Ypos= random:uniform(GridYSize),
   {Tile,Viewer} = get_tile(Xpos,Ypos,State#state.tileList,State),
-  {ok,Zombie}=supervisor:start_child(State#state.zombieSup,[Xpos,Ypos,Tile,Viewer]),
+  % zombie now takes {X,Y,Tile,Viewer,Speed,Bearing,Timeout}
+  {ok,Zombie}=supervisor:start_child(State#state.zombieSup,[Xpos,Ypos,Tile,Viewer,0,0,300]),
   tile:summon_entity(Tile,{Zombie,{Xpos,Ypos}}),
   create_swarm(State,Num-1,List++[Zombie]).
 

@@ -41,7 +41,7 @@
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
--record(tile_state, {entityDict=dict:new() :: dict:dict(),
+-record(tile_state, {entityDict=dict:new() :: dict(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
@@ -128,8 +128,8 @@ remove_entity(Pid, Entity) ->
 %%%% @end
 %%%%----------------------------------------------------------------------------
 -spec update_entity(pid(),entity(),pos(),_,_) -> ok.
-update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-    gen_server:cast(Pid, {update_entity, Entity, Pos, Heading, _Speed}).
+update_entity(Pid, Entity, Pos, Bearing, _Speed) ->
+    gen_server:cast(Pid, {update_entity, Entity, Pos, Bearing, _Speed}).
 
 %%%%----------------------------------------------------------------------------
 %%%% @doc
@@ -221,20 +221,12 @@ handle_cast({remove_entity, Entity}, State) ->
         dict:erase(ID,State#tile_state.entityDict)}};
 
 %%%% Updates an entities position on the tile 
-handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
+handle_cast({update_entity, Entity, Pos, _Bearing, _Speed}, State) ->
     {ID,{_,_}} = Entity,
     case dict:is_key(ID,State#tile_state.entityDict) of
         true ->
-            case Heading of
-                n -> {noreply,State#tile_state{entityDict = 
-                            dict:store(ID,Pos,State#tile_state.entityDict)}};
-                e -> {noreply,State#tile_state{entityDict = 
-                            dict:store(ID,Pos,State#tile_state.entityDict)}};
-                s -> {noreply,State#tile_state{entityDict = 
-                            dict:store(ID,Pos,State#tile_state.entityDict)}};
-                w -> {noreply,State#tile_state{entityDict = 
-                            dict:store(ID,Pos,State#tile_state.entityDict)}}
-            end;
+            {noreply,State#tile_state{entityDict = 
+                dict:store(ID,Pos,State#tile_state.entityDict)}};
         false ->
             {noreply,State#tile_state{entityDict = 
                 summon_entity(State,{ID,Pos})}}
