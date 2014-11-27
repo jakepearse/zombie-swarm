@@ -43,7 +43,6 @@
 %%%% neihbours - a list of the neighbouring tiles viewers
 
 -record(tile_state, {entityDict=dict:new(), % :: dict:new_dict()
->>>>>>> 381268a7ae3d8d1c4af9e75621204f9a161419d3
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
