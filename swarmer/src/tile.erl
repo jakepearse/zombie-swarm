@@ -41,7 +41,9 @@
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
--record(tile_state, {entityDict=dict:new() :: dict(),
+
+-record(tile_state, {entityDict=dict:new(), % :: dict:new_dict()
+>>>>>>> 381268a7ae3d8d1c4af9e75621204f9a161419d3
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
@@ -50,131 +52,141 @@
                     viewer  ::  pid(),
                     neighbours  ::  [pid()]}). 
 
-%%%%%%=============================================================================
+%%%%%%==========================================================================
 %%%%%% API
-%%%%%%=============================================================================
+%%%%%%==========================================================================
 
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Start the server.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec start_link(coord(),coord(),pos_integer()) -> ok.
 start_link(X,Y,Size) ->
     gen_server:start_link(?MODULE, [X,Y,Size], []).
 
-%%%%-Calls------------------------------------------------------------------------
+%%%%-Calls----------------------------------------------------------------------
 
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Return the population of the tile.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec get_population(pid()) -> ok.
 get_population(Pid) ->
     gen_server:call(Pid, get_population).
 
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Return the geometry of the tile.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec get_geometry(pid()) -> ok.
 get_geometry(Pid) ->
     gen_server:call(Pid, get_geometry).
 
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Return the assigned viewer of the tile.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec get_viewer(pid()) -> ok.
 get_viewer(Pid) ->
     gen_server:call(Pid, get_viewer).
 
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Return a list of the associated viewers from the neighbouring tiles.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec get_neighbours(pid()) -> ok.
 get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
 
-%%%%-Casts------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
+%%%% @doc
+%%%% Update the entities position on the tile.
+%%%% @end
+%%%%----------------------------------------------------------------------------
+-spec update_entity(pid(),entity(),pos(),_,_) -> ok.
+update_entity(Pid, Entity, Pos, Bearing, _Speed) ->
+    gen_server:call(Pid, {update_entity, Entity, Pos, Bearing, _Speed}).
 
-%%%%------------------------------------------------------------------------------
+
+%%%%-Casts----------------------------------------------------------------------
+
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Add an entity to the tile.
 %%%% Entity should be sent in the form of {Pid,{X,Y}}.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec summon_entity(pid(),entity()) -> ok.
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
 
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Remove an entity from the tile.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec remove_entity(pid(),entity()) -> ok.
 remove_entity(Pid, Entity) ->
     gen_server:cast(Pid, {remove_entity, Entity}).
 
-%%%%------------------------------------------------------------------------------
-%%%% @doc
-%%%% Update the entities position on the tile.
-%%%% @end
-%%%%------------------------------------------------------------------------------
--spec update_entity(pid(),entity(),pos(),_,_) -> ok.
-update_entity(Pid, Entity, Pos, Heading, _Speed) ->
-    gen_server:cast(Pid, {update_entity, Entity, Pos, Heading, _Speed}).
-
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Set the boundaries of the tile.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec set_geometry(pid(),coord(),coord(),pos_integer()) -> ok.
 set_geometry(Pid,Xorigin,Yorigin,Size) ->
     gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
 
-% look I added something to your module, Ha!
+%%%%----------------------------------------------------------------------------
+%%%% @doc
+%%%% Return the state of the tile.
+%%%% @end
+%%%%----------------------------------------------------------------------------
+-spec get_state(pid()) -> ok.
 get_state(Pid) ->
   gen_server:call(Pid,get_state).
   
-  
-  
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Assign a viewer to the tile.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec set_viewer(pid(),pid()) -> ok.
 set_viewer(Pid, ViewerPid) ->
     gen_server:cast(Pid, {set_viewer, ViewerPid}).
 
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Assign the neighbouring tiles viewers.
 %%%% @end
-%%%%------------------------------------------------------------------------------
+%%%%----------------------------------------------------------------------------
 -spec set_neighbours(pid(), list()) -> ok.
 set_neighbours(Pid, NeighbourPids) ->
     gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
 
+%%%%----------------------------------------------------------------------------
+%%%% @doc
+%%%% End the tile process.
+%%%% @end
+%%%%----------------------------------------------------------------------------
 terminate(Pid) ->
     gen_server:cast(Pid, terminate).
-%%%%%%=============================================================================
+
+%%%%%%==========================================================================
 %%%%%% gen_server Callbacks
-%%%%%%=============================================================================
+%%%%%%==========================================================================
 
 init([X,Y,Size]) ->
     set_geometry(self(),X,Y,Size),
     {ok, #tile_state{}}.
 
-%%%%-Calls------------------------------------------------------------------------
+%%%%-Calls----------------------------------------------------------------------
 
 handle_call(get_population,_From,State) ->
     {reply, make_usable(dict:to_list(State#tile_state.entityDict),[]),State};
@@ -189,41 +201,51 @@ handle_call(get_neighbours,_From,State) ->
     {reply,State#tile_state.neighbours};
 
 handle_call(get_state,_From,State) ->
-  {reply,State,State}.
-  
-%%%%-Casts------------------------------------------------------------------------
+    {reply,State,State};
+
+handle_call({update_entity, Entity, Pos, _Bearing, _Speed},_From, State) ->
+    {ID,{_,_}} = Entity,
+    NewDict = dict:store(ID,Pos,State#tile_state.entityDict),
+    {reply,Pos,State#tile_state{entityDict = NewDict}}.
+
+
+%%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
-handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =/= 0 ->
+handle_cast({summon_entity, Entity}, State) when 
+        size(State#tile_state.entityDict) =/= 0 ->
     {ID,{X,Y}} = Entity,
-    {noreply,State#tile_state{entityDict = add_unique(ID,{X,Y},State#tile_state.entityDict)}};
-handle_cast({summon_entity, Entity}, State) when size(State#tile_state.entityDict) =:= 0 ->
+    {noreply,State#tile_state{entityDict = 
+        add_unique(ID,{X,Y},State#tile_state.entityDict)}};
+handle_cast({summon_entity, Entity}, State) when 
+        size(State#tile_state.entityDict) =:= 0 ->
     {ID,{X,Y}} = Entity,
-    {noreply,State#tile_state{entityDict = dict:store(ID,{X,Y},State#tile_state.entityDict)}};
+    {noreply,State#tile_state{entityDict = 
+        dict:store(ID,{X,Y},State#tile_state.entityDict)}};
 
 %%%% Handle delete entity calls
 handle_cast({remove_entity, Entity}, State) ->
     {ID,{_,_}} = Entity,
-    {noreply,State#tile_state{entityDict = dict:erase(ID,State#tile_state.entityDict)}};
+    {noreply,State#tile_state{entityDict = 
+        dict:erase(ID,State#tile_state.entityDict)}};
 
- 
-handle_cast({update_entity, Entity, Pos, Heading, _Speed}, State) ->
-    {ID,{_,_}} = Entity,
-    case dict:is_key(ID,State#tile_state.entityDict) of
-        true ->
-            case Heading of
-                n -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}};
-                e -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}};
-                s -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}};
-                w -> {noreply,State#tile_state{entityDict = dict:store(ID,Pos,State#tile_state.entityDict)}}
-            end;
-        false ->
-            {noreply,State#tile_state{entityDict = summon_entity(State,{ID,Pos})}}
-    end; 
+%%%%%%%%%%%%%% Old, probably good to delete
+% %%%% Updates an entities position on the tile 
+% handle_cast({update_entity, Entity, Pos, _Bearing, _Speed}, State) ->
+%     {ID,{_,_}} = Entity,
+%     case dict:is_key(ID,State#tile_state.entityDict) of
+%         true ->
+%             {noreply,State#tile_state{entityDict = 
+%                 dict:store(ID,Pos,State#tile_state.entityDict)}};
+%         false ->
+%             {noreply,State#tile_state{entityDict = 
+%                 summon_entity(State,{ID,Pos})}}
+%     end; 
 
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
-    {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size, ylimit = Y+Size, coords = {X,Y,X+Size,Y+Size,Size}}};
+    {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size-1, 
+        ylimit = Y+Size-1, coords = {X,Y,X+Size-1,Y+Size-1,Size}}};
 
 %%%% Handles setting of tiles viewer
 handle_cast({set_viewer, ViewerPid}, State) ->
@@ -237,12 +259,13 @@ handle_cast({set_neighbours, NeighbourPids}, State) ->
 handle_cast({update_viewers}, State) ->
     {noreply,update_viewers(State#tile_state{}, State#tile_state.neighbours)};
 
+%%%% Handle cast to end the system normally
 handle_cast(terminate, State) ->
     {stop,normal,State}.
 
-%%%%-Gen-Server-API---------------------------------------------------------------
+%%%%-Gen-Server-API-------------------------------------------------------------
 
-handle_info(Info, State) ->
+handle_info(_Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, _State) ->
@@ -251,12 +274,13 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-%%%%%%=============================================================================
+%%%%%%==========================================================================
 %%%%%% Internal Functions
-%%%%%%=============================================================================
+%%%%%%==========================================================================
 
 %% A function to periodically update the viewers
-%% Currently this is carried out every 5 seconds, this is just an arbitratry value
+%% Currently this is carried out every 5 seconds, 
+%% this is just an arbitratry value
 %% until a more permanent solution is decided upon
 update_viewers(Pid) ->
     receive
@@ -305,7 +329,7 @@ make_usable([L|Ls],A,Num) ->
     B = [[Num,X,Y]] ++ A,
     make_usable(Ls,B,Num+1).
 
-%%%%-Notes------------------------------------------------------------------------
+%%%%-Notes----------------------------------------------------------------------
 
 % Still need to figure out how to update a zombies viewer
 
@@ -327,5 +351,8 @@ make_usable([L|Ls],A,Num) ->
 
 % list returning in strange order
 % need to fix this
-% binary_to_list for pid
+% pid_to_list for pid
+% list_to_pid for reverse
 % need to make  a pid to string function
+
+% ctrl + g > to line
