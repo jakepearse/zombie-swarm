@@ -257,8 +257,9 @@ get_neighbours(Xo,Yo,ViewersWithGeometry,NeighbourList) ->
   end.
 
 
-
 test_neighbour(Xo,Yo,X,Y,Size) ->
-       (X =:= Xo + Size) or (X =:= Xo) or (X =:= (Xo - Size)
+      (X =:= Xo + Size) or (X =:= Xo) or (X =:= Xo - Size)
       andalso
-      Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
+      (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
+
+

@@ -205,7 +205,8 @@ handle_call({update_entity, Entity, Pos, _Bearing, _Speed},_From, State) ->
     {ID,{_,_}} = Entity,
     NewDict = dict:store(ID,Pos,State#tile_state.entityDict),
     {reply,Pos,State#tile_state{entityDict = NewDict}}.
-  
+
+
 %%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
@@ -241,8 +242,8 @@ handle_cast({remove_entity, Entity}, State) ->
 
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
-    {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size, 
-        ylimit = Y+Size, coords = {X,Y,X+Size,Y+Size,Size}}};
+    {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size-1, 
+        ylimit = Y+Size-1, coords = {X,Y,X+Size-1,Y+Size-1,Size}}};
 
 %%%% Handles setting of tiles viewer
 handle_cast({set_viewer, ViewerPid}, State) ->
