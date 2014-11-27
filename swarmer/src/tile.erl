@@ -41,7 +41,7 @@
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
--record(tile_state, {entityDict=dict:new() :: dict:dict(),
+-record(tile_state, {entityDict=dict:new() :: dict(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
