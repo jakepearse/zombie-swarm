@@ -5,7 +5,8 @@
 <script src="js/initial.js" charset="utf-8"></script>
 <script src="js/update.js" charset="utf-8"></script>
 <body>
-  <div id="gridControls" style="border: 1px solid red;">
+  <div id="controls-wrapper" style="width:50%;">
+  <div id="gridControls" style="border: 1px solid red;width:48%;float:left;">
     <label for="arrity">Grid Arrity</label>
     <input id="arrity" type="range" min="3" max="10" value="3" step="1" onChange="updateArrity(this.value)">
   
@@ -16,7 +17,7 @@
     <input id="gridScale" type="range" min="1" max="10" value="1" step="1" onChange="updateArrity(this.value)">
   </div>
   
-  <div id="simControls" style="border:1px solid red;">
+  <div id="simControls" style="border:1px solid red;width:48%;float:right;">
     <label for="swarmSize">Swarm Size</label>
     <input id="swarmSize" type="range" min="1" max="2000" value="500" step="1" />
     
@@ -26,6 +27,7 @@
     <label for="movespeed">Movement Speed</label>
     <input id="movespeed" type="range" min="3" max="30" value="3" step="3"/>
   </div>
+  </div><!-- end control-wrapper -->
   <button onClick="start()">Start </button>
 <button>Pause</button>
 <button>Reset</button>
@@ -64,7 +66,7 @@ set by data from the socket
       draw_circles(swarm_data);
         };
       };
-      
+
     };
 
 </script>
