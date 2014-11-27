@@ -20,10 +20,11 @@ initial(timeout,State) ->
 	{next_state,calc_state(aimless),State,State#state.timeout}.
 	
 aimless(timeout,State) ->
-	X = State#state.x,
-	Y = State#state.y + 1,
-tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},{X,Y},n,10),
-	{next_state,aimless_search,State#state{x=X,y=Y},State#state.timeout}.
+	Bearing = random:uniform(360),
+	{Changex,Changey} = calc_aimlessbearing(Bearing),
+	{X,Y} = {State#state.x + Changex,State#state.y + Changey},
+tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},{X,Y},Bearing,State#state.speed),
+	{next_state,aimless_search,State#state{x=X,y=Y,bearing = Bearing},State#state.timeout}.
 
 aimless_search(timeout,State) ->
 	{next_state,calc_state(aimless),State,State#state.timeout}.
@@ -46,7 +47,9 @@ update([Newx,Newy,Pid]) ->
 
 calc_state(_Current_state) ->
 	aimless.
-	
+
+calc_aimlessbearing(_rand) ->
+	{1,0}.
 %stuff for gen_fsm.
 terminate(shutdown,_StateName,_StateData) ->
 	ok.
