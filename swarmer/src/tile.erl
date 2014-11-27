@@ -25,7 +25,9 @@
         get_viewer/1,
         set_neighbours/2,
         get_neighbours/1,
+        terminate/1,
         get_state/1]).
+
 
 -define(SERVER, ?MODULE).
 
@@ -39,14 +41,14 @@
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
--record(tile_state, {entityDict=dict:new(),
+-record(tile_state, {entityDict=dict:new() :: dict:dict(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
                     ylimit  ::  coord(),
                     coords  ::  tuple(),
                     viewer  ::  pid(),
-                    neighbours  ::  []}).  
+                    neighbours  ::  [pid()]}). 
 
 %%%%%%=============================================================================
 %%%%%% API
@@ -62,6 +64,7 @@ start_link(X,Y,Size) ->
     gen_server:start_link(?MODULE, [X,Y,Size], []).
 
 %%%%-Calls------------------------------------------------------------------------
+
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Return the population of the tile.
@@ -99,6 +102,7 @@ get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
 
 %%%%-Casts------------------------------------------------------------------------
+
 %%%%------------------------------------------------------------------------------
 %%%% @doc
 %%%% Add an entity to the tile.
@@ -160,7 +164,8 @@ set_viewer(Pid, ViewerPid) ->
 set_neighbours(Pid, NeighbourPids) ->
     gen_server:cast(Pid, {set_neighbours, NeighbourPids}).
 
-
+terminate(Pid) ->
+    gen_server:cast(Pid, terminate).
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
@@ -185,6 +190,7 @@ handle_call(get_neighbours,_From,State) ->
 
 handle_call(get_state,_From,State) ->
   {reply,State,State}.
+  
 %%%%-Casts------------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
@@ -229,7 +235,12 @@ handle_cast({set_neighbours, NeighbourPids}, State) ->
 
 %%%% Handle the cast to update the viewers
 handle_cast({update_viewers}, State) ->
-    {noreply,update_viewers(State#tile_state{}, State#tile_state.neighbours)}.
+    {noreply,update_viewers(State#tile_state{}, State#tile_state.neighbours)};
+
+handle_cast(terminate, State) ->
+    {stop,normal,State}.
+
+%%%%-Gen-Server-API---------------------------------------------------------------
 
 handle_info(Info, State) ->
     {noreply, State}.
@@ -313,3 +324,8 @@ make_usable([L|Ls],A,Num) ->
 
 % tiles within tiles?
 %   quadtree like datastructure
+
+% list returning in strange order
+% need to fix this
+% binary_to_list for pid
+% need to make  a pid to string function
