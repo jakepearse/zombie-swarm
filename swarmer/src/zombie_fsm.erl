@@ -5,41 +5,41 @@
 %gen_fsm implementation
 -export([code_change/4,handle_event/3,handle_sync_event/4,handle_info/3,init/1,terminate/3]).
 
--export([start_link/7,update/1,aimless/2,initial/2,aimless_search/2,active/2,active_search/2,chasing/2,chasing_search/2,calc_state/1]).
--record(state, {id,tile,viewer,speed,bearing,x,y,timeout}).
+-export([start_link/7,update/1,aimless/2,initial/2,aimless_search/2,active/2,active_search/2,chasing/2,chasing_search/2,calc_state/1,calc_aimlessbearing/4]).
+-record(state, {id,tile,viewer,speed,bearing,x,y,timeoutz}).
 
 start_link(X,Y,Tile,Viewer,Speed,Bearing,Timeout) -> 
 	gen_fsm:start_link(?MODULE,[X,Y,Tile,Viewer,Speed,Bearing,Timeout],[]).
 
 init([X,Y,Tile,Viewer,Speed,Bearing,Timeout]) ->
-	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, bearing=Bearing, timeout=Timeout},#state.timeout}.
+	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, bearing=Bearing, timeoutz=Timeout},#state.timeoutz}.
 
 %States of fsm.	
 
 initial(timeout,State) ->
-	{next_state,calc_state(aimless),State,State#state.timeout}.
+	{next_state,calc_state(aimless),State,300}.
 	
 aimless(timeout,State) ->
+	random:seed(erlang:now()),
 	Bearing = random:uniform(360),
-	{Changex,Changey} = calc_aimlessbearing(Bearing),
-	{X,Y} = {State#state.x + Changex,State#state.y + Changey},
-	{NewX,NewY} = tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},{X,Y},Bearing,State#state.speed),
-	{next_state,aimless_search,State#state{x=NewX,y=NewY,bearing = Bearing},State#state.timeout}.
+	P = calc_aimlessbearing(Bearing,State#state.speed,State#state.x,State#state.y),
+	{NewX,NewY} = tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},P,Bearing,State#state.speed),
+	{next_state,aimless_search,State#state{x=NewX,y=NewY,bearing = Bearing},State#state.timeoutz}.
 
 aimless_search(timeout,State) ->
-	{next_state,calc_state(aimless),State,State#state.timeout}.
+	{next_state,calc_state(aimless),State,State#state.timeoutz}.
 
 active(timeout,State) ->
-	{next_state,active_search,State,State#state.timeout}.
+	{next_state,active_search,State,State#state.timeoutz}.
 
 active_search(timeout,State) ->
-	{next_state,calc_state(active),State,State#state.timeout}.
+	{next_state,calc_state(active),State,State#state.timeoutz}.
 	
 chasing(timeout,State) ->
-	{next_state,chasing_search,State,State#state.timeout}.
+	{next_state,chasing_search,State,State#state.timeoutz}.
 
 chasing_search(timeout,State) ->
-	{next_state,calc_state(chasing),State,State#state.timeout}.
+	{next_state,calc_state(chasing),State,State#state.timeoutz}.
 
 %Events for fsm.	
 update([Newx,Newy,Pid]) ->
@@ -48,8 +48,8 @@ update([Newx,Newy,Pid]) ->
 calc_state(_Current_state) ->
 	aimless.
 
-calc_aimlessbearing(_rand) ->
-	{1,0}.
+calc_aimlessbearing(Rand,Speed,X,Y) ->
+	trigstuff:findcoordinates(Rand,Speed,X,Y).
 %stuff for gen_fsm.
 terminate(shutdown,_StateName,_StateData) ->
 	ok.
