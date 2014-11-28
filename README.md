@@ -14,11 +14,15 @@ Use the included rebar to build the application
 Run Project
 ===========
 Linux/Unix
+
   From /zombie-swarm/swarmer
+  
     ./start.swarm.sh
 
 Windows
+
   From \zombie-swarm\swarmer
+  
     .\startswarm.bat
 
 Open file /zombie-swarmer/client/swarmclient.html
