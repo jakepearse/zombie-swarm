@@ -187,8 +187,12 @@ init([X,Y,Size]) ->
 
 %%%%-Calls----------------------------------------------------------------------
 
-handle_call(get_population,_From,State) ->
-    {reply, make_usable(dict:to_list(State#state.entity_dict),[]),State};
+% handle_call(get_population,_From,State) ->
+%     {reply, make_usable(dict:to_list(State#state.entity_dict),[]),State};
+
+handle_call(get_population, _From, State) ->
+    Report = build_report(State#state.entity_dict),
+    {reply, Report, [], State};
 
 handle_call(get_geometry,_From,State) ->
     {reply,State#state.coords, State};
@@ -211,14 +215,13 @@ handle_call({update_entity, Entity, Pos, _Bearing, _Speed},_From, State) ->
 %%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
-handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_dict = EntityDict} = State) ->
+handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_dict =EntityDict} =State)->
     {noreply,State#state{entity_dict = add_unique(ID,{X,Y},EntityDict)}};
 
 %%%% Handle delete entity calls
-handle_cast({remove_entity, Entity}, State) ->
-    {ID,{_,_}} = Entity,
+handle_cast({remove_entity,{ID,{_,_}}},#state{entity_dict =EntityDict} =State)->
     {noreply,State#state{entity_dict = 
-        dict:erase(ID,State#state.entity_dict)}};
+      dict:erase(ID,EntityDict)}};
 
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
@@ -293,17 +296,32 @@ update_viewers(State, [X|Xs]) ->
     viewer:update(X,{self(),State#state.entity_dict}),
     update_viewers(State, Xs).
 
-% Turn the dictionary into something usable by the client
--spec make_usable(list(),list()) -> list().
-make_usable(A,B) ->
-    make_usable(A,B,0).
-make_usable([],[],_) -> [];
-make_usable([],A,_) -> A;
-make_usable([L|Ls],A,Num) ->
-    {_Id,{X,Y}} = L,
-    B = [[Num,X,Y]] ++ A,
-    make_usable(Ls,B,Num+1).
+%% Turn the dictionary into something usable by the client
+% -spec make_usable(list(),list()) -> list().
+% make_usable(A,B) ->
+%     make_usable(A,B,0).
+% make_usable([],[],_) -> [];
+% make_usable([],A,_) -> A;
+% make_usable([L|Ls],A,Num) ->
+%     {_Id,{X,Y}} = L,
+%     B = [[Num,X,Y]] ++ A,
+%     make_usable(Ls,B,Num+1).
 
+
+
+build_report(EntityDict) ->
+    DictList = dict:to_list(EntityDict),
+    % map(DictList, 0).
+    lists:map(
+        fun({ID,{X,Y}}) ->
+            [{id,pid_to_list(ID)},{x,X},{y,Y}]
+            %[pid_to_list(ID),X,Y]
+        end, DictList).
+
+% map([], _) ->
+%     [];
+% map([{ID, {X,Y}}|List], N) ->
+%     [[N,X,Y]] ++ map(List, N+1).
 %%%%-Notes----------------------------------------------------------------------
 
 % Still need to figure out how to update a zombies viewer
@@ -331,3 +349,13 @@ make_usable([L|Ls],A,Num) ->
 % need to make  a pid to string function
 
 % ctrl + g > to line
+
+
+% TODO
+% Change what the get_population
+%   needs to return [["pid", X, Y, type, heading, speed, current_state]]
+
+% Need to work out when moving, if you remain in the time
+% if not, tell the neigbour that it now owns the zombie and remove zombie
+
+% need to update state to viewers every now and again
