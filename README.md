@@ -13,13 +13,13 @@ Use the included rebar to build the application
 
 Run Project
 ===========
-From /zombie-swarm/swarmer;
-Enter in bash:
-  erl -pa deps/*/ebin/ -pa ebin/
+Linux/Unix
+  From /zombie-swarm/swarmer
+    ./start.swarm.sh
 
-Enter from Erlang Shell
-  application:ensure_all_started(swarm).
-  swarm_server:start().
+Windows
+  From \zombie-swarm\swarmer
+    .\startswarm.bat
 
 Open file /zombie-swarmer/client/swarmclient.html
 
