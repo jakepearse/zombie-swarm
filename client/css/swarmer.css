@@ -1,0 +1,7 @@
+.control-panel {
+  margin: 1em;
+  border:4px outset grey;
+  background: light-grey;
+  width: 40%;
+  float: left;
+}

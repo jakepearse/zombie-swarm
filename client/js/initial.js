@@ -1,26 +1,36 @@
 function start() {
+  var gridScale = document.getElementById('gridScale').value;
   var dummy_json = JSON.stringify({"type":"report"});
   //This sends the "update" message to the socket every 1000ms
   // and updates the circles with the recived data
-  setInterval(function() {doUpdate()},700);
+  setInterval(function() {doUpdate()},1000);
   function doUpdate() {
     socket.send(dummy_json);
     socket.onmessage = function(evt) {
     var json = JSON.parse(evt.data);
-    update_circles(json);
+    update_circles(json,gridScale);
+    };
   };
-};
 };
 
 function setup_grid(arrity,tileSize,gridScale) {
-    var list =[];
+  arrity = parseInt(arrity);
+  tileSize = parseInt(tileSize);
+  gridScale = parseInt(gridScale);
+  var list =[];
   for (var i = 0; i <= arrity; i++) {
     list.push(i*tileSize);
   };
-  var svg = d3.select("svg")
+  draw_hlines(arrity,tileSize,gridScale,list);
+  draw_vlines(arrity,tileSize,gridScale,list);
+}
+
+
+function draw_hlines(arrity,tileSize,gridScale,list) {
+   var svg = d3.select("svg")
     .attr("height",(arrity*tileSize)*gridScale)
     .attr("width",(arrity*tileSize)*gridScale)
-    .selectAll("line")
+    .selectAll("hline")
     .data(list)
     .enter().append("line")
     .attr("class","xline")
@@ -29,60 +39,43 @@ function setup_grid(arrity,tileSize,gridScale) {
     .attr("y1",function(d) { return d*gridScale; })
     .attr("y2",function(d) { return d*gridScale; })
     .attr("stroke","lightblue");
-  };
+}
 
 
-  
-
-
-
-  //}
-  //console.log(list);
-
-  //var Scale= d3.scale.linear()
-    //.domain(list)
-    //.range(list);
-  
-  //var xAxis = d3.svg.axis()
-    //.scale(Scale);
-  
-  //var Yaxis =d3.svg.axis()
-    //.scale(arrity);
-  
-  //var svg= d3.select("svg");
-    //svg.append("g")
-    //.attr("class", "x axis")
-    //.call(xAxis);
-  //};
-
-function updateArrity(arrity) {
-    
-    
+function draw_vlines(arrity,tileSize,gridScale,list) {
+    var svg = d3.select("svg")
+    .selectAll(".vline")
+    .data(list)
+    .enter().append("line")
+    .attr("class","yline")
+    .attr("y1",0)
+    .attr("y2",(arrity*tileSize)*gridScale)
+    .attr("x1",function(d) { return d*gridScale; })
+    .attr("x2",function(d) { return d*gridScale; })
+    .attr("stroke","lightblue");
 };
 
 
-function dragmove(d) {
-    d3.select(this)
-      .style("top", ((d3.event.sourceEvent.pageY) - this.offsetHeight/2)+"px")
-      .style("left", ((d3.event.sourceEvent.pageX) - this.offsetWidth/2)+"px")
+function updateArrity(arrity) {
+   ; //dummy
+};
+
+
+function draw_circles(data,gridScale) {
+  var svg = d3.select("svg");
+      svg.selectAll("circle")
+      .data(data)
+      .enter().append("circle")
+      .on("click", function() {changeColour(this);})
+      .style("fill", "steelblue")
+      .attr("r", gridScale)
+      .attr("cx", function(d) { return d[1]*gridScale; })
+      .attr("cy", function(d) { return d[2]*gridScale; });
 }
 
-var drag = d3.behavior.drag()
-    .on("drag", dragmove);
 
-  function draw_circles(data) {
-var svg = d3.select("svg");
-    svg.selectAll("circle")
-    .data(data)
-    .enter().append("circle")
-    .on("click", function() {changeColour(this);})
-    .style("fill", "steelblue")
-    .attr("r", 5)
-    .attr("cx", function(d) { return d[1]*5; })
-    .attr("cy", function(d) { return d[2]*5; });
-}
 function changeColour(object) {
-    d3.select(object)
-    .style("fill","red");
-  }
+  d3.select(object)
+  .style("fill","red");
+}
   
