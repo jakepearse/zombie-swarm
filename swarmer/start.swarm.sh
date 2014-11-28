@@ -1,2 +1,2 @@
 #!/bin/bash
-erl -pa deps/*/ebin -pa ebin/ -eval 'application:ensure_all_started(swarm)' -noshell
+erl -pa deps/*/ebin -pa ebin/ -s swarm_server -noshell

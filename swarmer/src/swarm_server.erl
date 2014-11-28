@@ -1,8 +1,12 @@
 -module(swarm_server).
 -behaviour(application).
 
--export([start/2]).
+-export([start/0,start/2]).
 -export([stop/1]).
+
+% Start the application
+start() ->
+	application:ensure_all_started(swarm).
 
 start(_,_) ->
   Dispatch = cowboy_router:compile([
