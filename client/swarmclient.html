@@ -41,10 +41,23 @@
       </ul>
     </div>
   </div><!-- end control-wrapper -->
-  
-  <button onClick="start()">Start </button>
-<button>Pause</button>
-<button>Reset</button>
+    
+  <div id="inspector-wrapper">
+    <textarea id="inspector" readonly>hello i'm your textfield, try and edit me! Go on try!</textarea>
+    <div id="button-wrapper">
+      <ul class="control-group">
+        <li>
+          <button onClick="start()">Start</button>
+        </li>
+        <li>
+          <button>Pause</button>
+        </li>
+        <li>
+          <button>Reset</button>
+        </li>
+      </ul>
+    </div> <!-- end button-wrapper -->
+  </div> <!-- end  inspector-wrapper-->
 
   <!-- main display -->
   <svg>
@@ -54,6 +67,8 @@
 </body>
 
 <script type="text/javascript">
+  var inspectList =[]; // global variables
+  var inspector = document.getElementById("inspector");// global variables
   socket= new WebSocket('ws://localhost:8080/websocket');
   // this will run as soon as the scoket is established
   socket.onopen= function() {

@@ -1,4 +1,5 @@
 function start() {
+  inspector.value ="";
   var gridScale = document.getElementById('gridScale').value;
   var dummy_json = JSON.stringify({"type":"report"});
   //This sends the "update" message to the socket every 1000ms
@@ -9,9 +10,14 @@ function start() {
     socket.onmessage = function(evt) {
     var json = JSON.parse(evt.data);
     update_circles(json,gridScale);
+    for (var i = 0; i<inspectList.length; i++) {
+      var element = inspectList[i];
+      inspector.value += "id: "+element.__data__[0]+", X: "+element.__data__[1]+"\n";
+    }
     };
   };
 };
+
 
 function setup_grid(arrity,tileSize,gridScale) {
   arrity = parseInt(arrity);
@@ -76,6 +82,8 @@ function draw_circles(data,gridScale) {
 
 function changeColour(object) {
   d3.select(object)
-  .style("fill","red");
+  .style("fill","red")
+  .attr("class","inspect-me");
+  inspectList.push(object);
 }
   
