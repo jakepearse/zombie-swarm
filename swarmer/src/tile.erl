@@ -35,14 +35,14 @@
 -type   pos()  ::  {pos_integer(),pos_integer()}.
 -type   entity()  ::  {pid(),{pos_integer(),pos_integer()}}.
 
-%%%% entityDict - a dictonary of entities within the tile
+%%%% entity_dict - a dictonary of entities within the tile
 %%%% x and y origin - the origin of the tile
 %%%% x and y limit - the edge of the tile
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
 
--record(tile_state, {entityDict=dict:new(), % :: dict:new_dict()
+-record(state, {entity_dict=dict:new(), % :: dict:dict()
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
@@ -183,80 +183,59 @@ terminate(Pid) ->
 
 init([X,Y,Size]) ->
     set_geometry(self(),X,Y,Size),
-    {ok, #tile_state{}}.
+    {ok, #state{}}.
 
 %%%%-Calls----------------------------------------------------------------------
 
 handle_call(get_population,_From,State) ->
-    {reply, make_usable(dict:to_list(State#tile_state.entityDict),[]),State};
+    {reply, make_usable(dict:to_list(State#state.entity_dict),[]),State};
 
 handle_call(get_geometry,_From,State) ->
-    {reply,State#tile_state.coords, State};
+    {reply,State#state.coords, State};
 
 handle_call(get_viewer,_From,State) ->
-    {reply,State#tile_state.viewer};
+    {reply,State#state.viewer};
 
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#tile_state.neighbours};
+    {reply,State#state.neighbours};
 
 handle_call(get_state,_From,State) ->
     {reply,State,State};
 
 handle_call({update_entity, Entity, Pos, _Bearing, _Speed},_From, State) ->
     {ID,{_,_}} = Entity,
-    NewDict = dict:store(ID,Pos,State#tile_state.entityDict),
-    {reply,Pos,State#tile_state{entityDict = NewDict}}.
+    NewDict = dict:store(ID,Pos,State#state.entity_dict),
+    {reply,Pos,State#state{entity_dict = NewDict}}.
 
 
 %%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
-handle_cast({summon_entity, Entity}, State) when 
-        size(State#tile_state.entityDict) =/= 0 ->
-    {ID,{X,Y}} = Entity,
-    {noreply,State#tile_state{entityDict = 
-        add_unique(ID,{X,Y},State#tile_state.entityDict)}};
-handle_cast({summon_entity, Entity}, State) when 
-        size(State#tile_state.entityDict) =:= 0 ->
-    {ID,{X,Y}} = Entity,
-    {noreply,State#tile_state{entityDict = 
-        dict:store(ID,{X,Y},State#tile_state.entityDict)}};
+handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_dict = EntityDict} = State) ->
+    {noreply,State#state{entity_dict = add_unique(ID,{X,Y},EntityDict)}};
 
 %%%% Handle delete entity calls
 handle_cast({remove_entity, Entity}, State) ->
     {ID,{_,_}} = Entity,
-    {noreply,State#tile_state{entityDict = 
-        dict:erase(ID,State#tile_state.entityDict)}};
-
-%%%%%%%%%%%%%% Old, probably good to delete
-% %%%% Updates an entities position on the tile 
-% handle_cast({update_entity, Entity, Pos, _Bearing, _Speed}, State) ->
-%     {ID,{_,_}} = Entity,
-%     case dict:is_key(ID,State#tile_state.entityDict) of
-%         true ->
-%             {noreply,State#tile_state{entityDict = 
-%                 dict:store(ID,Pos,State#tile_state.entityDict)}};
-%         false ->
-%             {noreply,State#tile_state{entityDict = 
-%                 summon_entity(State,{ID,Pos})}}
-%     end; 
+    {noreply,State#state{entity_dict = 
+        dict:erase(ID,State#state.entity_dict)}};
 
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
-    {noreply,State#tile_state{xorigin = X, yorigin = Y, xlimit = X+Size-1, 
+    {noreply,State#state{xorigin = X, yorigin = Y, xlimit = X+Size-1, 
         ylimit = Y+Size-1, coords = {X,Y,X+Size-1,Y+Size-1,Size}}};
 
 %%%% Handles setting of tiles viewer
 handle_cast({set_viewer, ViewerPid}, State) ->
-    {noreply,State#tile_state{viewer = ViewerPid}};
+    {noreply,State#state{viewer = ViewerPid}};
 
 %%%% Add nearby tiles viewers
 handle_cast({set_neighbours, NeighbourPids}, State) ->
-    {noreply,State#tile_state{neighbours = NeighbourPids}};
+    {noreply,State#state{neighbours = NeighbourPids}};
 
 %%%% Handle the cast to update the viewers
 handle_cast({update_viewers}, State) ->
-    {noreply,update_viewers(State#tile_state{}, State#tile_state.neighbours)};
+    {noreply,update_viewers(State#state{}, State#state.neighbours)};
 
 %%%% Handle cast to end the system normally
 handle_cast(terminate, State) ->
@@ -288,33 +267,30 @@ update_viewers(Pid) ->
         gen_server:cast(Pid, {update_viewers})
     end.
 
-%% Ensure new entity is in an untaken position
-%% a bit ugly, but it works
-add_unique(ID, Pos, Dict) ->
-    {X,Y} = Pos,
-    List = dict:to_list(Dict),
-    case check_dict(List, ID, Pos) of
-        false ->
-            dict:store(ID, {X,Y}, dict:from_list(List));
-        true ->
-            add_unique(ID, {X+1,Y+1}, Dict)
+add_unique(ID, {X,Y}, Dict) ->
+    Matching = dict:filter(
+        fun(_,{X0,Y0}) when X==X0 andalso Y==Y0  ->
+            true;
+        (_, _) ->
+            false
+        end,Dict),
+    case dict:size(Matching) of
+        0 ->
+            % doesn't exist
+            dict:store(ID, {X,Y}, Dict);
+        _ ->
+            % does exist, move elsewhere
+            % this needs to be changed eventually, 
+            % to prevent moving all over the place
+            add_unique(ID, {X+1,Y+1},Dict)
     end.
 
-%% Check dictinary for current postion
--spec check_dict(list(),_,_ ) ->  boolean().
-check_dict([],_,_) -> false;
-check_dict([X|Xs],ID,{X2,Y2}) ->
-    {_,{X1,Y1}} = X,
-    if (X1=/=X2) or (Y1=/=Y2) ->
-        check_dict(Xs, ID, {X2,Y2});
-        true -> true
-    end.
 
 %% This function iterates through the list of nearby viewers
 %% For each of these, it updates them with the current dictionary of entities
 update_viewers(State, []) -> update_viewers(State);
 update_viewers(State, [X|Xs]) ->
-    viewer:update(X,{self(),State#tile_state.entityDict}),
+    viewer:update(X,{self(),State#state.entity_dict}),
     update_viewers(State, Xs).
 
 % Turn the dictionary into something usable by the client
@@ -338,7 +314,7 @@ make_usable([L|Ls],A,Num) ->
 
 % sys:get_state(Pid).
 
-% eventually, entityDict needs to be a list of lists
+% eventually, entity_dict needs to be a list of lists
 %   when this is done, replace z1,z2,z3 etc etc with the Pid of the entities
 %       entities in the list will be in the format [[id,x,y],[id,x,y]]
 %           id = "pid", x = int, y = int
