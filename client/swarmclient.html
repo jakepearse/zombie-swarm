@@ -4,72 +4,88 @@
 <script src="js/d3.js" charset="utf-8"></script>
 <script src="js/initial.js" charset="utf-8"></script>
 <script src="js/update.js" charset="utf-8"></script>
+</head
 <body>
-  <div id="controls-wrapper" style="width:50%;">
-  <div id="gridControls" style="border: 1px solid red;width:48%;float:left;">
-    <label for="arrity">Grid Arrity</label>
-    <input id="arrity" type="range" min="3" max="10" step="1" onChange="updateArrity(this.value)">
+  <div id="controls-wrapper">
+    <div id="gridControls" class="control-panel">
+      <ul class="control-group">
+        <li>
+          <label for="arrity">Grid Arrity</label>
+          <input id="arrity" type="range" min="3" max="10" step="1" value="6" onChange="updateArrity(this.value)">
+        </li>
+        <li>
+          <label for="tileSize">Tile Size</label>
+          <input id="tileSize" type="range" min="10" max="100" step="10" value="50" onChange="updateArrity(this.value)">
+        </li>
+        <li>
+          <label for="gridScale">Grid Scale</label>
+          <input id="gridScale" type="range" min="1" max="10" step="1" value="3" onChange="updateArrity(this.value)">
+        </li>
+      </ul>
+    </div>
   
-    <label for="tileSize">Tile Size</label>
-    <input id="tileSize" type="range" min="10" max="100" step="10" onChange="updateArrity(this.value)">
-  
-    <label for="gridScale">Grid Scale</label>
-    <input id="gridScale" type="range" min="1" max="10" step="1" onChange="updateArrity(this.value)">
-  </div>
-  
-  <div id="simControls" style="border:1px solid red;width:48%;float:right;">
-    <label for="swarmSize">Swarm Size</label>
-    <input id="swarmSize" type="range" min="1" max="2000" value="500" step="1" />
-    
-    <label for="simspeed">Simulation Speed</label>
-    <input id="simspeed" type="range" min="3" max="30" value="3" step="3"/>
-    
-    <label for="movespeed">Movement Speed</label>
-    <input id="movespeed" type="range" min="3" max="30" value="3" step="3"/>
-  </div>
+    <div id="simControls" class="control-panel">
+      <ul class="control-group">
+        <li>
+          <label for="swarmSize">Swarm Size</label>
+          <input id="swarmSize" type="range" min="5" max="500" value="200" step="1"  />
+        </li>
+        <li>
+          <label for="simspeed">Simulation Speed</label>
+          <input id="simspeed" type="range" min="3" max="30" value="3" step="3" disabled />
+        </li>
+        <li>
+          <label for="movespeed">Movement Speed</label>
+          <input id="movespeed" type="range" min="3" max="30" value="3" step="3"disabled />
+        </li>
+      </ul>
+    </div>
   </div><!-- end control-wrapper -->
+  
   <button onClick="start()">Start </button>
 <button>Pause</button>
 <button>Reset</button>
-<!--
-TODO: the hardcoded values for svg.width and svg.height need to be dynamicly
-set by data from the socket
--->
 
-<svg>
-</svg>
+  <!-- main display -->
+  <svg>
+  </svg>
+  <!-- end of display -->
 
-<script type="text/javascript">
-  
-</script>
 </body>
 
 <script type="text/javascript">
   socket= new WebSocket('ws://localhost:8080/websocket');
+  // this will run as soon as the scoket is established
   socket.onopen= function() {
+    // collect rhe values from the controls
     var arrity = document.getElementById('arrity').value;
     var tileSize = document.getElementById('tileSize').value;
+    var gridScale = document.getElementById('gridScale').value;
+    var swarmSize= document.getElementById("swarmSize").value;
+    // compile a JSON object and send it to the socket
     var json = JSON.stringify({"type":"setup","arrity":arrity,"tileSize":tileSize});
     socket.send(json);
-    
+    // this part will run when the reply comes back from the socket
     socket.onmessage = function(evt) {
+      // data from the reply
       var data = JSON.parse(evt.data);
-      arrity = data.rows; // This replaces the value we got from the slider with what came back from erlang whihch should be the same thing
+      // I'm replacing the value from the arrity slider with the one from the socket reply
+      // I don't really need to do this
+      arrity = data.rows;
       var size = data.tileSize;
-      var gridScale = document.getElementById('gridScale').value;
-      console.log(gridScale);
+      // call the function to draw the grid
       setup_grid(arrity,size,gridScale);
-      var swarmSize=document.getElementById("swarmSize").value;
+      // Send a JSON to set up the swarm
       var swarm_json = JSON.stringify({"type":"swarm","size":swarmSize});
       socket.send(swarm_json);
-      socket.onmessage = function(sw) {
-      swarm_data = JSON.parse(sw.data);
-      draw_circles(swarm_data);
+      // recieve a message back
+        socket.onmessage = function(sw) {
+          // draw the swarm
+          swarm_data = JSON.parse(sw.data);
+          draw_circles(swarm_data,gridScale);
         };
       };
-
     };
-
 </script>
 <script type="text/javascript">
 </script>
