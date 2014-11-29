@@ -192,7 +192,7 @@ init([X,Y,Size]) ->
 
 handle_call(get_population, _From, State) ->
     Report = build_report(State#state.entity_dict),
-    {reply, Report, [], State};
+    {reply, Report, State};
 
 handle_call(get_geometry,_From,State) ->
     {reply,State#state.coords, State};

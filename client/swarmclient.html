@@ -95,8 +95,9 @@
       socket.send(swarm_json);
       // recieve a message back
         socket.onmessage = function(sw) {
-          // draw the swarm
+          // draw the swarm 
           swarm_data = JSON.parse(sw.data);
+          console.log(swarm_data);
           draw_circles(swarm_data,gridScale);
         };
       };

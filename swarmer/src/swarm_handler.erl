@@ -45,9 +45,7 @@ websocket_handle({text, Json}, Req, State) ->
         BinSize = proplists:get_value(<<"size">>,Parsed),
         Size = binary_to_integer(BinSize),
         enviroment:set_swarm(Size),
-        RawReport = enviroment:report(),
-        error_logger:error_report(RawReport),
-        Report = jsx:encode(RawReport),
+        Report = jsx:encode(enviroment:report()),
         {reply, [{text,Report}], Req, State};
 
       <<"report">> ->
