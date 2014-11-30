@@ -113,7 +113,6 @@ init([]) ->
 
 handle_call(report,_From,State) ->
     Report = make_report(State#state.tileList), 
-    error_logger:error_report(Report),
     {reply,Report,State};
 
 handle_call(get_grid,_From,State) ->

@@ -187,9 +187,6 @@ init([X,Y,Size]) ->
 
 %%%%-Calls----------------------------------------------------------------------
 
-% handle_call(get_population,_From,State) ->
-%     {reply, make_usable(dict:to_list(State#state.entity_dict),[]),State};
-
 handle_call(get_population, _From, State) ->
     Report = build_report(State#state.entity_dict),
     {reply, Report, State};
@@ -296,32 +293,14 @@ update_viewers(State, [X|Xs]) ->
     viewer:update(X,{self(),State#state.entity_dict}),
     update_viewers(State, Xs).
 
-%% Turn the dictionary into something usable by the client
-% -spec make_usable(list(),list()) -> list().
-% make_usable(A,B) ->
-%     make_usable(A,B,0).
-% make_usable([],[],_) -> [];
-% make_usable([],A,_) -> A;
-% make_usable([L|Ls],A,Num) ->
-%     {_Id,{X,Y}} = L,
-%     B = [[Num,X,Y]] ++ A,
-%     make_usable(Ls,B,Num+1).
-
-
 
 build_report(EntityDict) ->
     DictList = dict:to_list(EntityDict),
-    % map(DictList, 0).
     lists:map(
         fun({ID,{X,Y}}) ->
             [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
-            %[pid_to_list(ID),X,Y]
         end, DictList).
 
-% map([], _) ->
-%     [];
-% map([{ID, {X,Y}}|List], N) ->
-%     [[N,X,Y]] ++ map(List, N+1).
 %%%%-Notes----------------------------------------------------------------------
 
 % Still need to figure out how to update a zombies viewer
@@ -341,12 +320,6 @@ build_report(EntityDict) ->
 
 % tiles within tiles?
 %   quadtree like datastructure
-
-% list returning in strange order
-% need to fix this
-% pid_to_list for pid
-% list_to_pid for reverse
-% need to make  a pid to string function
 
 % ctrl + g > to line
 
