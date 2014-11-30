@@ -314,7 +314,7 @@ build_report(EntityDict) ->
     % map(DictList, 0).
     lists:map(
         fun({ID,{X,Y}}) ->
-            [{id,pid_to_list(ID)},{x,X},{y,Y}]
+            [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
             %[pid_to_list(ID),X,Y]
         end, DictList).
 
