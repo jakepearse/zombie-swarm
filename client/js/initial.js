@@ -2,22 +2,37 @@ function start() {
   inspector.value ="";
   var gridScale = document.getElementById('gridScale').value;
   var dummy_json = JSON.stringify({"type":"report"});
+  
   //This sends the "update" message to the socket every 1000ms
   // and updates the circles with the recived data
-  setInterval(function() {doUpdate()},1000);
+  setInterval(function() {doUpdate()},0);
   function doUpdate() {
     socket.send(dummy_json);
     socket.onmessage = function(evt) {
     var json = JSON.parse(evt.data);
-    update_circles(json,gridScale);
+    update_circles(json,gridScale,swarmSize);
     for (var i = 0; i<inspectList.length; i++) {
       var element = inspectList[i];
-      inspector.value += "id: "+element.__data__[0]+", X: "+element.__data__[1]+"\n";
+      inspector.value = "id: "+element.__data__.id+", Pos: "+element.__data__.x+","+element.__data__.y+"\n" + inspector.value;
     }
     };
   };
 };
 
+//function start() {
+  //inspector.value ="";
+  //var gridScale = document.getElementById('gridScale').value;
+  //var dummy_json = JSON.stringify({"type":"report"});
+  //socket.send(dummy_json);
+  //function loop (callback) {
+    //socket.onmessage = function(evt) {
+    //console.log(evt);
+    //callback(dummy_json);
+    //};
+  //};
+    //setInterval(function() {loop(socket.send)},800);
+//};
+    
 
 function setup_grid(arrity,tileSize,gridScale) {
   arrity = parseInt(arrity);
@@ -44,7 +59,8 @@ function draw_hlines(arrity,tileSize,gridScale,list) {
     .attr("x2",(arrity*tileSize)*gridScale)
     .attr("y1",function(d) { return d*gridScale; })
     .attr("y2",function(d) { return d*gridScale; })
-    .attr("stroke","lightblue");
+    .attr("stroke","cadetblue")
+    .style("stroke-dasharray","10 5");
 }
 
 
@@ -58,7 +74,8 @@ function draw_vlines(arrity,tileSize,gridScale,list) {
     .attr("y2",(arrity*tileSize)*gridScale)
     .attr("x1",function(d) { return d*gridScale; })
     .attr("x2",function(d) { return d*gridScale; })
-    .attr("stroke","lightblue");
+    .attr("stroke","cadetblue")
+    .style("stroke-dasharray","10 5");
 };
 
 
@@ -73,17 +90,20 @@ function draw_circles(data,gridScale) {
       .data(data)
       .enter().append("circle")
       .on("click", function() {changeColour(this);})
-      .style("fill", "steelblue")
+      .style("fill", "darkseagreen")
+      .style("stroke","seagreen")
+      .style("stroke-width",0.5*gridScale)
       .attr("r", gridScale)
-      .attr("cx", function(d) { return d[1]*gridScale; })
-      .attr("cy", function(d) { return d[2]*gridScale; });
+      .attr("cx", function(d) { return d.x*gridScale; })
+      .attr("cy", function(d) { return d.y*gridScale; });
 }
 
 
 function changeColour(object) {
   d3.select(object)
-  .style("fill","red")
-  .attr("class","inspect-me");
+  .style("fill","tomato")
+  .style("stroke","indianred");
   inspectList.push(object);
+  
 }
   

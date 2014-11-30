@@ -237,8 +237,11 @@ make_report([],PopList) ->
   PopList;
 make_report(TileList,PopList) ->
   [X|Xs] = TileList,
-  NewPopList = PopList ++ tile:get_population(X),
+  NewPop = tile:get_population(X),
+  NewPopList = PopList ++ NewPop,
   make_report(Xs,NewPopList).
+
+
 
 
 make_neighbourhood(TileList,ViewerPropList) ->
