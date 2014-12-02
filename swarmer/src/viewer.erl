@@ -41,12 +41,11 @@ init([]) ->
    {ok, #state{}}. %new state record with default values
 
 handle_cast({update_population, Tile, Entities}, #state{population_map = PopMap} = State) ->
-    error_logger:error_reporter(PopMap),
     {noreply, State#state{population_map = maps:put(Tile,Entities,PopMap)}}.
 
 %get population - just dump the state out.
 handle_call(get_population,_From,State) ->
-    {reply,State#state.tile_map,State}.
+    {reply,State#state.population_map,State}.
 
 % enxpected message
 handle_info(Msg,State) ->

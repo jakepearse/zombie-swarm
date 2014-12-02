@@ -213,7 +213,9 @@ handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, State) ->
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
 handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_map =EntityMap} =State)->
-    {noreply,State#state{entity_map = add_unique(ID,{X,Y},EntityMap)}};
+    NewMap = add_unique(ID,{X,Y},EntityMap),
+    update_viewers(State#state.neighbours, NewMap),
+    {noreply,State#state{entity_map = NewMap}};
 
 %%%% Handle delete entity calls
 handle_cast({remove_entity,{ID,{_,_}}},#state{entity_map =EntityMap} =State)->
@@ -263,6 +265,7 @@ add_unique(ID, {X,Y}, Map) ->
             add_unique(ID, {X+1,Y+1}, Map)
     end.
 
+
 build_report(EntityMap) ->
     DictList = maps:to_list(EntityMap),
     lists:map(
@@ -270,9 +273,10 @@ build_report(EntityMap) ->
             [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
         end, DictList).
 
-
-update_viewers([V|Vs], EntityMap) when V =/= [] -> 
-    viewer:update_population(self(), EntityMap),
+update_viewers([], _EntityMap) -> 
+    [];
+update_viewers([V|Vs], EntityMap) ->
+    viewer:update_population(V, {self(), maps:to_list(EntityMap)}),
     update_viewers(Vs, EntityMap).
 
 %%%%-Notes----------------------------------------------------------------------
