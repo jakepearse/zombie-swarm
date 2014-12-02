@@ -203,9 +203,9 @@ handle_call(get_neighbours,_From,State) ->
 handle_call(get_state,_From,State) ->
     {reply,State,State};
 
-handle_call({update_entity, Entity, Pos, _Bearing, _Speed},_From, State) ->
-    {ID,{_,_}} = Entity,
+handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, State) ->
     NewMap = maps:put(ID,Pos,State#state.entity_map),
+    update_viewers(State#state.neighbours, NewMap),
     {reply,Pos,State#state{entity_map = NewMap}}.
 
 
@@ -233,10 +233,6 @@ handle_cast({set_viewer, ViewerPid}, State) ->
 handle_cast({set_neighbours, NeighbourPids}, State) ->
     {noreply,State#state{neighbours = NeighbourPids}};
 
-%%%% Handle the cast to update the viewers
-handle_cast({update_viewers}, State) ->
-    {noreply,update_viewers(State#state{}, State#state.neighbours)};
-
 %%%% Handle cast to end the system normally
 handle_cast(terminate, State) ->
     {stop,normal,State}.
@@ -256,17 +252,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%%%% Internal Functions
 %%%%%%==========================================================================
 
-%% A function to periodically update the viewers
-%% Currently this is carried out every 5 seconds, 
-%% this is just an arbitratry value
-%% until a more permanent solution is decided upon
-update_viewers(Pid) ->
-    receive
-    after
-        5000 ->
-        gen_server:cast(Pid, {update_viewers})
-    end.
-
 %% a function to add a new entity to the entity_map
 %% eventually will need to become more inteligent than just X+1,Y+1
 add_unique(ID, {X,Y}, Map) ->
@@ -278,20 +263,17 @@ add_unique(ID, {X,Y}, Map) ->
             add_unique(ID, {X+1,Y+1}, Map)
     end.
 
-%% This function iterates through the list of nearby viewers
-%% For each of these, it updates them with the current dictionary of entities
-update_viewers(State, []) -> update_viewers(State);
-update_viewers(State, [X|Xs]) ->
-    viewer:update(X,{self(),State#state.entity_map}),
-    update_viewers(State, Xs).
-
-
 build_report(EntityMap) ->
     DictList = maps:to_list(EntityMap),
     lists:map(
         fun({ID,{X,Y}}) ->
             [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
         end, DictList).
+
+
+update_viewers([V|Vs], EntityMap) when V =/= [] -> 
+    viewer:update_population(self(), EntityMap),
+    update_viewers(Vs, EntityMap).
 
 %%%%-Notes----------------------------------------------------------------------
 

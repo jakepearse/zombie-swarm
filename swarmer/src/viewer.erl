@@ -28,11 +28,11 @@ handle_info/2,init/1,terminate/2]).
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
 update_population(Pid, {Tile,Entities}) ->
-  gen_server:cast(Pid,{update_population,Tile,Entities}).
+    gen_server:cast(Pid,{update_population,Tile,Entities}).
 
 % returns the entire tileDict
 get_population(Pid) ->
-  gen_server:call(Pid,get_population).
+    gen_server:call(Pid,get_population).
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -40,17 +40,18 @@ get_population(Pid) ->
 init([]) -> 
    {ok, #state{}}. %new state record with default values
 
-handle_cast({update_population,Tile,Entities},State) ->
-    {noreply, State#state.population_map,State}.
+handle_cast({update_population, Tile, Entities}, #state{population_map = PopMap} = State) ->
+    error_logger:error_reporter(PopMap),
+    {noreply, State#state{population_map = maps:put(Tile,Entities,PopMap)}}.
 
 %get population - just dump the state out.
 handle_call(get_population,_From,State) ->
-  {reply,State#state.tile_map,State}.
+    {reply,State#state.tile_map,State}.
 
 % enxpected message
 handle_info(Msg,State) ->
-  io:format("Unexpected message: ~p~n",[Msg]),
-    {noreply,State}.
+    io:format("Unexpected message: ~p~n",[Msg]),
+        {noreply,State}.
 
 terminate(normal,_State) ->
     ok.
