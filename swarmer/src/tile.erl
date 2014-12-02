@@ -35,14 +35,14 @@
 -type   pos()  ::  {pos_integer(),pos_integer()}.
 -type   entity()  ::  {pid(),{pos_integer(),pos_integer()}}.
 
-%%%% entity_dict - a dictonary of entities within the tile
+%%%% entity_map - a dictonary of entities within the tile
 %%%% x and y origin - the origin of the tile
 %%%% x and y limit - the edge of the tile
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
 
--record(state, {entity_dict=dict:new(), % :: dict:dict()
+-record(state, {entity_map=maps:new() :: maps:maps(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
@@ -188,7 +188,7 @@ init([X,Y,Size]) ->
 %%%%-Calls----------------------------------------------------------------------
 
 handle_call(get_population, _From, State) ->
-    Report = build_report(State#state.entity_dict),
+    Report = build_report(State#state.entity_map),
     {reply, Report, State};
 
 handle_call(get_geometry,_From,State) ->
@@ -205,20 +205,20 @@ handle_call(get_state,_From,State) ->
 
 handle_call({update_entity, Entity, Pos, _Bearing, _Speed},_From, State) ->
     {ID,{_,_}} = Entity,
-    NewDict = dict:store(ID,Pos,State#state.entity_dict),
-    {reply,Pos,State#state{entity_dict = NewDict}}.
+    NewMap = maps:put(ID,Pos,State#state.entity_map),
+    {reply,Pos,State#state{entity_map = NewMap}}.
 
 
 %%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
-handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_dict =EntityDict} =State)->
-    {noreply,State#state{entity_dict = add_unique(ID,{X,Y},EntityDict)}};
+handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_map =EntityMap} =State)->
+    {noreply,State#state{entity_map = add_unique(ID,{X,Y},EntityMap)}};
 
 %%%% Handle delete entity calls
-handle_cast({remove_entity,{ID,{_,_}}},#state{entity_dict =EntityDict} =State)->
-    {noreply,State#state{entity_dict = 
-      dict:erase(ID,EntityDict)}};
+handle_cast({remove_entity,{ID,{_,_}}},#state{entity_map =EntityMap} =State)->
+    {noreply,State#state{entity_map = 
+      maps:remove(ID,EntityMap)}};
 
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
@@ -267,35 +267,27 @@ update_viewers(Pid) ->
         gen_server:cast(Pid, {update_viewers})
     end.
 
-add_unique(ID, {X,Y}, Dict) ->
-    Matching = dict:filter(
-        fun(_,{X0,Y0}) when X==X0 andalso Y==Y0  ->
-            true;
-        (_, _) ->
-            false
-        end,Dict),
-    case dict:size(Matching) of
-        0 ->
-            % doesn't exist
-            dict:store(ID, {X,Y}, Dict);
-        _ ->
-            % does exist, move elsewhere
-            % this needs to be changed eventually, 
-            % to prevent moving all over the place
-            add_unique(ID, {X+1,Y+1},Dict)
+%% a function to add a new entity to the entity_map
+%% eventually will need to become more inteligent than just X+1,Y+1
+add_unique(ID, {X,Y}, Map) ->
+    Values = maps:values(Map),
+    case lists:member({X,Y}, Values) of
+        false ->
+            maps:put(ID, {X,Y}, Map);
+        true ->
+            add_unique(ID, {X+1,Y+1}, Map)
     end.
-
 
 %% This function iterates through the list of nearby viewers
 %% For each of these, it updates them with the current dictionary of entities
 update_viewers(State, []) -> update_viewers(State);
 update_viewers(State, [X|Xs]) ->
-    viewer:update(X,{self(),State#state.entity_dict}),
+    viewer:update(X,{self(),State#state.entity_map}),
     update_viewers(State, Xs).
 
 
-build_report(EntityDict) ->
-    DictList = dict:to_list(EntityDict),
+build_report(EntityMap) ->
+    DictList = maps:to_list(EntityMap),
     lists:map(
         fun({ID,{X,Y}}) ->
             [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
@@ -311,7 +303,7 @@ build_report(EntityDict) ->
 
 % sys:get_state(Pid).
 
-% eventually, entity_dict needs to be a list of lists
+% eventually, entity_map needs to be a list of lists
 %   when this is done, replace z1,z2,z3 etc etc with the Pid of the entities
 %       entities in the list will be in the format [[id,x,y],[id,x,y]]
 %           id = "pid", x = int, y = int
@@ -332,3 +324,6 @@ build_report(EntityDict) ->
 % if not, tell the neigbour that it now owns the zombie and remove zombie
 
 % need to update state to viewers every now and again
+
+
+% First: modify viewer 
