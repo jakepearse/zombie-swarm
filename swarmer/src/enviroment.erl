@@ -208,6 +208,8 @@ create_swarm(State,Num,List) ->
   {Tile,Viewer} = get_tile(Xpos,Ypos,State#state.tileList,State),
   % zombie now takes {X,Y,Tile,Viewer,Speed,Bearing,Timeout}
   {ok,Zombie}=supervisor:start_child(State#state.zombieSup,[Xpos,Ypos,Tile,Viewer,1,0,300]),
+ %temporary fix
+ zombie_fsm:start(Zombie),
   tile:summon_entity(Tile,{Zombie,{Xpos,Ypos}}),
   create_swarm(State,Num-1,List++[Zombie]).
 
