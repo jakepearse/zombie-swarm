@@ -208,7 +208,6 @@ handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, State) ->
     update_viewers(State#state.neighbours, NewMap),
     {reply,Pos,State#state{entity_map = NewMap}}.
 
-
 %%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
@@ -281,18 +280,11 @@ update_viewers([V|Vs], EntityMap) ->
 
 %%%%-Notes----------------------------------------------------------------------
 
-% Still need to figure out how to update a zombies viewer
-
 % get pid of registered process wheris(module)
 
 % observer:start().
 
 % sys:get_state(Pid).
-
-% eventually, entity_map needs to be a list of lists
-%   when this is done, replace z1,z2,z3 etc etc with the Pid of the entities
-%       entities in the list will be in the format [[id,x,y],[id,x,y]]
-%           id = "pid", x = int, y = int
 
 % update_entity needs to be a call
 
@@ -301,15 +293,9 @@ update_viewers([V|Vs], EntityMap) ->
 
 % ctrl + g > to line
 
-
 % TODO
 % Change what the get_population
 %   needs to return [["pid", X, Y, type, heading, speed, current_state]]
 
 % Need to work out when moving, if you remain in the time
 % if not, tell the neigbour that it now owns the zombie and remove zombie
-
-% need to update state to viewers every now and again
-
-
-% First: modify viewer 

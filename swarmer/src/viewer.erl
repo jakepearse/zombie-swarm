@@ -59,7 +59,5 @@ code_change(_OldVsn, State,_Extra) ->
     {ok,State}.
 
 % Things Viewer Needs:
-%   update neighbourhood
-%   get population in neigbourhood
 %     get zombieList
 %     get humanList
