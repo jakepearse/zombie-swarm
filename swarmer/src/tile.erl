@@ -35,14 +35,14 @@
 -type   pos()  ::  {pos_integer(),pos_integer()}.
 -type   entity()  ::  {pid(),{pos_integer(),pos_integer()}}.
 
-%%%% entity_dict - a dictonary of entities within the tile
+%%%% entity_map - a dictonary of entities within the tile
 %%%% x and y origin - the origin of the tile
 %%%% x and y limit - the edge of the tile
 %%%% coords - a tuple containing {Xo,Yo, Xl,Yl}
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
 
--record(state, {entity_dict=dict:new(), % :: dict:dict()
+-record(state, {entity_map=maps:new() :: maps:maps(),
                     xorigin  ::  coord(),
                     yorigin  ::  coord(),
                     xlimit  ::  coord(),
@@ -188,7 +188,7 @@ init([X,Y,Size]) ->
 %%%%-Calls----------------------------------------------------------------------
 
 handle_call(get_population, _From, State) ->
-    Report = build_report(State#state.entity_dict),
+    Report = build_report(State#state.entity_map),
     {reply, Report, State};
 
 handle_call(get_geometry,_From,State) ->
@@ -203,22 +203,23 @@ handle_call(get_neighbours,_From,State) ->
 handle_call(get_state,_From,State) ->
     {reply,State,State};
 
-handle_call({update_entity, Entity, Pos, _Bearing, _Speed},_From, State) ->
-    {ID,{_,_}} = Entity,
-    NewDict = dict:store(ID,Pos,State#state.entity_dict),
-    {reply,Pos,State#state{entity_dict = NewDict}}.
-
+handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, State) ->
+    NewMap = maps:put(ID,Pos,State#state.entity_map),
+    update_viewers(State#state.neighbours, NewMap),
+    {reply,Pos,State#state{entity_map = NewMap}}.
 
 %%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
-handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_dict =EntityDict} =State)->
-    {noreply,State#state{entity_dict = add_unique(ID,{X,Y},EntityDict)}};
+handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_map =EntityMap} =State)->
+    NewMap = add_unique(ID,{X,Y},EntityMap),
+    update_viewers(State#state.neighbours, NewMap),
+    {noreply,State#state{entity_map = NewMap}};
 
 %%%% Handle delete entity calls
-handle_cast({remove_entity,{ID,{_,_}}},#state{entity_dict =EntityDict} =State)->
-    {noreply,State#state{entity_dict = 
-      dict:erase(ID,EntityDict)}};
+handle_cast({remove_entity,{ID,{_,_}}},#state{entity_map =EntityMap} =State)->
+    {noreply,State#state{entity_map = 
+      maps:remove(ID,EntityMap)}};
 
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->
@@ -232,10 +233,6 @@ handle_cast({set_viewer, ViewerPid}, State) ->
 %%%% Add nearby tiles viewers
 handle_cast({set_neighbours, NeighbourPids}, State) ->
     {noreply,State#state{neighbours = NeighbourPids}};
-
-%%%% Handle the cast to update the viewers
-handle_cast({update_viewers}, State) ->
-    {noreply,update_viewers(State#state{}, State#state.neighbours)};
 
 %%%% Handle cast to end the system normally
 handle_cast(terminate, State) ->
@@ -256,65 +253,38 @@ code_change(_OldVsn, State, _Extra) ->
 %%%%%% Internal Functions
 %%%%%%==========================================================================
 
-%% A function to periodically update the viewers
-%% Currently this is carried out every 5 seconds, 
-%% this is just an arbitratry value
-%% until a more permanent solution is decided upon
-update_viewers(Pid) ->
-    receive
-    after
-        5000 ->
-        gen_server:cast(Pid, {update_viewers})
-    end.
-
-add_unique(ID, {X,Y}, Dict) ->
-    Matching = dict:filter(
-        fun(_,{X0,Y0}) when X==X0 andalso Y==Y0  ->
-            true;
-        (_, _) ->
-            false
-        end,Dict),
-    case dict:size(Matching) of
-        0 ->
-            % doesn't exist
-            dict:store(ID, {X,Y}, Dict);
-        _ ->
-            % does exist, move elsewhere
-            % this needs to be changed eventually, 
-            % to prevent moving all over the place
-            add_unique(ID, {X+1,Y+1},Dict)
+%% a function to add a new entity to the entity_map
+%% eventually will need to become more inteligent than just X+1,Y+1
+add_unique(ID, {X,Y}, Map) ->
+    Values = maps:values(Map),
+    case lists:member({X,Y}, Values) of
+        false ->
+            maps:put(ID, {X,Y}, Map);
+        true ->
+            add_unique(ID, {X+1,Y+1}, Map)
     end.
 
 
-%% This function iterates through the list of nearby viewers
-%% For each of these, it updates them with the current dictionary of entities
-update_viewers(State, []) -> update_viewers(State);
-update_viewers(State, [X|Xs]) ->
-    viewer:update(X,{self(),State#state.entity_dict}),
-    update_viewers(State, Xs).
-
-
-build_report(EntityDict) ->
-    DictList = dict:to_list(EntityDict),
+build_report(EntityMap) ->
+    DictList = maps:to_list(EntityMap),
     lists:map(
         fun({ID,{X,Y}}) ->
             [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
         end, DictList).
 
-%%%%-Notes----------------------------------------------------------------------
+update_viewers([], _EntityMap) -> 
+    [];
+update_viewers([V|Vs], EntityMap) ->
+    viewer:update_population(V, {self(), maps:to_list(EntityMap)}),
+    update_viewers(Vs, EntityMap).
 
-% Still need to figure out how to update a zombies viewer
+%%%%-Notes----------------------------------------------------------------------
 
 % get pid of registered process wheris(module)
 
 % observer:start().
 
 % sys:get_state(Pid).
-
-% eventually, entity_dict needs to be a list of lists
-%   when this is done, replace z1,z2,z3 etc etc with the Pid of the entities
-%       entities in the list will be in the format [[id,x,y],[id,x,y]]
-%           id = "pid", x = int, y = int
 
 % update_entity needs to be a call
 
@@ -323,12 +293,9 @@ build_report(EntityDict) ->
 
 % ctrl + g > to line
 
-
 % TODO
 % Change what the get_population
 %   needs to return [["pid", X, Y, type, heading, speed, current_state]]
 
 % Need to work out when moving, if you remain in the time
 % if not, tell the neigbour that it now owns the zombie and remove zombie
-
-% need to update state to viewers every now and again
