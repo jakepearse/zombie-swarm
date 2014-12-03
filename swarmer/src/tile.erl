@@ -111,7 +111,6 @@ get_neighbours(Pid) ->
 update_entity(Pid, Entity, Pos, Bearing, _Speed) ->
     gen_server:call(Pid, {update_entity, Entity, Pos, Bearing, _Speed}).
 
-
 %%%%-Casts----------------------------------------------------------------------
 
 %%%%----------------------------------------------------------------------------
@@ -203,10 +202,20 @@ handle_call(get_neighbours,_From,State) ->
 handle_call(get_state,_From,State) ->
     {reply,State,State};
 
-handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, State) ->
-    NewMap = maps:put(ID,Pos,State#state.entity_map),
+% needs a way to check the pos for a something being there
+handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, #state{entity_map = EntityMap} = State) ->
+    case in_tile(Pos,State#state.coords) of
+        true ->     % pos in current tile, move entity
+            Tile = self(),                                  
+            Viewer = State#state.viewer,
+            NewMap = maps:put(ID,Pos,EntityMap);
+        false ->    % pos not in tile, need to move the entity
+            Tile = enviroment:get_new_tile(Pos),
+            Viewer = tile:get_viewer(Tile),
+            NewMap = maps:remove(ID,EntityMap)
+    end,
     update_viewers(State#state.neighbours, NewMap),
-    {reply,Pos,State#state{entity_map = NewMap}}.
+    {reply,{Pos,Tile,Viewer},State#state{entity_map = NewMap}}.
 
 %%%%-Casts----------------------------------------------------------------------
 
@@ -278,6 +287,10 @@ update_viewers([V|Vs], EntityMap) ->
     viewer:update_population(V, {self(), maps:to_list(EntityMap)}),
     update_viewers(Vs, EntityMap).
 
+%% Boolean check of wheter a set of X,Y is within the tile Geometry
+in_tile({Xpos,Ypos},{Xo,Yo,Xl,Yl,_Size}) ->
+    ((Xpos >= Xo) and (Xpos =< Xl)) and ((Ypos >= Yo) and (Ypos =< Yl)).
+
 %%%%-Notes----------------------------------------------------------------------
 
 % get pid of registered process wheris(module)
@@ -299,3 +312,12 @@ update_viewers([V|Vs], EntityMap) ->
 
 % Need to work out when moving, if you remain in the time
 % if not, tell the neigbour that it now owns the zombie and remove zombie
+
+
+% Tile Movement
+% Ask the tile if pos in in tile T
+%   if yes, tile:update as normal
+%   if no, ask enviroment for new tile
+%       tile = new tile, viewer = new tile
+%      remove from old tile, add to new
+% move to the new pos

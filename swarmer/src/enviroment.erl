@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%% API
--export([start_link/0,make_grid/3,get_grid/0,get_grid_info/0,report/0]).
+-export([start_link/0,make_grid/3,get_grid/0,get_grid_info/0,report/0,get_new_tile/1]).
 
 %%%% internal functions for debugging these can be deleted later
 -export([get_state/0,set_swarm/1]).
@@ -97,7 +97,8 @@ report() ->
 set_swarm(Num) -> 
   gen_server:cast(?MODULE,{swarm,Num}).
 
-
+get_new_tile(Pos) ->
+  gen_server:call(?MODULE,{get_new_tile, Pos}).
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -125,7 +126,11 @@ handle_call(grid_info,_From,State) ->
   {reply,[{<<"rows">>,Rows},{<<"columns">>,Columns},{<<"tileSize">>,Size}],State};
 
 handle_call(get_state,_From,State) ->
-    {reply,State,State}.
+    {reply,State,State};
+
+handle_call({get_new_tile,Pos},_From,State) ->
+    NewTile = get_new_tile(Pos,State#state.tileList),
+    {reply,NewTile,State}.
 
 handle_call(terminate,State) ->
   {stop,normal,State}.
@@ -283,3 +288,14 @@ test_neighbour(Xo,Yo,X,Y,Size) ->
       (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
 
 
+get_new_tile(_Pos,[]) -> [];
+get_new_tile({X,Y},[T|Ts]) ->
+
+  % needs a in_tile(X,Y,geom(T)) instead of lists:member
+
+  case lists:member({X,Y},T) of
+    true ->
+      T;
+    false ->
+      get_new_tile({X,Y},Ts)
+  end.

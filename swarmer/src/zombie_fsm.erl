@@ -31,8 +31,8 @@ aimless(timeout,State) ->
 			OldBearing
 	end,
 	P = calc_aimlessbearing(Bearing,State#state.speed,State#state.x,State#state.y),
-	{NewX,NewY} = tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},P,Bearing,State#state.speed),
-	{next_state,aimless_search,State#state{x=NewX,y=NewY,bearing = Bearing},State#state.timeoutz}.
+	{{NewX,NewY},Tile,Viewer} = tile:update_entity(State#state.tile,{self(),{State#state.x,State#state.y}},P,Bearing,State#state.speed),
+	{next_state,aimless_search,State#state{x=NewX,y=NewY,bearing = Bearing, tile = Tile, viewer = Viewer},State#state.timeoutz}.
 
 aimless_search(timeout,State) ->
 	{next_state,calc_state(aimless),State,State#state.timeoutz}.
