@@ -203,15 +203,26 @@ handle_call(get_state,_From,State) ->
     {reply,State,State};
 
 % needs a way to check the pos for a something being there
-handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, #state{entity_map = EntityMap} = State) ->
+handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, 
+  #state{entity_map = EntityMap} = State) ->
     case in_tile(Pos,State#state.coords) of
         true ->     % pos in current tile, move entity
+            error_logger:error_report("Tried to move in own tile"),
             Tile = self(),                                  
             Viewer = State#state.viewer,
             NewMap = maps:put(ID,Pos,EntityMap);
         false ->    % pos not in tile, need to move the entity
-            Tile = enviroment:get_new_tile(Pos),
-            Viewer = tile:get_viewer(Tile),
+            error_logger:error_report("Tried to move out of tile"),
+            {Tile,Viewer} = case catch enviroment:get_new_tile(ID,Pos) of
+                {'EXIT', _} ->
+                    error_logger:error_report("balls"),
+                    {self(), State#state.viewer};
+                kill_zombie ->
+                    
+                    {ok, you_dead};
+                Value ->
+                    Value
+            end,
             NewMap = maps:remove(ID,EntityMap)
     end,
     update_viewers(State#state.neighbours, NewMap),
@@ -275,11 +286,11 @@ add_unique(ID, {X,Y}, Map) ->
 
 
 build_report(EntityMap) ->
-    DictList = maps:to_list(EntityMap),
+    MapList = maps:to_list(EntityMap),
     lists:map(
         fun({ID,{X,Y}}) ->
             [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
-        end, DictList).
+        end, MapList).
 
 update_viewers([], _EntityMap) -> 
     [];
@@ -319,5 +330,5 @@ in_tile({Xpos,Ypos},{Xo,Yo,Xl,Yl,_Size}) ->
 %   if yes, tile:update as normal
 %   if no, ask enviroment for new tile
 %       tile = new tile, viewer = new tile
-%      remove from old tile, add to new
+%      remove Entity from old tile, add to new
 % move to the new pos
