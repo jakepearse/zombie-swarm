@@ -18,6 +18,8 @@ handle_info/2,init/1,terminate/2]).
 -record(state,{
 % a canonical list of tile PID's
   tileList=[],
+% map of tile Pid's and there geometry
+  geometryMap = maps:new(),
 % a canonical list of entities
   swarm = [],
 % map viewer PID's to respective tiles
@@ -129,7 +131,7 @@ handle_call(get_state,_From,State) ->
     {reply,State,State};
 
 handle_call({get_new_tile,Pos},_From,State) ->
-    NewTile = get_new_tile(Pos,State#state.tileList),
+    NewTile = get_new_tile(Pos, State#state.tileList, State#state.geometryMap),
     {reply,NewTile,State}.
 
 handle_call(terminate,State) ->
@@ -226,7 +228,10 @@ get_tile(_Xpos,_Ypos,[],State) ->
 
 get_tile(Xpos,Ypos,TL,State) ->
   [H|T] = TL,
-  case in_tile(Xpos,Ypos,tile:get_geometry(H)) of
+  Geom = tile:get_geometry(H),
+  State#state.geometryMap = maps:put(H,Geom,State#state.geometryMap),
+  error_logger:error_report(State#state.geometryMap),
+  case in_tile(Xpos,Ypos,Geom) of
     true -> {H,proplists:get_value(H,State#state.viewerPropList)};
     false -> get_tile(Xpos,Ypos,T,State)
   end.
@@ -288,14 +293,14 @@ test_neighbour(Xo,Yo,X,Y,Size) ->
       (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
 
 
-get_new_tile(_Pos,[]) -> [];
-get_new_tile({X,Y},[T|Ts]) ->
-
+get_new_tile(_Pos,[], _GeometryMap) -> [];
+get_new_tile({X,Y},[T|Ts], GeometryMap) ->
   % needs a in_tile(X,Y,geom(T)) instead of lists:member
-
-  case lists:member({X,Y},T) of
+  % Geometry = maps:get(T,GeometryMap),
+  case in_tile(X,Y,maps:get(T,GeometryMap)) of
     true ->
       T;
     false ->
-      get_new_tile({X,Y},Ts)
+      get_new_tile({X,Y},Ts,GeometryMap)
   end.
+
