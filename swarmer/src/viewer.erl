@@ -4,13 +4,16 @@
 -behaviour(gen_server).
 
 %%%% API
--export([start_link/0, add_tile/2,get_population/1,get_tiles/1]).
+-export([start_link/0,get_population/1,update_population/2]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/3,
 handle_info/2,init/1,terminate/2]).
 
--record(state, {id,tileDict=dict:new()}).
+-record(state, {tile_map=maps:new(),
+                population_map=maps:new() :: maps:map(),
+                zombieList :: list(),
+                humanList :: list()}).
 
 %%%%%%=============================================================================
 %%%%%% API
@@ -24,53 +27,37 @@ handle_info/2,init/1,terminate/2]).
 %start_link([Id]) -> gen_server:start_link({local,Id}, ?MODULE, [Id], []).
 start_link() -> gen_server:start_link(?MODULE, [], []).
 
-% exactly the same as update
-add_tile(Pid,{Tile,Entities}) ->
-  gen_server:cast(Pid,{add_tile,{Tile,Entities}}).
+update_population(Pid, {Tile,Entities}) ->
+    gen_server:cast(Pid,{update_population,Tile,Entities}).
 
 % returns the entire tileDict
 get_population(Pid) ->
-  gen_server:call(Pid,get_population).
-
-
-% returns a list of keys from the tileDict
-get_tiles(Pid) ->
-  gen_server:call(Pid,get_tiles).
-
-%stop_viewer(_Pid) ->
-    %gen_server:terminate(normal).
+    gen_server:call(Pid,get_population).
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
-%init([Id]) -> 
-%   {ok, #state{id=Id}}.
 init([]) -> 
    {ok, #state{}}. %new state record with default values
 
+handle_cast({update_population, Tile, Entities}, #state{population_map = PopMap} = State) ->
+    {noreply, State#state{population_map = maps:put(Tile,Entities,PopMap)}}.
+
 %get population - just dump the state out.
 handle_call(get_population,_From,State) ->
-  {reply,State#state.tileDict,State};
-
-% get tiles - dump the keys in the state dict
-handle_call(get_tiles,_From,State) ->
-  {reply,dict:fetch_keys(State#state.tileDict),State}.
-
-%handle_call(terminate,State) ->
-  %{stop,normal,State}.handle_call(terminate,State) ->
-  %{stop,normal,State}.
-
-%callback for add_tile
-handle_cast({add_tile,{Tile,Entities}},State) ->
-{noreply,State#state{tileDict = dict:store(Tile,Entities,State#state.tileDict)}}.
+    {reply,State#state.population_map,State}.
 
 % enxpected message
 handle_info(Msg,State) ->
-  io:format("Unexpected message: ~p~n",[Msg]),
-    {noreply,State}.
+    io:format("Unexpected message: ~p~n",[Msg]),
+        {noreply,State}.
 
 terminate(normal,_State) ->
     ok.
 
 code_change(_OldVsn, State,_Extra) ->
     {ok,State}.
+
+% Things Viewer Needs:
+%     get zombieList
+%     get humanList

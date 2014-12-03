@@ -4,13 +4,13 @@
 -behaviour(gen_server).
 
 %%% API
--export([start_link/0,make_grid/3,get_grid/0,get_grid_info/0,report/0]).
+-export([start_link/0,make_grid/3,get_grid/0,get_grid_info/0,report/0,get_new_tile/2]).
 
 %%%% internal functions for debugging these can be deleted later
 -export([get_state/0,set_swarm/1]).
 
 %%%% gen_server callbacks
--export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
+-export([code_change/3,handle_cast/2,handle_call/3,
 handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
@@ -18,6 +18,8 @@ handle_info/2,init/1,terminate/2]).
 -record(state,{
 % a canonical list of tile PID's
   tileList=[],
+% map of tile Pid's and there geometry
+  geometryMap = maps:new(),
 % a canonical list of entities
   swarm = [],
 % map viewer PID's to respective tiles
@@ -98,6 +100,8 @@ set_swarm(Num) ->
   gen_server:cast(?MODULE,{swarm,Num}).
 
 
+get_new_tile(ID,Pos) ->
+  gen_server:call(?MODULE,{get_new_tile,ID,Pos},500).
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -125,11 +129,16 @@ handle_call(grid_info,_From,State) ->
   {reply,[{<<"rows">>,Rows},{<<"columns">>,Columns},{<<"tileSize">>,Size}],State};
 
 handle_call(get_state,_From,State) ->
-    {reply,State,State}.
+    {reply,State,State};
 
-handle_call(terminate,State) ->
-  {stop,normal,State}.
-
+handle_call({get_new_tile,ID,{X,Y}},{ThisTile, _} = _From,State) ->
+    case get_tile(X,Y,State#state.tileList,State, ThisTile) of
+      {Tile, Viewer} ->
+        tile:summon_entity(Tile,{ID,{X,Y}}),
+        {reply,{Tile,Viewer},State};
+      kill_zombie ->
+        {reply, kill_zombie, State}
+    end.
 % casts
 
 handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
@@ -142,7 +151,6 @@ handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
 handle_cast({swarm,Num},State) ->
   Swarm=create_swarm(State,Num),
   {noreply,State#state{swarm=Swarm}}.
-
 
 % other gen_server stuff
 
@@ -214,17 +222,23 @@ create_swarm(State,Num,List) ->
   create_swarm(State,Num-1,List++[Zombie]).
 
 
-%% search for a tile by X,Y in the viewerPropList
-get_tile(_Xpos,_Ypos,[],State) -> 
-  [{Tile,Viewer}|_T] = State#state.viewerPropList,
-  {Tile,Viewer};
 
-get_tile(Xpos,Ypos,TL,State) ->
-  [H|T] = TL,
-  case in_tile(Xpos,Ypos,tile:get_geometry(H)) of
-    true -> {H,proplists:get_value(H,State#state.viewerPropList)};
-    false -> get_tile(Xpos,Ypos,T,State)
-  end.
+
+%% search for a tile by X,Y in the viewerPropList
+get_tile(Xpos,Ypos, TL, State) ->
+  get_tile(Xpos, Ypos, TL, State, notarealtile).
+
+get_tile(_Xpos,_Ypos,[],_State, _ThisTile) -> 
+  error_logger:error_report("get tile failed"),
+  %this needs to change
+  kill_zombie;
+get_tile(Xpos, Ypos, [ThisTile | TL], State, ThisTile) ->
+  get_tile(Xpos, Ypos, TL, State, ThisTile);
+get_tile(Xpos,Ypos,[H|TL],State, ThisTile) ->
+case in_tile(Xpos,Ypos,tile:get_geometry(H)) of
+  true -> {H,proplists:get_value(H,State#state.viewerPropList)};
+  false -> get_tile(Xpos,Ypos,TL,State, ThisTile)
+end.
 
 %% Boolean check of wheter a set of X,Y is within the tile Geom
 in_tile(Xpos,Ypos,Geom) ->
@@ -281,5 +295,4 @@ test_neighbour(Xo,Yo,X,Y,Size) ->
       (X =:= Xo + Size) or (X =:= Xo) or (X =:= Xo - Size)
       andalso
       (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
-
 
