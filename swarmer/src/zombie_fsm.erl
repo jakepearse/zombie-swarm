@@ -5,7 +5,8 @@
 -behaviour(gen_fsm).
 
 %gen_fsm implementation
--export([code_change/4,handle_event/3,handle_sync_event/4,handle_info/3,init/1,terminate/3]).
+-export([code_change/4,handle_event/3,handle_sync_event/4,
+		 handle_info/3,init/1,terminate/3]).
 
 -export([start_link/10,aimless/2,initial/2,aimless_search/2,active/2,
          active_search/2,chasing/2,chasing_search/2,calc_state/1,
@@ -14,7 +15,21 @@
 %API
 -export([get_position/1]).
 
--record(state, {id,tile,tile_size,num_columns,num_rows,viewer,speed,bearing,x,y,timeoutz,type}).
+-record(state, {id,
+				tile,
+				tile_size,
+				num_columns,
+				num_rows,
+				viewer,
+				speed,
+				bearing,
+				x,y,
+				timeoutz,
+				type}).
+
+%%%%%%==========================================================================
+%%%%%% API
+%%%%%%==========================================================================
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
 	gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
@@ -29,9 +44,9 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows}}.
 
-
-
-%States of fsm.	
+%%%%%%==========================================================================
+%%%%%% State Machine
+%%%%%%==========================================================================
 
 initial(start,State) ->
     gen_fsm:send_event_after(State#state.timeoutz, move),
@@ -55,7 +70,8 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             {stop, shutdown, State};
         false ->
             NewTile = 
-              case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
+            % This calculates if the zombie is still in it's initial tile
+            case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
                 {XTile, XTile, YTile, YTile} -> % In same tile
                     Tile;
                 {_, NewXTile, _, NewYTile} ->
@@ -89,14 +105,18 @@ chasing_search(move,State) ->
 pause(unpause,State) ->
     gen_fsm:send_event_after(State#state.timeoutz, move),
 	{next_state,aimless,State}.
-%Events for fsm.	
+
+%%%%%%==========================================================================
+%%%%%% Event Handling
+%%%%%%==========================================================================
+
 start(Pid) ->
 	gen_fsm:send_event(Pid,start).
 unpause(Pid) -> 
 	gen_fsm:send_event(Pid,unpause).
 calc_state(_Current_state) ->
 	aimless.
-
+	
 calc_aimlessbearing(Rand,Speed,X,Y) ->
 	trigstuff:findcoordinates(Rand,Speed,X,Y).
 %stuff for gen_fsm.
@@ -111,14 +131,4 @@ ok.
 
 handle_sync_event(get_position, _From, StateName, #state{x = X, y = Y} = StateData) ->
     {reply,{ok,{X, Y}},StateName,StateData}.
-
-%% Notes
-
-% method of moving (dumb movement)
-% 	decide on a bearing, based on prob
-%	ask the viewer if it can go there
-% 		if yes, go there
-% 		if no, redecide 
-
-%% Possible deadlock with this method... Collision detection
 

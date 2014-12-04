@@ -45,8 +45,8 @@ handle_info/2,init/1,terminate/2]).
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-start_link() -> gen_server:start_link({local,?MODULE},?MODULE, [], []).
-
+start_link() -> 
+    gen_server:start_link({local,?MODULE},?MODULE, [], []).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -55,7 +55,6 @@ start_link() -> gen_server:start_link({local,?MODULE},?MODULE, [], []).
 %%%%------------------------------------------------------------------------------
 get_grid() ->
     gen_server:call(?MODULE,get_grid).
-
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -96,8 +95,6 @@ report() ->
 %%%%------------------------------------------------------------------------------
 set_swarm(Num) -> 
   gen_server:cast(?MODULE,{swarm,Num}).
-
-
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -233,12 +230,15 @@ in_tile(Xpos,Ypos,Geom) ->
  {Xt,Yt,Xl,Yl,_Size}=Geom,
  ((Xpos >= Xt) and (Xpos =< Xl)) and ((Ypos >= Yt) and (Ypos =< Yl)).
 
+%% Makes a report for the client.
+%% This report contains a list of lists, built from polling the zombie_sup
+%% for current position of all it's children.
 make_report() ->
     lists:filtermap(
         fun({_Id, Pid, _Type, _Modules}) ->
             case zombie_fsm:get_position(Pid) of
                 {ok, {X, Y}} ->
-                   {true, [{id, list_to_binary(pid_to_list(Pid))}, {x, X}, {y, Y}]};
+                   {true,[{id,list_to_binary(pid_to_list(Pid))}, {x,X}, {y,Y}]};
                 _ ->
                     false
             end
@@ -279,5 +279,3 @@ test_neighbour(Xo,Yo,X,Y,Size) ->
       (X =:= Xo + Size) or (X =:= Xo) or (X =:= Xo - Size)
       andalso
       (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
-
-
