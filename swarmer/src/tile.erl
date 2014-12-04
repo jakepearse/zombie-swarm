@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%%% API
--export([start_link/3]).
+-export([start_link/4]).
 
 %%%% gen_server callbacks
 -export([init/1,
@@ -59,9 +59,9 @@
 %%%% Start the server.
 %%%% @end
 %%%%----------------------------------------------------------------------------
--spec start_link(coord(),coord(),pos_integer()) -> ok.
-start_link(X,Y,Size) ->
-    gen_server:start_link(?MODULE, [X,Y,Size], []).
+-spec start_link(atom(), coord(),coord(),pos_integer()) -> ok.
+start_link(Name,X,Y,Size) ->
+    gen_server:start_link(?MODULE, [Name,X,Y,Size], []).
 
 %%%%-Calls----------------------------------------------------------------------
 %%%%----------------------------------------------------------------------------
@@ -170,7 +170,8 @@ terminate(Pid) ->
 %%%%%% gen_server Callbacks
 %%%%%%==========================================================================
 
-init([X,Y,Size]) ->
+init([Name,X,Y,Size]) ->
+    erlang:register(Name, self()),
     set_geometry(self(),X,Y,Size),
     {ok, #state{}}.
 
@@ -201,9 +202,8 @@ handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_map =EntityMap} =State)->
     {noreply,State#state{entity_map = NewMap}};
 
 %%%% Handle delete entity calls
-handle_cast({remove_entity,{ID,{_,_}}},#state{entity_map =EntityMap} =State)->
-    {noreply,State#state{entity_map = 
-      maps:remove(ID,EntityMap)}};
+handle_cast({remove_entity,ID},#state{entity_map =EntityMap} =State)->
+    {noreply,State#state{entity_map = maps:remove(ID,EntityMap)}};
 
 %%%% Handle set geometry calls
 handle_cast({set_geometry, X, Y, Size}, State) ->

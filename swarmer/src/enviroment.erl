@@ -166,9 +166,11 @@ make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize) ->
 make_row(_TileSup,_RowCounter,Columns,ColumnCounter,_TileSize,Row) when ColumnCounter > Columns -1 ->
   Row;
 make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize,Row) ->
+  Name = list_to_atom("tile" ++  "X" ++ integer_to_list(ColumnCounter) ++  "Y" ++ integer_to_list(RowCounter)),
   {ok,Tile} = supervisor:start_child(TileSup,
-                                        [RowCounter*TileSize,
+                                        [Name,
                                         ColumnCounter*TileSize,
+                                        RowCounter*TileSize,
                                         TileSize]),
   make_row(TileSup,RowCounter,Columns,ColumnCounter +1,TileSize,
             Row++[Tile]).
@@ -199,14 +201,15 @@ create_swarm(State,Num) ->
 
 create_swarm(_State,0,List) -> List;
 
-create_swarm(State,Num,List) ->
-  GridXSize=State#state.tileSize*State#state.columns,
-  GridYSize=State#state.tileSize*State#state.rows,
+create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, 
+                    tileList = TileList, zombieSup = ZombieSup} = State,Num,List) ->
+  GridXSize=TileSize*Columns,
+  GridYSize=TileSize*Rows,
   Xpos = random:uniform(GridXSize),
   Ypos= random:uniform(GridYSize),
-  {Tile,Viewer} = get_tile(Xpos,Ypos,State#state.tileList,State),
+  {Tile,Viewer} = get_tile(Xpos,Ypos,TileList,State),
   % zombie now takes {X,Y,Tile,Viewer,Speed,Bearing,Timeout}
-  {ok,Zombie}=supervisor:start_child(State#state.zombieSup,[Xpos,Ypos,Tile,Viewer,1,0,300]),
+  {ok,Zombie}=supervisor:start_child(ZombieSup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
  %temporary fix
  zombie_fsm:start(Zombie),
   tile:summon_entity(Tile,{Zombie,{Xpos,Ypos}}),
@@ -231,10 +234,14 @@ in_tile(Xpos,Ypos,Geom) ->
  ((Xpos >= Xt) and (Xpos =< Xl)) and ((Ypos >= Yt) and (Ypos =< Yl)).
 
 make_report() ->
-    lists:map(
+    lists:filtermap(
         fun({_Id, Pid, _Type, _Modules}) ->
-            {X, Y} = zombie_fsm:get_position(Pid),
-            [{id, list_to_binary(pid_to_list(Pid))}, {x, X}, {y, Y}]
+            case zombie_fsm:get_position(Pid) of
+                {ok, {X, Y}} ->
+                   {true, [{id, list_to_binary(pid_to_list(Pid))}, {x, X}, {y, Y}]};
+                _ ->
+                    false
+            end
         end, supervisor:which_children(zombie_sup)).
 
 make_neighbourhood(TileList,ViewerPropList) ->
