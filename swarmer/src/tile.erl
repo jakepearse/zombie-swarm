@@ -15,8 +15,7 @@
          code_change/3]).
 
 %%%% tile functions
--export([get_population/1,
-        summon_entity/2,
+-export([summon_entity/2,
         remove_entity/2,
         update_entity/5,
         set_geometry/4,
@@ -65,16 +64,6 @@ start_link(X,Y,Size) ->
     gen_server:start_link(?MODULE, [X,Y,Size], []).
 
 %%%%-Calls----------------------------------------------------------------------
-
-%%%%----------------------------------------------------------------------------
-%%%% @doc
-%%%% Return the population of the tile.
-%%%% @end
-%%%%----------------------------------------------------------------------------
--spec get_population(pid()) -> ok.
-get_population(Pid) ->
-    gen_server:call(Pid, get_population).
-
 %%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Return the geometry of the tile.
@@ -186,11 +175,6 @@ init([X,Y,Size]) ->
     {ok, #state{}}.
 
 %%%%-Calls----------------------------------------------------------------------
-
-handle_call(get_population, _From, State) ->
-    Report = build_report(State#state.entity_map),
-    {reply, Report, State};
-
 handle_call(get_geometry,_From,State) ->
     {reply,State#state.coords, State};
 
@@ -263,14 +247,6 @@ add_unique(ID, {X,Y}, Map) ->
         true ->
             add_unique(ID, {X+1,Y+1}, Map)
     end.
-
-
-build_report(EntityMap) ->
-    DictList = maps:to_list(EntityMap),
-    lists:map(
-        fun({ID,{X,Y}}) ->
-            [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
-        end, DictList).
 
 update_viewers([], _EntityMap) -> 
     [];

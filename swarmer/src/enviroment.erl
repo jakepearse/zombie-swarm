@@ -109,10 +109,9 @@ init([]) ->
   {ok,Z} = zombie_sup:start_link([]),
    {ok, #state{viewerSup=V,tileSup=T, zombieSup=Z}}. %new state record with default values
 
-%%% calls
-
+%%% calls   
 handle_call(report,_From,State) ->
-    Report = make_report(State#state.tileList), 
+    Report = make_report(), 
     {reply,Report,State};
 
 handle_call(get_grid,_From,State) ->
@@ -231,20 +230,12 @@ in_tile(Xpos,Ypos,Geom) ->
  {Xt,Yt,Xl,Yl,_Size}=Geom,
  ((Xpos >= Xt) and (Xpos =< Xl)) and ((Ypos >= Yt) and (Ypos =< Yl)).
 
-%% Build a list of the population of every tile
-make_report(TileList) -> 
-  make_report(TileList, []).
-
-make_report([],PopList) -> 
-  PopList;
-make_report(TileList,PopList) ->
-  [X|Xs] = TileList,
-  NewPop = tile:get_population(X),
-  NewPopList = PopList ++ NewPop,
-  make_report(Xs,NewPopList).
-
-
-
+make_report() ->
+    lists:map(
+        fun({_Id, Pid, _Type, _Modules}) ->
+            {X, Y} = zombie_fsm:get_position(Pid),
+            [{id, list_to_binary(pid_to_list(Pid))}, {x, X}, {y, Y}]
+        end, supervisor:which_children(zombie_sup)).
 
 make_neighbourhood(TileList,ViewerPropList) ->
   ViewerGeomList = setup_neighbours(ViewerPropList),
