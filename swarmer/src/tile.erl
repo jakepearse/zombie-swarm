@@ -18,7 +18,6 @@
 -export([summon_entity/2,
         remove_entity/2,
         update_entity/5,
-        set_geometry/4,
         get_geometry/1,
         set_viewer/2,
         get_viewer/1,
@@ -124,15 +123,6 @@ remove_entity(Pid, Entity) ->
 
 %%%%----------------------------------------------------------------------------
 %%%% @doc
-%%%% Set the boundaries of the tile.
-%%%% @end
-%%%%----------------------------------------------------------------------------
--spec set_geometry(pid(),coord(),coord(),pos_integer()) -> ok.
-set_geometry(Pid,Xorigin,Yorigin,Size) ->
-    gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
-
-%%%%----------------------------------------------------------------------------
-%%%% @doc
 %%%% Return the state of the tile.
 %%%% @end
 %%%%----------------------------------------------------------------------------
@@ -172,8 +162,8 @@ terminate(Pid) ->
 
 init([Name,X,Y,Size]) ->
     erlang:register(Name, self()),
-    set_geometry(self(),X,Y,Size),
-    {ok, #state{}}.
+    {ok, #state{xorigin = X, yorigin = Y, xlimit = X+Size-1, ylimit = Y+Size-1, 
+                coords = {X,Y,X+Size-1,Y+Size-1,Size}}}.
 
 %%%%-Calls----------------------------------------------------------------------
 handle_call(get_geometry,_From,State) ->
@@ -204,11 +194,6 @@ handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_map =EntityMap} =State)->
 %%%% Handle delete entity calls
 handle_cast({remove_entity,ID},#state{entity_map =EntityMap} =State)->
     {noreply,State#state{entity_map = maps:remove(ID,EntityMap)}};
-
-%%%% Handle set geometry calls
-handle_cast({set_geometry, X, Y, Size}, State) ->
-    {noreply,State#state{xorigin = X, yorigin = Y, xlimit = X+Size-1, 
-        ylimit = Y+Size-1, coords = {X,Y,X+Size-1,Y+Size-1,Size}}};
 
 %%%% Handles setting of tiles viewer
 handle_cast({set_viewer, ViewerPid}, State) ->
