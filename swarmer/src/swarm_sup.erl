@@ -11,6 +11,12 @@ start_link([]) ->
 	supervisor:start_link({local,?MODULE}, ?MODULE, []).
 
 init([]) ->
-	{ok,{{one_for_one,1,60},
-  		[{enviroment, {enviroment,start_link,[]},
-    	permanent,1000,worker,[enviroment]}]}}.
+    Environment = {enviroment, {enviroment,start_link,[]},
+                    permanent,1000,worker,[enviroment]},
+    TileSup = {tile_sup, {tile_sup, start_link, []},
+                    permanent,brutal_kill,supervisor,[tile_sup]},
+    ViewerSup = {viewer_sup, {viewer_sup, start_link, []},
+                    permanent,brutal_kill,supervisor,[viewer_sup]},
+    ZombieSup = {zombie_sup, {zombie_sup, start_link, []},
+                    permanent,brutal_kill,supervisor,[zombie_sup]},
+	{ok,{{one_for_one,1,60},[Environment,TileSup, ViewerSup, ZombieSup]}}.
