@@ -13,4 +13,4 @@ start_link() ->
 init([]) ->
 	{ok,{{simple_one_for_one,1,60},
   		[{normal_tile, {tile,start_link,[]},
-    	permanent,1000,worker,[tile]}]}}.
+    	permanent,brutal_kill,worker,[tile]}]}}.

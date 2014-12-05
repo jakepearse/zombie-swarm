@@ -1,7 +1,6 @@
 -module(zombie_fsm).
 -author("Robert Hales rsjh3@kent.ac.uk").
 -define(AIMLESS_STAY_COURSE, 8).
--define(DEFAULT_GET_POS_TIMEOUT, 50).
 
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
@@ -46,7 +45,7 @@ unpause(Pid) ->
     gen_fsm:send_event(Pid,unpause).
 
 get_state(Pid) ->
-    catch gen_fsm:sync_send_all_state_event(Pid, get_state, ?DEFAULT_GET_POS_TIMEOUT).
+    catch gen_fsm:sync_send_all_state_event(Pid, get_state).
 
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
 	random:seed(erlang:now()),

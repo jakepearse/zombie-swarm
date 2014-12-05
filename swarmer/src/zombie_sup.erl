@@ -12,4 +12,4 @@ supervisor:start_link({local,?MODULE}, ?MODULE, []).
 init([]) ->
 {ok,{{simple_one_for_one,1,60},
   [{normal_zombie, {zombie_fsm,start_link,[]},
-    temporary,1000,worker,[zombie_fsm]}]}}.
+    temporary,500,worker,[zombie_fsm]}]}}.

@@ -12,4 +12,4 @@ supervisor:start_link({local,?MODULE}, ?MODULE, []).
 init([]) ->
 {ok,{{simple_one_for_one,1,60},
   [{normal_viewer, {viewer,start_link,[]},
-    permanent,1000,worker,[viewer]}]}}.
+    permanent,brutal_kill,worker,[viewer]}]}}.

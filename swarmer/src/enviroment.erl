@@ -125,9 +125,16 @@ handle_call(terminate,State) ->
 % casts
 
 handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
+  %%kinda hacky but works....kill supervisors, start supervisors, why not....
   %kill entities
+  supervisor:terminate_child(swarm_sup, zombie_sup),
+  supervisor:restart_child(swarm_sup, zombie_sup),
   %Kill tiles
+  supervisor:terminate_child(swarm_sup, tile_sup),
+  supervisor:restart_child(swarm_sup, tile_sup),
   %Kill viewers
+  supervisor:terminate_child(swarm_sup, viewer_sup),
+  supervisor:restart_child(swarm_sup, viewer_sup),
   Grid = populate_grid(Rows,Columns,TileSize),
   Viewers=add_viewers(Grid),
   
@@ -135,7 +142,10 @@ handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
   {noreply,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers}};
 
 handle_cast({swarm,Num},State) ->
-  %kill all entities
+  %%kinda hacky but works....kill supervisors, start supervisors, why not....
+  %kill entities
+  supervisor:terminate_child(swarm_sup, zombie_sup),
+  supervisor:restart_child(swarm_sup, zombie_sup),
   create_swarm(State,Num),
   {noreply,State}.
 
