@@ -52,8 +52,8 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
 	random:seed(erlang:now()),
 	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
                        bearing=random:uniform(360), timeoutz=Timeout,type =zombie,
-                       tile_size = TileSize, num_columns = NumColumns, 
-                       num_rows = NumRows}}.
+                       tile_size = TileSize, num_columns = NumColumns-1, 
+                       num_rows = NumRows-1}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
