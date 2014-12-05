@@ -45,8 +45,8 @@ handle_info/2,init/1,terminate/2]).
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-start_link() -> gen_server:start_link({local,?MODULE},?MODULE, [], []).
-
+start_link() -> 
+    gen_server:start_link({local,?MODULE},?MODULE, [], []).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -55,7 +55,6 @@ start_link() -> gen_server:start_link({local,?MODULE},?MODULE, [], []).
 %%%%------------------------------------------------------------------------------
 get_grid() ->
     gen_server:call(?MODULE,get_grid).
-
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -97,8 +96,6 @@ report() ->
 set_swarm(Num) -> 
   gen_server:cast(?MODULE,{swarm,Num}).
 
-
-
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
@@ -109,10 +106,9 @@ init([]) ->
   {ok,Z} = zombie_sup:start_link([]),
    {ok, #state{viewerSup=V,tileSup=T, zombieSup=Z}}. %new state record with default values
 
-%%% calls
-
+%%% calls   
 handle_call(report,_From,State) ->
-    Report = make_report(State#state.tileList), 
+    Report = make_report(), 
     {reply,Report,State};
 
 handle_call(get_grid,_From,State) ->
@@ -167,9 +163,11 @@ make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize) ->
 make_row(_TileSup,_RowCounter,Columns,ColumnCounter,_TileSize,Row) when ColumnCounter > Columns -1 ->
   Row;
 make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize,Row) ->
+  Name = list_to_atom("tile" ++  "X" ++ integer_to_list(ColumnCounter) ++  "Y" ++ integer_to_list(RowCounter)),
   {ok,Tile} = supervisor:start_child(TileSup,
-                                        [RowCounter*TileSize,
+                                        [Name,
                                         ColumnCounter*TileSize,
+                                        RowCounter*TileSize,
                                         TileSize]),
   make_row(TileSup,RowCounter,Columns,ColumnCounter +1,TileSize,
             Row++[Tile]).
@@ -200,14 +198,15 @@ create_swarm(State,Num) ->
 
 create_swarm(_State,0,List) -> List;
 
-create_swarm(State,Num,List) ->
-  GridXSize=State#state.tileSize*State#state.columns,
-  GridYSize=State#state.tileSize*State#state.rows,
+create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, 
+                    tileList = TileList, zombieSup = ZombieSup} = State,Num,List) ->
+  GridXSize=TileSize*Columns,
+  GridYSize=TileSize*Rows,
   Xpos = random:uniform(GridXSize),
   Ypos= random:uniform(GridYSize),
-  {Tile,Viewer} = get_tile(Xpos,Ypos,State#state.tileList,State),
+  {Tile,Viewer} = get_tile(Xpos,Ypos,TileList,State),
   % zombie now takes {X,Y,Tile,Viewer,Speed,Bearing,Timeout}
-  {ok,Zombie}=supervisor:start_child(State#state.zombieSup,[Xpos,Ypos,Tile,Viewer,1,0,300]),
+  {ok,Zombie}=supervisor:start_child(ZombieSup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
  %temporary fix
  zombie_fsm:start(Zombie),
   tile:summon_entity(Tile,{Zombie,{Xpos,Ypos}}),
@@ -231,20 +230,19 @@ in_tile(Xpos,Ypos,Geom) ->
  {Xt,Yt,Xl,Yl,_Size}=Geom,
  ((Xpos >= Xt) and (Xpos =< Xl)) and ((Ypos >= Yt) and (Ypos =< Yl)).
 
-%% Build a list of the population of every tile
-make_report(TileList) -> 
-  make_report(TileList, []).
-
-make_report([],PopList) -> 
-  PopList;
-make_report(TileList,PopList) ->
-  [X|Xs] = TileList,
-  NewPop = tile:get_population(X),
-  NewPopList = PopList ++ NewPop,
-  make_report(Xs,NewPopList).
-
-
-
+%% Makes a report for the client.
+%% This report contains a list of lists, built from polling the zombie_sup
+%% for current position of all it's children.
+make_report() ->
+    lists:filtermap(
+        fun({_Id, Pid, _Type, _Modules}) ->
+            case zombie_fsm:get_position(Pid) of
+                {ok, {X, Y}} ->
+                   {true,[{id,list_to_binary(pid_to_list(Pid))}, {x,X}, {y,Y}]};
+                _ ->
+                    false
+            end
+        end, supervisor:which_children(zombie_sup)).
 
 make_neighbourhood(TileList,ViewerPropList) ->
   ViewerGeomList = setup_neighbours(ViewerPropList),
@@ -281,5 +279,3 @@ test_neighbour(Xo,Yo,X,Y,Size) ->
       (X =:= Xo + Size) or (X =:= Xo) or (X =:= Xo - Size)
       andalso
       (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
-
-

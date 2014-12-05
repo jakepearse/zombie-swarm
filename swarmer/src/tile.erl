@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%%% API
--export([start_link/3]).
+-export([start_link/4]).
 
 %%%% gen_server callbacks
 -export([init/1,
@@ -15,11 +15,9 @@
          code_change/3]).
 
 %%%% tile functions
--export([get_population/1,
-        summon_entity/2,
+-export([summon_entity/2,
         remove_entity/2,
         update_entity/5,
-        set_geometry/4,
         get_geometry/1,
         set_viewer/2,
         get_viewer/1,
@@ -43,13 +41,13 @@
 %%%% neihbours - a list of the neighbouring tiles viewers
 
 -record(state, {entity_map=maps:new() :: maps:maps(),
-                    xorigin  ::  coord(),
-                    yorigin  ::  coord(),
-                    xlimit  ::  coord(),
-                    ylimit  ::  coord(),
-                    coords  ::  tuple(),
-                    viewer  ::  pid(),
-                    neighbours  ::  [pid()]}). 
+                xorigin  ::  coord(),
+                yorigin  ::  coord(),
+                xlimit  ::  coord(),
+                ylimit  ::  coord(),
+                coords  ::  tuple(),
+                viewer  ::  pid(),
+                neighbours  ::  [pid()]}). 
 
 %%%%%%==========================================================================
 %%%%%% API
@@ -60,21 +58,11 @@
 %%%% Start the server.
 %%%% @end
 %%%%----------------------------------------------------------------------------
--spec start_link(coord(),coord(),pos_integer()) -> ok.
-start_link(X,Y,Size) ->
-    gen_server:start_link(?MODULE, [X,Y,Size], []).
+-spec start_link(atom(), coord(),coord(),pos_integer()) -> ok.
+start_link(Name,X,Y,Size) ->
+    gen_server:start_link(?MODULE, [Name,X,Y,Size], []).
 
 %%%%-Calls----------------------------------------------------------------------
-
-%%%%----------------------------------------------------------------------------
-%%%% @doc
-%%%% Return the population of the tile.
-%%%% @end
-%%%%----------------------------------------------------------------------------
--spec get_population(pid()) -> ok.
-get_population(Pid) ->
-    gen_server:call(Pid, get_population).
-
 %%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Return the geometry of the tile.
@@ -135,15 +123,6 @@ remove_entity(Pid, Entity) ->
 
 %%%%----------------------------------------------------------------------------
 %%%% @doc
-%%%% Set the boundaries of the tile.
-%%%% @end
-%%%%----------------------------------------------------------------------------
--spec set_geometry(pid(),coord(),coord(),pos_integer()) -> ok.
-set_geometry(Pid,Xorigin,Yorigin,Size) ->
-    gen_server:cast(Pid, {set_geometry, Xorigin, Yorigin, Size}).
-
-%%%%----------------------------------------------------------------------------
-%%%% @doc
 %%%% Return the state of the tile.
 %%%% @end
 %%%%----------------------------------------------------------------------------
@@ -181,16 +160,13 @@ terminate(Pid) ->
 %%%%%% gen_server Callbacks
 %%%%%%==========================================================================
 
-init([X,Y,Size]) ->
-    set_geometry(self(),X,Y,Size),
-    {ok, #state{}}.
+init([Name,X,Y,Size]) ->
+    % this registers the name and pid of the process
+    erlang:register(Name, self()),
+    {ok, #state{xorigin = X, yorigin = Y, xlimit = X+Size-1, ylimit = Y+Size-1, 
+                coords = {X,Y,X+Size-1,Y+Size-1,Size}}}.
 
 %%%%-Calls----------------------------------------------------------------------
-
-handle_call(get_population, _From, State) ->
-    Report = build_report(State#state.entity_map),
-    {reply, Report, State};
-
 handle_call(get_geometry,_From,State) ->
     {reply,State#state.coords, State};
 
@@ -203,6 +179,8 @@ handle_call(get_neighbours,_From,State) ->
 handle_call(get_state,_From,State) ->
     {reply,State,State};
 
+%%%% Updates the entities position on the tile.
+%%%% Will also deal with a new entitiy being moved onto the tile
 handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, State) ->
     NewMap = maps:put(ID,Pos,State#state.entity_map),
     update_viewers(State#state.neighbours, NewMap),
@@ -211,20 +189,16 @@ handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, State) ->
 %%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
+%%%% This is only used for the initialisation stage of the application.
+%%%% No reply because the environment doesn't care where the new zombie ends up.
 handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_map =EntityMap} =State)->
     NewMap = add_unique(ID,{X,Y},EntityMap),
     update_viewers(State#state.neighbours, NewMap),
     {noreply,State#state{entity_map = NewMap}};
 
 %%%% Handle delete entity calls
-handle_cast({remove_entity,{ID,{_,_}}},#state{entity_map =EntityMap} =State)->
-    {noreply,State#state{entity_map = 
-      maps:remove(ID,EntityMap)}};
-
-%%%% Handle set geometry calls
-handle_cast({set_geometry, X, Y, Size}, State) ->
-    {noreply,State#state{xorigin = X, yorigin = Y, xlimit = X+Size-1, 
-        ylimit = Y+Size-1, coords = {X,Y,X+Size-1,Y+Size-1,Size}}};
+handle_cast({remove_entity,ID},#state{entity_map =EntityMap} =State)->
+    {noreply,State#state{entity_map = maps:remove(ID,EntityMap)}};
 
 %%%% Handles setting of tiles viewer
 handle_cast({set_viewer, ViewerPid}, State) ->
@@ -264,14 +238,6 @@ add_unique(ID, {X,Y}, Map) ->
             add_unique(ID, {X+1,Y+1}, Map)
     end.
 
-
-build_report(EntityMap) ->
-    DictList = maps:to_list(EntityMap),
-    lists:map(
-        fun({ID,{X,Y}}) ->
-            [{id,list_to_binary(pid_to_list(ID))},{x,X},{y,Y}]
-        end, DictList).
-
 update_viewers([], _EntityMap) -> 
     [];
 update_viewers([V|Vs], EntityMap) ->
@@ -286,16 +252,6 @@ update_viewers([V|Vs], EntityMap) ->
 
 % sys:get_state(Pid).
 
-% update_entity needs to be a call
-
-% tiles within tiles?
-%   quadtree like datastructure
-
-% ctrl + g > to line
-
 % TODO
 % Change what the get_population
 %   needs to return [["pid", X, Y, type, heading, speed, current_state]]
-
-% Need to work out when moving, if you remain in the time
-% if not, tell the neigbour that it now owns the zombie and remove zombie
