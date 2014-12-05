@@ -3,8 +3,11 @@
 
 -behaviour(gen_server).
 
+-include_lib("include/swarmer.hrl").
+
 %%% API
--export([start_link/0,make_grid/3,get_grid/0,get_grid_info/0,report/0]).
+-export([start_link/0,make_grid/3,get_grid/0,get_grid_info/0,report/0, 
+         pause_entities/0, unpause_entities/0]).
 
 %%%% internal functions for debugging these can be deleted later
 -export([get_state/0,set_swarm/1]).
@@ -95,6 +98,22 @@ report() ->
 %%%%------------------------------------------------------------------------------
 set_swarm(Num) -> 
   gen_server:cast(?MODULE,{swarm,Num}).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%% Pauses all running entities
+%%%% @end
+%%%%------------------------------------------------------------------------------
+pause_entities() -> 
+  do_pause_entities().
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%% Pauses all running entities
+%%%% @end
+%%%%------------------------------------------------------------------------------
+unpause_entities() -> 
+  do_unpause_entities().
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -236,13 +255,14 @@ in_tile(Xpos,Ypos,Geom) ->
 make_report() ->
     lists:filtermap(
         fun({_Id, Pid, _Type, _Modules}) ->
-            case zombie_fsm:get_position(Pid) of
-                {ok, {X, Y}} ->
-                   {true,[{id,list_to_binary(pid_to_list(Pid))}, {x,X}, {y,Y}]};
+            case zombie_fsm:get_state(Pid) of
+                {ok, #entity_status{id = ID, x = X, y = Y} = _EntityStatus} ->
+                   {true, [{id, list_to_binary(pid_to_list(ID))}, {x, X}, {y, Y}]};
                 _ ->
                     false
             end
         end, supervisor:which_children(zombie_sup)).
+%% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
 
 make_neighbourhood(TileList,ViewerPropList) ->
   ViewerGeomList = setup_neighbours(ViewerPropList),
@@ -279,3 +299,17 @@ test_neighbour(Xo,Yo,X,Y,Size) ->
       (X =:= Xo + Size) or (X =:= Xo) or (X =:= Xo - Size)
       andalso
       (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
+
+do_pause_entities() ->
+    lists:foreach(
+        fun({_Id, Pid, _Type, _Modules}) ->
+            zombie_fsm:pause(Pid)
+        end, supervisor:which_children(zombie_sup)).
+    %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
+
+do_unpause_entities() ->
+    lists:foreach(
+        fun({_Id, Pid, _Type, _Modules}) ->
+            zombie_fsm:unpause(Pid)
+        end, supervisor:which_children(zombie_sup)).
+    %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES

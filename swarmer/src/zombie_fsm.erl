@@ -2,6 +2,8 @@
 -author("Robert Hales rsjh3@kent.ac.uk").
 -define(AIMLESS_STAY_COURSE, 8).
 -define(DEFAULT_GET_POS_TIMEOUT, 50).
+
+-include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
 
 %gen_fsm implementation
@@ -10,32 +12,41 @@
 
 -export([start_link/10,aimless/2,initial/2,aimless_search/2,active/2,
          active_search/2,chasing/2,chasing_search/2,calc_state/1,
-         calc_aimlessbearing/4,start/1,unpause/1,pause/2]).
+         calc_aimlessbearing/4,start/1,pause/2]).
 
 %API
--export([get_position/1]).
+-export([get_state/1, pause/1, unpause/1]).
 
 -record(state, {id,
-				tile,
-				tile_size,
-				num_columns,
-				num_rows,
-				viewer,
-				speed,
-				bearing,
-				x,y,
-				timeoutz,
-				type}).
-
-%%%%%%==========================================================================
-%%%%%% API
-%%%%%%==========================================================================
+                tile,
+                tile_size,
+                num_columns,
+                num_rows,
+                viewer,
+                speed,
+                bearing,
+                x,
+                y,
+                timeoutz,
+                type,
+                paused_state}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
 	gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
 
-get_position(Pid) ->
-    catch gen_fsm:sync_send_all_state_event(Pid, get_position, ?DEFAULT_GET_POS_TIMEOUT).
+
+%%% API!
+start(Pid) ->
+    gen_fsm:send_event(Pid,start).
+
+pause(Pid) ->
+    gen_fsm:send_event(Pid, pause).
+
+unpause(Pid) -> 
+    gen_fsm:send_event(Pid,unpause).
+
+get_state(Pid) ->
+    catch gen_fsm:sync_send_all_state_event(Pid, get_state, ?DEFAULT_GET_POS_TIMEOUT).
 
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
 	random:seed(erlang:now()),
@@ -102,18 +113,17 @@ chasing(move,State) ->
 chasing_search(move,State) ->
     gen_fsm:send_event_after(State#state.timeoutz, move),
 	{next_state,calc_state(chasing),State}.
-pause(unpause,State) ->
+
+pause(move, State) -> 
+    %% If we get a move event start the timer again but don't actually move
+    %% Ensure we will move after unpause.
     gen_fsm:send_event_after(State#state.timeoutz, move),
-	{next_state,aimless,State}.
+    {next_state, pause, State};
+pause(unpause, #state{paused_state = PausedState} = State) ->
+	{next_state,PausedState,State}.
 
-%%%%%%==========================================================================
-%%%%%% Event Handling
-%%%%%%==========================================================================
+%Events for fsm.	
 
-start(Pid) ->
-	gen_fsm:send_event(Pid,start).
-unpause(Pid) -> 
-	gen_fsm:send_event(Pid,unpause).
 calc_state(_Current_state) ->
 	aimless.
 	
@@ -126,9 +136,14 @@ code_change(_,StateName,StateData,_) ->
 	{ok,StateName,StateData}.
 handle_info(_,StateName,StateData)->
 	{ok,StateName,StateData}.
-handle_event(_,_,_) ->
-ok.
 
-handle_sync_event(get_position, _From, StateName, #state{x = X, y = Y} = StateData) ->
-    {reply,{ok,{X, Y}},StateName,StateData}.
+handle_event(pause, StateName, StateData) ->
+    {next_state,pause,StateData#state{paused_state = StateName}}.
+
+handle_sync_event(get_state, _From, StateName, 
+                  #state{x = X, y = Y, speed = Speed, type = Type,
+                         bearing = Bearing} = StateData) ->
+    {reply,{ok,#entity_status{id = self(), x = X, y = Y, type = Type, 
+                              current_activity = StateName, speed = Speed,
+                              bearing = Bearing}},StateName,StateData}.
 
