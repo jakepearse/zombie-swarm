@@ -272,16 +272,18 @@ test_neighbour(Xo,Yo,X,Y,Size) ->
       andalso
       (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
 
+do_start_entities() ->
+    apply_to_all_entities(start).
+
 do_pause_entities() ->
-    lists:foreach(
-        fun({_Id, Pid, _Type, _Modules}) ->
-            zombie_fsm:pause(Pid)
-        end, supervisor:which_children(zombie_sup)).
-    %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
+    apply_to_all_entities(pause).
 
 do_unpause_entities() ->
+    apply_to_all_entities(unpause).
+
+apply_to_all_entities(Fun) ->
     lists:foreach(
         fun({_Id, Pid, _Type, _Modules}) ->
-            zombie_fsm:unpause(Pid)
+            zombie_fsm:Fun(Pid)
         end, supervisor:which_children(zombie_sup)).
     %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
