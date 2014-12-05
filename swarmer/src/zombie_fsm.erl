@@ -39,7 +39,7 @@ start(Pid) ->
     gen_fsm:send_event(Pid,start).
 
 pause(Pid) ->
-    gen_fsm:send_event(Pid, pause).
+    gen_fsm:send_all_state_event(Pid, pause).
 
 unpause(Pid) -> 
     gen_fsm:send_event(Pid,unpause).
