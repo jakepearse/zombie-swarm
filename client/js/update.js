@@ -1,11 +1,24 @@
 function update_circles(data,gridScale,swarmSize) {
-  var anim_time = Math.abs(0.3*swarmSize.value);
-  var svg = d3.select("svg");
+  //var anim_time = Math.abs(0.3*swarmSize.value);
+    var svg = d3.select("svg");
     svg.selectAll("circle")
-    .data(data)
-    .transition().attr("cx", function(d) { return d.x*gridScale; })
+    .data(data, function(d) { return d.id; })
+    .transition()
+    .attr("cx", function(d) { return d.x*gridScale; })
     .attr("cy", function(d) { return d.y*gridScale; })
-    .duration(anim_time);
+    .duration(300);
+   
+   svg.selectAll("circle")
+      .each(function(d,i) {
+        //Find corresponding pid in data list
+        for (var j=0;j<data.length;j++) {
+          if (data[j].id === d.id){
+            break;
+          } else {
+            if(j == (data.length -1)) {
+              d3.select(this).remove()
+            }
+          }
+        }
+      })
 }
-
-

@@ -5,7 +5,7 @@ function start() {
   
   //This sends the "update" message to the socket every 1000ms
   // and updates the circles with the recived data
-  setInterval(function() {doUpdate()},0);
+  setInterval(function() {doUpdate()},300);
   function doUpdate() {
     socket.send(dummy_json);
     socket.onmessage = function(evt) {
@@ -19,20 +19,6 @@ function start() {
   };
 };
 
-//function start() {
-  //inspector.value ="";
-  //var gridScale = document.getElementById('gridScale').value;
-  //var dummy_json = JSON.stringify({"type":"report"});
-  //socket.send(dummy_json);
-  //function loop (callback) {
-    //socket.onmessage = function(evt) {
-    //console.log(evt);
-    //callback(dummy_json);
-    //};
-  //};
-    //setInterval(function() {loop(socket.send)},800);
-//};
-    
 
 function setup_grid(arrity,tileSize,gridScale) {
   arrity = parseInt(arrity);

@@ -12,7 +12,7 @@
       <ul class="control-group">
         <li>
           <label for="arrity">Grid Arrity</label>
-          <input id="arrity" type="range" min="3" max="10" step="1" value="6" onChange="updateArrity(this.value)">
+          <input id="arrity" type="range" min="3" max="10" step="1" value="10" onChange="updateArrity(this.value)">
         </li>
         <li>
           <label for="tileSize">Tile Size</label>
@@ -29,7 +29,7 @@
       <ul class="control-group">
         <li>
           <label for="swarmSize">Swarm Size</label>
-          <input id="swarmSize" type="range" min="5" max="500" value="200" step="1"  />
+          <input id="swarmSize" type="range" min="5" max="500" value="50" step="1"  />
         </li>
         <li>
           <label for="simSpeed">Simulation Speed</label>
@@ -68,6 +68,7 @@
 </body>
 
 <script type="text/javascript">
+  var oldReport =[];
   var inspectList =[]; // global variables
   var inspector = document.getElementById("inspector");// global variables
   socket= new WebSocket('ws://localhost:8080/websocket');
