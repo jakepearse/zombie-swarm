@@ -75,7 +75,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             OldBearing
     end,
     {NewX, NewY} = calc_aimlessbearing(Bearing,X,Y),
-    case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * TileSize) or (NewY > NumRows * TileSize) of
+   case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
             {stop, shutdown, State};
         false ->
