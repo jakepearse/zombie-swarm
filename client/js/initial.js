@@ -76,15 +76,26 @@ function draw_circles(data,gridScale) {
       .data(data)
       .enter().append("circle")
       .on("click", function() {changeColour(this);})
-      .style("fill", "darkseagreen")
-      .style("stroke","seagreen")
+      .style("fill", fill_colour(this))
+      .style("stroke",stroke_colour(this))
       .style("stroke-width",0.5*gridScale)
       .attr("r", gridScale)
       .attr("cx", function(d) { return d.x*gridScale; })
       .attr("cy", function(d) { return d.y*gridScale; });
 }
 
+function fill_colour(ob) {
+  if (ob.type === "human") {
+    return "steel-blue";}
+    return "darkseagreen";
+    }
 
+function stroke_colour(ob){
+  if (ob.type === "human") {
+    return "forestgreen";}
+    return "seagreen";
+  }
+  
 function changeColour(object) {
   d3.select(object)
   .style("fill","tomato")
