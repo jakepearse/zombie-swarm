@@ -11,7 +11,7 @@
 
 -export([start_link/10,aimless/2,initial/2,aimless_search/2,active/2,
          active_search/2,chasing/2,chasing_search/2,calc_state/1,
-         calc_aimlessbearing/4,start/1,pause/2]).
+         calc_aimlessbearing/3,start/1,pause/2]).
 
 %API
 -export([get_state/1, pause/1, unpause/1]).
@@ -74,8 +74,8 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
         _ ->
             OldBearing
     end,
-    {NewX, NewY} = calc_aimlessbearing(Bearing,Speed,X,Y),
-    case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * TileSize) or (NewY > NumRows * TileSize) of
+    {NewX, NewY} = calc_aimlessbearing(Bearing,X,Y),
+   case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
             {stop, shutdown, State};
         false ->
@@ -126,8 +126,8 @@ pause(unpause, #state{paused_state = PausedState} = State) ->
 calc_state(_Current_state) ->
     aimless.
     
-calc_aimlessbearing(Rand,Speed,X,Y) ->
-    trigstuff:findcoordinates(Rand,Speed,X,Y).
+calc_aimlessbearing(Rand,X,Y) ->
+    trigstuff:findcoordinates(Rand,X,Y).
 %stuff for gen_fsm.
 terminate(_,_StateName, #state{tile = Tile} = _StateData) ->
     tile:remove_entity(Tile, self()),

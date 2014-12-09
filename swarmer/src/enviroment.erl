@@ -235,7 +235,7 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State
             Xpos = random:uniform(GridXSize),
             Ypos= random:uniform(GridYSize),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
-            {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
+            {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,300,0]),
             %temporary fix
             zombie_fsm:start(Zombie)
         end,lists:seq(1,Num)).
