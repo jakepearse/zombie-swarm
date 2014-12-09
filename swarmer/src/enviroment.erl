@@ -7,7 +7,7 @@
 
 %%% API
 -export([start_link/0,make_grid/3,get_grid_info/0,report/0, 
-         pause_entities/0, unpause_entities/0]).
+         pause_entities/0, unpause_entities/0, start_entities/0]).
 
 %%%% internal functions for debugging these can be deleted later
 -export([get_state/0,set_swarm/1,set_mob/1]).
@@ -91,6 +91,14 @@ set_mob(Num) ->
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
+%% create Num zombies and add add them to the tiles
+%%%% @end
+%%%%------------------------------------------------------------------------------
+start_entities() -> 
+  do_start_entities().
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
 %% Pauses all running entities
 %%%% @end
 %%%%------------------------------------------------------------------------------
@@ -99,7 +107,7 @@ pause_entities() ->
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
-%% Pauses all running entities
+%% Unpauses all running entities
 %%%% @end
 %%%%------------------------------------------------------------------------------
 unpause_entities() -> 
@@ -267,7 +275,7 @@ make_report() ->
                 _ ->
                     false
             end
-        end, supervisor:which_children(human_sup) ++ supervisor:which_children(zombie_sup)).
+        end, get_entities_list()).
 %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
 
 make_neighbourhood(TileList,ViewerPropList) ->
@@ -317,7 +325,9 @@ do_unpause_entities() ->
 
 apply_to_all_entities(Fun) ->
     lists:foreach(
-        fun({_Id, Pid, _Type, _Modules}) ->
-            zombie_fsm:Fun(Pid)
-        end, supervisor:which_children(zombie_sup)).
-    %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
+        fun({_Id, Pid, _Type, [Module]}) ->
+            Module:Fun(Pid)
+        end, get_entities_list()).
+
+get_entities_list() ->
+  supervisor:which_children(zombie_sup) ++ supervisor:which_children(human_sup).
