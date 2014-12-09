@@ -19,4 +19,6 @@ init([]) ->
                     permanent,infinity,supervisor,[viewer_sup]},
     ZombieSup = {zombie_sup, {zombie_sup, start_link, []},
                     permanent,infinity,supervisor,[zombie_sup]},
-	{ok,{{one_for_one,1,60},[Environment,TileSup, ViewerSup, ZombieSup]}}.
+    HumanSup = {human_sup, {human_sup, start_link, []},
+                permanent,infinity,supervisor,[human_sup]},
+	{ok,{{one_for_one,1,60},[Environment,TileSup,ViewerSup,ZombieSup,HumanSup]}}.

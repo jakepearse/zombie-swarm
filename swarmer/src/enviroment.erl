@@ -10,7 +10,7 @@
          pause_entities/0, unpause_entities/0]).
 
 %%%% internal functions for debugging these can be deleted later
--export([get_state/0,set_swarm/1]).
+-export([get_state/0,set_swarm/1,set_mob/1]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
@@ -83,6 +83,14 @@ set_swarm(Num) ->
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
+%% create Num zombies and add add them to the tiles
+%%%% @end
+%%%%------------------------------------------------------------------------------
+set_mob(Num) -> 
+  gen_server:cast(?MODULE,{mob,Num}).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
 %% Pauses all running entities
 %%%% @end
 %%%%------------------------------------------------------------------------------
@@ -128,7 +136,9 @@ handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
   %%kinda hacky but works....kill supervisors, start supervisors, why not....
   %kill entities
   supervisor:terminate_child(swarm_sup, zombie_sup),
+  supervisor:terminate_child(swarm_sup, human_sup),
   supervisor:restart_child(swarm_sup, zombie_sup),
+  supervisor:restart_child(swarm_sup, human_sup),
   %Kill tiles
   supervisor:terminate_child(swarm_sup, tile_sup),
   supervisor:restart_child(swarm_sup, tile_sup),
@@ -147,8 +157,15 @@ handle_cast({swarm,Num},State) ->
   supervisor:terminate_child(swarm_sup, zombie_sup),
   supervisor:restart_child(swarm_sup, zombie_sup),
   create_swarm(State,Num),
-  {noreply,State}.
+  {noreply,State};
 
+handle_cast({mob,Num},State) ->
+  %%kinda hacky but works....kill supervisors, start supervisors, why not....
+  %kill entities
+  supervisor:terminate_child(swarm_sup, human_sup),
+  supervisor:restart_child(swarm_sup, human_sup),
+  create_mob(State,Num),
+  {noreply,State}.
 
 % other gen_server stuff
 
@@ -215,6 +232,20 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State
             zombie_fsm:start(Zombie)
         end,lists:seq(1,Num)).
 
+%% Spawns Num randomly positioned humans
+create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,Num) ->
+    GridXSize=TileSize*Columns,
+    GridYSize=TileSize*Rows,
+    lists:foreach(
+        fun(_) ->
+            Xpos = random:uniform(GridXSize),
+            Ypos= random:uniform(GridYSize),
+            {Tile,Viewer} = get_tile(Xpos,Ypos,State),
+            {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
+            %temporary fix
+            human_fsm:start(Human)
+        end,lists:seq(1,Num)).
+
 %% search for a tile by X,Y in the viewerPropList
 get_tile(Xpos,Ypos,#state{viewerPropList = ViewerPropList, tileSize = TileSize}) -> 
   Tile = list_to_atom("tile" ++  "X" ++ integer_to_list(Xpos div TileSize) ++  "Y" ++ integer_to_list(Ypos div TileSize)),
@@ -226,14 +257,17 @@ get_tile(Xpos,Ypos,#state{viewerPropList = ViewerPropList, tileSize = TileSize})
 %% for current position of all it's children.
 make_report() ->
     lists:filtermap(
-        fun({_Id, Pid, _Type, _Modules}) ->
-            case zombie_fsm:get_state(Pid) of
-                {ok, #entity_status{id = ID, x = X, y = Y} = _EntityStatus} ->
-                   {true, [{id, list_to_binary(pid_to_list(ID))}, {x, X}, {y, Y}]};
+        fun({_Id, Pid, _Type, [Module]}) ->
+            case Module:get_state(Pid) of
+                {ok, #entity_status{id = ID, x = X, y = Y, 
+                                    speed = Speed, bearing = Bearing, 
+                                    type = Type} = _EntityStatus} ->
+                   {true, [{id, list_to_binary(pid_to_list(ID))},{type,Type}, 
+                            {x,X}, {y,Y}, {speed,Speed}, {bearing, Bearing}]};
                 _ ->
                     false
             end
-        end, supervisor:which_children(zombie_sup)).
+        end, supervisor:which_children(human_sup) ++ supervisor:which_children(zombie_sup)).
 %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
 
 make_neighbourhood(TileList,ViewerPropList) ->
