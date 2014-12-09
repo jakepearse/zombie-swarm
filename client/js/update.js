@@ -1,4 +1,5 @@
 function update_circles(data,gridScale,swarmSize) {
+  console.log(data);
   //var anim_time = Math.abs(0.3*swarmSize.value);
     var svg = d3.select("svg");
     svg.selectAll("circle")
