@@ -1,7 +1,6 @@
 -module(zombie_fsm).
 -author("Robert Hales rsjh3@kent.ac.uk").
 -define(AIMLESS_STAY_COURSE, 8).
--define(DEFAULT_GET_POS_TIMEOUT, 50).
 
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
@@ -40,20 +39,21 @@ start(Pid) ->
     gen_fsm:send_event(Pid,start).
 
 pause(Pid) ->
-    gen_fsm:send_event(Pid, pause).
+    gen_fsm:send_all_state_event(Pid, pause).
 
 unpause(Pid) -> 
     gen_fsm:send_event(Pid,unpause).
 
 get_state(Pid) ->
-    catch gen_fsm:sync_send_all_state_event(Pid, get_state, ?DEFAULT_GET_POS_TIMEOUT).
+    catch gen_fsm:sync_send_all_state_event(Pid, get_state).
 
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
 	random:seed(erlang:now()),
+    tile:summon_entity(Tile,{self(),{X,Y}}),
 	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
                        bearing=random:uniform(360), timeoutz=Timeout,type =zombie,
-                       tile_size = TileSize, num_columns = NumColumns-1, 
-                       num_rows = NumRows-1}}.
+                       tile_size = TileSize, num_columns = NumColumns, 
+                       num_rows = NumRows}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -77,7 +77,6 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 	{NewX, NewY} = calc_aimlessbearing(Bearing,Speed,X,Y),
     case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * TileSize) or (NewY > NumRows * TileSize) of
         true -> % We are off the screen!
-            tile:remove_entity(Tile, self()),
             {stop, shutdown, State};
         false ->
             NewTile = 
@@ -130,7 +129,8 @@ calc_state(_Current_state) ->
 calc_aimlessbearing(Rand,Speed,X,Y) ->
 	trigstuff:findcoordinates(Rand,Speed,X,Y).
 %stuff for gen_fsm.
-terminate(_,_StateName,_StateData) ->
+terminate(_,_StateName, #state{tile = Tile} = _StateData) ->
+    tile:remove_entity(Tile, self()),
 	ok.
 code_change(_,StateName,StateData,_) ->
 	{ok,StateName,StateData}.

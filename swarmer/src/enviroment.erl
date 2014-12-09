@@ -6,7 +6,7 @@
 -include_lib("include/swarmer.hrl").
 
 %%% API
--export([start_link/0,make_grid/3,get_grid/0,get_grid_info/0,report/0, 
+-export([start_link/0,make_grid/3,get_grid_info/0,report/0, 
          pause_entities/0, unpause_entities/0]).
 
 %%%% internal functions for debugging these can be deleted later
@@ -19,18 +19,8 @@ handle_info/2,init/1,terminate/2]).
 -define(SERVER, ?MODULE).
 
 -record(state,{
-% a canonical list of tile PID's
-  tileList=[],
-% a canonical list of entities
-  swarm = [],
 % map viewer PID's to respective tiles
   viewerPropList,
-% handle to viewer supervisor
-  viewerSup,
-% handle to tile supervisor
-  tileSup,
-% handle to zombie supervisor
-  zombieSup,
 % Number of tile rows
   rows,
 % number of tile columns
@@ -50,14 +40,6 @@ handle_info/2,init/1,terminate/2]).
 %%%%------------------------------------------------------------------------------
 start_link() -> 
     gen_server:start_link({local,?MODULE},?MODULE, [], []).
-
-%%%%------------------------------------------------------------------------------
-%%%% @doc
-%%%% Get the full tileList form the #state record
-%%%% @end
-%%%%------------------------------------------------------------------------------
-get_grid() ->
-    gen_server:call(?MODULE,get_grid).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -120,18 +102,13 @@ unpause_entities() ->
 %%%%%%=============================================================================
 
 init([]) -> 
-  {ok,V} = viewer_sup:start_link([]),
-  {ok,T} = tile_sup:start_link([]),
-  {ok,Z} = zombie_sup:start_link([]),
-   {ok, #state{viewerSup=V,tileSup=T, zombieSup=Z}}. %new state record with default values
+   {ok, #state{}}. %new state record with default values
 
 %%% calls   
 handle_call(report,_From,State) ->
     Report = make_report(), 
     {reply,Report,State};
 
-handle_call(get_grid,_From,State) ->
-  {reply,State#state.tileList,State};
 
 handle_call(grid_info,_From,State) ->
   Rows = State#state.rows,
@@ -148,15 +125,29 @@ handle_call(terminate,State) ->
 % casts
 
 handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
-  Grid = populate_grid(State#state.tileSup,Rows,Columns,TileSize),
-  Viewers=add_viewers(State#state.viewerSup,Grid),
+  %%kinda hacky but works....kill supervisors, start supervisors, why not....
+  %kill entities
+  supervisor:terminate_child(swarm_sup, zombie_sup),
+  supervisor:restart_child(swarm_sup, zombie_sup),
+  %Kill tiles
+  supervisor:terminate_child(swarm_sup, tile_sup),
+  supervisor:restart_child(swarm_sup, tile_sup),
+  %Kill viewers
+  supervisor:terminate_child(swarm_sup, viewer_sup),
+  supervisor:restart_child(swarm_sup, viewer_sup),
+  Grid = populate_grid(Rows,Columns,TileSize),
+  Viewers=add_viewers(Grid),
   
-  _=make_neighbourhood(Grid,Viewers),
-  {noreply,State#state{tileList=Grid,viewerPropList=Viewers,rows=Rows,columns=Columns,tileSize=TileSize}};
+  make_neighbourhood(Grid,Viewers),
+  {noreply,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers}};
 
 handle_cast({swarm,Num},State) ->
-  Swarm=create_swarm(State,Num),
-  {noreply,State#state{swarm=Swarm}}.
+  %%kinda hacky but works....kill supervisors, start supervisors, why not....
+  %kill entities
+  supervisor:terminate_child(swarm_sup, zombie_sup),
+  supervisor:restart_child(swarm_sup, zombie_sup),
+  create_swarm(State,Num),
+  {noreply,State}.
 
 
 % other gen_server stuff
@@ -177,77 +168,58 @@ code_change(_OldVsn, State,_Extra) ->
 
 
 %%%% called by populate grid to make a row of tiles %%%%%%%
-make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize) ->
-  make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize,[]).
-make_row(_TileSup,_RowCounter,Columns,ColumnCounter,_TileSize,Row) when ColumnCounter > Columns -1 ->
+make_row(RowCounter,Columns,ColumnCounter,TileSize) ->
+  make_row(RowCounter,Columns,ColumnCounter,TileSize,[]).
+make_row(_RowCounter,Columns,ColumnCounter,_TileSize,Row) when ColumnCounter > Columns -1 ->
   Row;
-make_row(TileSup,RowCounter,Columns,ColumnCounter,TileSize,Row) ->
+make_row(RowCounter,Columns,ColumnCounter,TileSize,Row) ->
   Name = list_to_atom("tile" ++  "X" ++ integer_to_list(ColumnCounter) ++  "Y" ++ integer_to_list(RowCounter)),
-  {ok,Tile} = supervisor:start_child(TileSup,
+  {ok,_} = supervisor:start_child(tile_sup,
                                         [Name,
                                         ColumnCounter*TileSize,
                                         RowCounter*TileSize,
                                         TileSize]),
-  make_row(TileSup,RowCounter,Columns,ColumnCounter +1,TileSize,
-            Row++[Tile]).
+  make_row(RowCounter,Columns,ColumnCounter +1,TileSize, Row++[Name]).
   
 %%% populate could be misleading, it means populate a grid with tiles %%%
-populate_grid(TileSup,Rows,Columns,TileSize) ->
-  populate_grid(TileSup,0,Rows,Columns,TileSize,[]).
-populate_grid(_TileSup,RowCounter,Rows,_Columns,_TileSize,Grid) when RowCounter > Rows -1 ->
+populate_grid(Rows,Columns,TileSize) ->
+  populate_grid(0,Rows,Columns,TileSize,[]).
+populate_grid(RowCounter,Rows,_Columns,_TileSize,Grid) when RowCounter > Rows -1 ->
   Grid;
-populate_grid(TileSup,RowCounter,Rows,Columns,TileSize,Grid) ->
-  populate_grid(TileSup,RowCounter +1,Rows,Columns,TileSize,Grid++make_row(TileSup,RowCounter,Columns,0,TileSize)).
+populate_grid(RowCounter,Rows,Columns,TileSize,Grid) ->
+  populate_grid(RowCounter +1,Rows,Columns,TileSize,Grid++make_row(RowCounter,Columns,0,TileSize)).
 
 %%% take a list of tiles and add viewers to each one
-add_viewers(Sup,Grid) ->
- add_viewers(Sup,Grid,[]).
-add_viewers(_,[],Viewers) ->
+add_viewers(Grid) ->
+ add_viewers(Grid,[]).
+add_viewers([],Viewers) ->
   Viewers;
-add_viewers(Sup,Grid,Viewers) ->
+add_viewers(Grid,Viewers) ->
   [H|T]=Grid,
-  {ok,V}=supervisor:start_child(Sup,[]),
+  {ok,V}=supervisor:start_child(viewer_sup,[]),
   tile:set_viewer(H,V),
-  add_viewers(Sup,T,Viewers ++ [{H,V}]).
+  add_viewers(T,Viewers ++ [{H,V}]).
 
 
 %% Spawns Num randomly positioned zombies
-create_swarm(State,Num) ->
-  create_swarm(State,Num,[]).
-
-create_swarm(_State,0,List) -> List;
-
-create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, 
-                    tileList = TileList, zombieSup = ZombieSup} = State,Num,List) ->
-  GridXSize=TileSize*Columns,
-  GridYSize=TileSize*Rows,
-  Xpos = random:uniform(GridXSize),
-  Ypos= random:uniform(GridYSize),
-  {Tile,Viewer} = get_tile(Xpos,Ypos,TileList,State),
-  % zombie now takes {X,Y,Tile,Viewer,Speed,Bearing,Timeout}
-  {ok,Zombie}=supervisor:start_child(ZombieSup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
- %temporary fix
- zombie_fsm:start(Zombie),
-  tile:summon_entity(Tile,{Zombie,{Xpos,Ypos}}),
-  create_swarm(State,Num-1,List++[Zombie]).
-
+create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,Num) ->
+    GridXSize=TileSize*Columns,
+    GridYSize=TileSize*Rows,
+    lists:foreach(
+        fun(_) ->
+            Xpos = random:uniform(GridXSize),
+            Ypos= random:uniform(GridYSize),
+            {Tile,Viewer} = get_tile(Xpos,Ypos,State),
+            {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
+            %temporary fix
+            zombie_fsm:start(Zombie)
+        end,lists:seq(1,Num)).
 
 %% search for a tile by X,Y in the viewerPropList
-get_tile(_Xpos,_Ypos,[],State) -> 
-  [{Tile,Viewer}|_T] = State#state.viewerPropList,
-  {Tile,Viewer};
-
-get_tile(Xpos,Ypos,TL,State) ->
-  [H|T] = TL,
-  case in_tile(Xpos,Ypos,tile:get_geometry(H)) of
-    true -> {H,proplists:get_value(H,State#state.viewerPropList)};
-    false -> get_tile(Xpos,Ypos,T,State)
-  end.
-
-%% Boolean check of wheter a set of X,Y is within the tile Geom
-in_tile(Xpos,Ypos,Geom) ->
- {Xt,Yt,Xl,Yl,_Size}=Geom,
- ((Xpos >= Xt) and (Xpos =< Xl)) and ((Ypos >= Yt) and (Ypos =< Yl)).
+get_tile(Xpos,Ypos,#state{viewerPropList = ViewerPropList, tileSize = TileSize}) -> 
+  Tile = list_to_atom("tile" ++  "X" ++ integer_to_list(Xpos div TileSize) ++  "Y" ++ integer_to_list(Ypos div TileSize)),
+  Viewer = proplists:get_value(Tile,ViewerPropList),
+  {Tile,Viewer}.
 
 %% Makes a report for the client.
 %% This report contains a list of lists, built from polling the zombie_sup
@@ -300,16 +272,18 @@ test_neighbour(Xo,Yo,X,Y,Size) ->
       andalso
       (Y =:= Yo + Size) or (Y =:= Yo) or (Y =:= Yo - Size).
 
+do_start_entities() ->
+    apply_to_all_entities(start).
+
 do_pause_entities() ->
-    lists:foreach(
-        fun({_Id, Pid, _Type, _Modules}) ->
-            zombie_fsm:pause(Pid)
-        end, supervisor:which_children(zombie_sup)).
-    %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
+    apply_to_all_entities(pause).
 
 do_unpause_entities() ->
+    apply_to_all_entities(unpause).
+
+apply_to_all_entities(Fun) ->
     lists:foreach(
         fun({_Id, Pid, _Type, _Modules}) ->
-            zombie_fsm:unpause(Pid)
+            zombie_fsm:Fun(Pid)
         end, supervisor:which_children(zombie_sup)).
     %% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
