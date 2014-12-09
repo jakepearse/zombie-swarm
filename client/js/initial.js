@@ -73,29 +73,38 @@ function updateArrity(arrity) {
 function draw_circles(data,gridScale) {
   var svg = d3.select("svg");
       svg.selectAll("circle")
-      .data(data)
-      .enter().append("circle")
-      .on("click", function() {changeColour(this);})
-      .style("fill", fill_colour(this))
-      .style("stroke",stroke_colour(this))
-      .style("stroke-width",0.5*gridScale)
-      .attr("r", gridScale)
-      .attr("cx", function(d) { return d.x*gridScale; })
-      .attr("cy", function(d) { return d.y*gridScale; });
+        .data(data)
+        .enter().append("circle")
+        .on("click", function() {changeColour(this);})
+        .attr("class", function(d) {return d.type; })
+        .attr("r", gridScale)
+        .attr("cx", function(d) { return d.x*gridScale; })
+        .attr("cy", function(d) { return d.y*gridScale; })
+        .style("fill",function(d) { return setColour(d);})
+        .style("stroke", function(d) { return strokeColour(d);})
+        .style("stroke-width",0.5*gridScale);
+        
+      //svg.selectAll(".zombie")
+        //.style("fill", "darkseagreen" )
+        //.style("stroke","seagreen");
+      //svg.selectAll(".human")
+        //.style("fill", "steelblue" )
+        //.style("stroke","darkblue");
+}
+function setColour(ob) {
+  if (ob.type==="human"){
+    return "steelblue";
+  }
+  return "darkseagreen";
+}
+  
+function strokeColour(ob) {
+  if (ob.type==="human"){
+    return "blue";
+  }
+  return "seagreen";
 }
 
-function fill_colour(ob) {
-  if (ob.type === "human") {
-    return "steel-blue";}
-    return "darkseagreen";
-    }
-
-function stroke_colour(ob){
-  if (ob.type === "human") {
-    return "forestgreen";}
-    return "seagreen";
-  }
-  
 function changeColour(object) {
   d3.select(object)
   .style("fill","tomato")
