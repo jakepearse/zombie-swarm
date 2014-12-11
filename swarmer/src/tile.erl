@@ -249,17 +249,17 @@ add_unique(ID, {X,Y}, Map) ->
             add_unique(ID, {X+1,Y+1}, Map)
     end.
 
-update_viewers_z([], _EntityMap) -> 
+update_viewers_z([], _Zmap) -> 
     [];
-update_viewers_z([V|Vs], EntityMap) ->
-    viewer:update_zombies(V, {self(), maps:to_list(EntityMap)}),
-    update_viewers_z(Vs, EntityMap).
+update_viewers_z([V|Vs], Zmap) ->
+    viewer:update_zombies(V, {self(), maps:to_list(Zmap)}),
+    update_viewers_z(Vs, Zmap).
 
-update_viewers_h([], _EntityMap) -> 
+update_viewers_h([], _Zmap) -> 
     [];
-update_viewers_h([V|Vs], EntityMap) ->
-    viewer:update_humans(V, {self(), maps:to_list(EntityMap)}),
-    update_viewers_h(Vs, EntityMap).
+update_viewers_h([V|Vs], Hmap) ->
+    viewer:update_humans(V, {self(), maps:to_list(Hmap)}),
+    update_viewers_h(Vs, Hmap).
 
 %%%%-Notes----------------------------------------------------------------------
 
