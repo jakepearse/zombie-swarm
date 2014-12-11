@@ -86,7 +86,3 @@ terminate(normal,_State) ->
 
 code_change(_OldVsn, State,_Extra) ->
     {ok,State}.
-
-% Things Viewer Needs:
-%     get zombieList
-%     get humanList

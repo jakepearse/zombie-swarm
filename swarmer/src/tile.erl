@@ -198,11 +198,11 @@ handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State
 %%%% No reply because the environment doesn't care where the new zombie ends up.
 handle_cast({summon_entity,{ID,{X,Y},Type}}, #state{zombie_map =Zombie_Map} =State) when Type == zombie ->
     NewMap = maps:put(ID,{Type,{X,Y}},Zombie_Map),
-    update_viewers_z(State#state.neighbours, NewMap),
+    update_viewers(State#state.neighbours, Type, NewMap),
     {noreply,State#state{zombie_map = NewMap}};
 handle_cast({summon_entity,{ID,{X,Y}, Type}},#state{human_map =Human_Map} =State) when Type == human ->
     NewMap = maps:put(ID,{Type,{X,Y}},Human_Map),
-    update_viewers_h(State#state.neighbours, NewMap),
+    update_viewers(State#state.neighbours, Type, NewMap),
     {noreply,State#state{human_map = Human_Map}};
 
 %%%% Handle delete entity calls
@@ -249,17 +249,14 @@ add_unique(ID, {X,Y}, Map) ->
             add_unique(ID, {X+1,Y+1}, Map)
     end.
 
-update_viewers_z([], _Zmap) -> 
+update_viewers([], Type, _EntityMap) ->
     [];
-update_viewers_z([V|Vs], Zmap) ->
-    viewer:update_zombies(V, {self(), maps:to_list(Zmap)}),
-    update_viewers_z(Vs, Zmap).
-
-update_viewers_h([], _Hmap) -> 
-    [];
-update_viewers_h([V|Vs], Hmap) ->
-    viewer:update_humans(V, {self(), maps:to_list(Hmap)}),
-    update_viewers_h(Vs, Hmap).
+update_viewers([V|Vs], Type, EntityMap) when Type =:= zombie ->
+    viewer:update_zombies(V, {self(), maps:to_list(EntityMapMap)}),
+    update_viewers(Vs, Type, EntityMap);
+update_viewers([V|Vs], Type, EntityMap) when Type =:= human ->
+    viewer:update_humans(V, {self(), maps:to_list(EntityMapMap)}),
+    update_viewers(Vs, Type, EntityMap);
 
 %%%%-Notes----------------------------------------------------------------------
 
