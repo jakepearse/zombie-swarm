@@ -65,11 +65,9 @@ init([]) ->
    {ok, #state{}}. %new state record with default values
 
 handle_cast({update_zombies, Tile, Entities}, #state{zombie_map = Zmap} = State) ->
-    error_logger:error_report("Zombie Map: ", Zmap),
     {noreply, State#state{zombie_map = maps:put(Tile,Entities,Zmap)}};
 
 handle_cast({update_humans, Tile, Entities}, #state{human_map = Hmap} = State) ->
-    error_logger:error_report("Human Map: ", Hmap),
     {noreply, State#state{human_map = maps:put(Tile,Entities,Hmap)}}.
 
 handle_call(get_zombies,_From,State) ->
