@@ -184,11 +184,11 @@ handle_call(get_state,_From,State) ->
 %%%% Will also deal with a new entitiy being moved onto the tile
 handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State) when Type == zombie ->
     NewMap = maps:put(ID,{Type,Pos},State#state.zombie_map),
-    update_viewers_z(State#state.neighbours, NewMap),
+    update_viewers(State#state.neighbours, Type, NewMap),
     {reply,Pos,State#state{zombie_map = NewMap}};
 handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State) when Type == human ->
     NewMap = maps:put(ID,{Type,Pos},State#state.human_map),
-    update_viewers_h(State#state.neighbours, NewMap),
+    update_viewers(State#state.neighbours, Type, NewMap),
     {reply,Pos,State#state{human_map = NewMap}}.
 
 %%%%-Casts----------------------------------------------------------------------
@@ -249,14 +249,14 @@ add_unique(ID, {X,Y}, Map) ->
             add_unique(ID, {X+1,Y+1}, Map)
     end.
 
-update_viewers([], Type, _EntityMap) ->
+update_viewers([], _Type, _EntityMap) ->
     [];
 update_viewers([V|Vs], Type, EntityMap) when Type =:= zombie ->
-    viewer:update_zombies(V, {self(), maps:to_list(EntityMapMap)}),
+    viewer:update_zombies(V, {self(), maps:to_list(EntityMap)}),
     update_viewers(Vs, Type, EntityMap);
 update_viewers([V|Vs], Type, EntityMap) when Type =:= human ->
-    viewer:update_humans(V, {self(), maps:to_list(EntityMapMap)}),
-    update_viewers(Vs, Type, EntityMap);
+    viewer:update_humans(V, {self(), maps:to_list(EntityMap)}),
+    update_viewers(Vs, Type, EntityMap).
 
 %%%%-Notes----------------------------------------------------------------------
 
