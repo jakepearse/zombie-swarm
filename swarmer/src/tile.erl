@@ -255,7 +255,7 @@ update_viewers_z([V|Vs], Zmap) ->
     viewer:update_zombies(V, {self(), maps:to_list(Zmap)}),
     update_viewers_z(Vs, Zmap).
 
-update_viewers_h([], _Zmap) -> 
+update_viewers_h([], _Hmap) -> 
     [];
 update_viewers_h([V|Vs], Hmap) ->
     viewer:update_humans(V, {self(), maps:to_list(Hmap)}),
