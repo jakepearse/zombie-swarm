@@ -104,8 +104,9 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
                     num_columns = NumColumns, num_rows = NumRows,bearing = Bearing, speed = Speed,
                     tile = Tile, type = Type} =  State) ->
 	Humans = get_surroundings(self(),State),
-	{Distance,HumanPid,{Hx,Hy}}= pso:zombie_target(X,Y,Humans),
-	State#state{fitness = Distance},
+	error_logger:error_report(X,Y),
+	[Distance,{HumanPid,{Hx,Hy}}] = pso:zombie_target(X,Y,Humans),
+	
 	NewState = case Distance < BestFitness of
 		true ->
 			State#state{bestfitness = Distance,bestx=X,besty=Y};
@@ -130,7 +131,7 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
             end,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
     gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,aimless_search,NewState#state{x = ReturnedX,y =ReturnedY,xvelocity = ReturnedX - X, yvelocity = ReturnedY -Y}}
+	{next_state,aimless_search,NewState#state{x = ReturnedX,y =ReturnedY,xvelocity = ReturnedX - X, yvelocity = ReturnedY -Y,fitness = Distance}}
 	end.
 
 active(move,State) ->
