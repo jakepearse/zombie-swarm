@@ -4,16 +4,16 @@
 -behaviour(gen_server).
 
 %%%% API
--export([start_link/0,get_population/1,update_population/2]).
+-export([start_link/0,get_zombies/1, get_humans/1,
+         update_zombies/2, update_humans/2]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_cast/2,handle_call/3,
 handle_info/2,init/1,terminate/2]).
 
 -record(state, {tile_map=maps:new(),
-                population_map=maps:new() :: maps:map(),
-                zombieList :: list(),
-                humanList :: list()}).
+                zombie_map = maps:new(),
+                human_map = maps:new()}).
 
 %%%%%%==========================================================================
 %%%%%% API
@@ -31,16 +31,32 @@ start_link() -> gen_server:start_link(?MODULE, [], []).
 %%%% Update population of the neighbourhood.
 %%%% @end
 %%%%----------------------------------------------------------------------------
-update_population(Pid, {Tile,Entities}) ->
-    gen_server:cast(Pid,{update_population,Tile,Entities}).
+update_zombies(Pid, {Tile,Entities}) ->
+    gen_server:cast(Pid,{update_zombies,Tile,Entities}).
+
+%%%%----------------------------------------------------------------------------
+%%%% @doc
+%%%% Update population of the neighbourhood.
+%%%% @end
+%%%%----------------------------------------------------------------------------
+update_humans(Pid, {Tile,Entities}) ->
+    gen_server:cast(Pid,{update_humans,Tile,Entities}).
 
 %%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Returns the population of the neighbourhood.
 %%%% @end
 %%%%----------------------------------------------------------------------------
-get_population(Pid) ->
-    gen_server:call(Pid,get_population).
+get_zombies(Pid) ->
+    gen_server:call(Pid,get_zombies).
+
+%%%%----------------------------------------------------------------------------
+%%%% @doc
+%%%% Returns the population of the neighbourhood.
+%%%% @end
+%%%%----------------------------------------------------------------------------
+get_humans(Pid) ->
+    gen_server:call(Pid,get_humans).
 
 %%%%%%==========================================================================
 %%%%%% gen_server Callbacks
@@ -48,12 +64,17 @@ get_population(Pid) ->
 init([]) -> 
    {ok, #state{}}. %new state record with default values
 
-handle_cast({update_population, Tile, Entities}, #state{population_map = PopMap} = State) ->
-    {noreply, State#state{population_map = maps:put(Tile,Entities,PopMap)}}.
+handle_cast({update_zombies, Tile, Entities}, #state{zombie_map = Zmap} = State) ->
+    {noreply, State#state{zombie_map = maps:put(Tile,Entities,Zmap)}};
 
-%get population - just dump the state out.
-handle_call(get_population,_From,State) ->
-    {reply,State#state.population_map,State}.
+handle_cast({update_humans, Tile, Entities}, #state{human_map = Hmap} = State) ->
+    {noreply, State#state{human_map = maps:put(Tile,Entities,Hmap)}}.
+
+handle_call(get_zombies,_From,State) ->
+    {reply,State#state.zombie_map,State};
+
+handle_call(get_humans,_From,State) ->
+    {reply,State#state.human_map,State}.
 
 % enxpected message
 handle_info(Msg,State) ->
@@ -65,7 +86,3 @@ terminate(normal,_State) ->
 
 code_change(_OldVsn, State,_Extra) ->
     {ok,State}.
-
-% Things Viewer Needs:
-%     get zombieList
-%     get humanList

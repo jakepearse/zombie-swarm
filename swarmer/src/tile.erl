@@ -16,7 +16,7 @@
 
 %%%% tile functions
 -export([summon_entity/2,
-        remove_entity/2,
+        remove_entity/3,
         update_entity/5,
         get_geometry/1,
         set_viewer/2,
@@ -40,7 +40,8 @@
 %%%% viewer - the assigned viewer of the tile
 %%%% neihbours - a list of the neighbouring tiles viewers
 
--record(state, {entity_map=maps:new() :: maps:maps(),
+-record(state, {zombie_map=maps:new() :: maps:maps(),
+                human_map=maps:new() :: maps:maps(),
                 xorigin  ::  coord(),
                 yorigin  ::  coord(),
                 xlimit  ::  coord(),
@@ -117,9 +118,9 @@ summon_entity(Pid, Entity) ->
 %%%% Remove an entity from the tile.
 %%%% @end
 %%%%----------------------------------------------------------------------------
--spec remove_entity(pid(),entity()) -> ok.
-remove_entity(Pid, Entity) ->
-    gen_server:cast(Pid, {remove_entity, Entity}).
+-spec remove_entity(pid(),entity(), atom()) -> ok.
+remove_entity(Pid, Entity, Type) ->
+    gen_server:cast(Pid, {remove_entity, Entity, Type}).
 
 %%%%----------------------------------------------------------------------------
 %%%% @doc
@@ -181,24 +182,34 @@ handle_call(get_state,_From,State) ->
 
 %%%% Updates the entities position on the tile.
 %%%% Will also deal with a new entitiy being moved onto the tile
-handle_call({update_entity, {ID,{_,_}}, Pos, _Bearing, _Speed},_From, State) ->
-    NewMap = maps:put(ID,Pos,State#state.entity_map),
-    update_viewers(State#state.neighbours, NewMap),
-    {reply,Pos,State#state{entity_map = NewMap}}.
+handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State) when Type == zombie ->
+    NewMap = maps:put(ID,{Type,Pos},State#state.zombie_map),
+    update_viewers(State#state.neighbours, Type, NewMap),
+    {reply,Pos,State#state{zombie_map = NewMap}};
+handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State) when Type == human ->
+    NewMap = maps:put(ID,{Type,Pos},State#state.human_map),
+    update_viewers(State#state.neighbours, Type, NewMap),
+    {reply,Pos,State#state{human_map = NewMap}}.
 
 %%%%-Casts----------------------------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
 %%%% This is only used for the initialisation stage of the application.
 %%%% No reply because the environment doesn't care where the new zombie ends up.
-handle_cast({summon_entity,{ID,{X,Y}}},#state{entity_map =EntityMap} =State)->
-    NewMap = add_unique(ID,{X,Y},EntityMap),
-    update_viewers(State#state.neighbours, NewMap),
-    {noreply,State#state{entity_map = NewMap}};
+handle_cast({summon_entity,{ID,{X,Y},Type}}, #state{zombie_map =Zombie_Map} =State) when Type == zombie ->
+    NewMap = maps:put(ID,{Type,{X,Y}},Zombie_Map),
+    update_viewers(State#state.neighbours, Type, NewMap),
+    {noreply,State#state{zombie_map = NewMap}};
+handle_cast({summon_entity,{ID,{X,Y}, Type}},#state{human_map =Human_Map} =State) when Type == human ->
+    NewMap = maps:put(ID,{Type,{X,Y}},Human_Map),
+    update_viewers(State#state.neighbours, Type, NewMap),
+    {noreply,State#state{human_map = Human_Map}};
 
 %%%% Handle delete entity calls
-handle_cast({remove_entity,ID},#state{entity_map =EntityMap} =State)->
-    {noreply,State#state{entity_map = maps:remove(ID,EntityMap)}};
+handle_cast({remove_entity,ID, Type},#state{zombie_map =Zombie_Map} =State) when Type == zombie ->
+    {noreply,State#state{zombie_map = maps:remove(ID,Zombie_Map)}};
+handle_cast({remove_entity,ID, Type},#state{human_map =Human_Map} =State) when Type == human ->
+    {noreply,State#state{human_map = maps:remove(ID,Human_Map)}};
 
 %%%% Handles setting of tiles viewer
 handle_cast({set_viewer, ViewerPid}, State) ->
@@ -238,11 +249,14 @@ add_unique(ID, {X,Y}, Map) ->
             add_unique(ID, {X+1,Y+1}, Map)
     end.
 
-update_viewers([], _EntityMap) -> 
+update_viewers([], _Type, _EntityMap) ->
     [];
-update_viewers([V|Vs], EntityMap) ->
-    viewer:update_population(V, {self(), maps:to_list(EntityMap)}),
-    update_viewers(Vs, EntityMap).
+update_viewers([V|Vs], Type, EntityMap) when Type =:= zombie ->
+    viewer:update_zombies(V, {self(), maps:to_list(EntityMap)}),
+    update_viewers(Vs, Type, EntityMap);
+update_viewers([V|Vs], Type, EntityMap) when Type =:= human ->
+    viewer:update_humans(V, {self(), maps:to_list(EntityMap)}),
+    update_viewers(Vs, Type, EntityMap).
 
 %%%%-Notes----------------------------------------------------------------------
 
@@ -251,7 +265,3 @@ update_viewers([V|Vs], EntityMap) ->
 % observer:start().
 
 % sys:get_state(Pid).
-
-% TODO
-% Change what the get_population
-%   needs to return [["pid", X, Y, type, heading, speed, current_state]]

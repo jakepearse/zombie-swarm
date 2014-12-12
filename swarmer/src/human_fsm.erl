@@ -49,7 +49,7 @@ get_state(Pid) ->
 
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
     random:seed(erlang:now()),
-    tile:summon_entity(Tile,{self(),{X,Y}}),
+    tile:summon_entity(Tile,{self(),{X,Y}, human}),
     {ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
                        bearing=random:uniform(360), timeout=Timeout,type =human,
                        tile_size = TileSize, num_columns = NumColumns, 
@@ -65,7 +65,7 @@ initial(start,State) ->
     
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
-                    tile = Tile} = State) ->
+                    tile = Tile, type = Type} = State) ->
     OldBearing = State#state.bearing,
     StaySame = random:uniform(?AIMLESS_STAY_COURSE),
     Bearing = case StaySame of
@@ -85,10 +85,10 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                 {XTile, XTile, YTile, YTile} -> % In same tile
                     Tile;
                 {_, NewXTile, _, NewYTile} ->
-                    tile:remove_entity(Tile, self()),
+                    tile:remove_entity(Tile, self(), Type),
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}},{NewX, NewY},Bearing,Speed),
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed),
             gen_fsm:send_event_after(State#state.timeout, move),
             {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile}}
     end.
@@ -129,8 +129,8 @@ calc_state(_Current_state) ->
 calc_aimlessbearing(Rand,X,Y) ->
     trigstuff:findcoordinates(Rand,X,Y).
 %stuff for gen_fsm.
-terminate(_,_StateName, #state{tile = Tile} = _StateData) ->
-    tile:remove_entity(Tile, self()),
+terminate(_,_StateName, #state{tile = Tile, type = Type} = _StateData) ->
+    tile:remove_entity(Tile, self(), Type),
     ok.
 code_change(_,StateName,StateData,_) ->
     {ok,StateName,StateData}.
