@@ -11,7 +11,7 @@
 velocity(MaxVelocity, Inertia, CurrentPositionX, CurrentPositionY, CurrentX_velocity, CurrentY_velocity, PreviousBestX, PreviousBestY, TargetX, TargetY) ->
   VelocityX = clamp(MaxVelocity, Inertia * CurrentX_velocity + random:uniform() * (PreviousBestX - CurrentPositionX) + random:uniform() * (TargetX - CurrentPositionX)),
   VelocityY = clamp(MaxVelocity, Inertia * CurrentY_velocity + random:uniform() * (PreviousBestY - CurrentPositionY) + random:uniform() * (TargetY - CurrentPositionY)),
-  {VelocityX,VelocityY}.
+  {round(VelocityX),round(VelocityY)}.
   
 clamp(MaxVelocity,Velocity) when Velocity < 0 andalso Velocity > MaxVelocity * -1 -> Velocity;
 clamp(MaxVelocity,Velocity) when Velocity < 0 -> MaxVelocity;
@@ -19,7 +19,9 @@ clamp(MaxVelocity,Velocity) when Velocity < MaxVelocity -> Velocity;
 clamp(_,MaxVelocity) -> MaxVelocity.
 
 % I haven't tested this yet but its about right ...
+zombie_target(Zx,Zy,[]) ->
+	notarget;
 zombie_target(ZombieX,ZombieY,ListOfHumans) ->
-  [Target|_OtherStuff] = lists:keysort(1,lists:map(fun({HumanPid,{X,Y}}) ->
+  [Target|_OtherStuff] = lists:keysort(1,lists:map(fun([{HumanPid,{human,{X,Y}}}]) ->
     {pythagoras:pyth(ZombieX,ZombieY,X,Y),HumanPid,{X,Y}} end, ListOfHumans)),
   Target.
