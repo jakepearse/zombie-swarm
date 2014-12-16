@@ -28,7 +28,14 @@
                 x,
                 y,
                 type,
-                paused_state}).
+                paused_state,
+				fitness = infinity,
+				bestfitness = infinity,
+				bestx,
+				besty,
+				xvelocity = 0,
+				yvelocity = 0
+				}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing) -> 
 	gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing],[]).
@@ -53,7 +60,7 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
 	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
                        bearing=random:uniform(360),type =zombie,
                        tile_size = TileSize, num_columns = NumColumns, 
-                       num_rows = NumRows}}.
+                       num_rows = NumRows,bestx = X,besty = Y}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -61,7 +68,7 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
 
 initial(start,State) ->
     gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,calc_state(aimless),State}.
+	{next_state,aimless_search,State}.
 	
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
@@ -93,10 +100,39 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile}}
     end.
 
-aimless_search(move,State) ->
-	%get_surroundings(self(),State),
+aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = TileSize,
+                    num_columns = NumColumns, num_rows = NumRows,bearing = Bearing, speed = Speed,
+                    tile = Tile, type = Type} =  State) ->
+	Humans = get_surroundings(self(),State),
+	error_logger:error_report(X,Y),
+	[Distance,{HumanPid,{Hx,Hy}}] = pso:zombie_target(X,Y,Humans),
+	
+	NewState = case Distance < BestFitness of
+		true ->
+			State#state{bestfitness = Distance,bestx=X,besty=Y};
+		false ->
+			State
+	end,
+	{Vx,Vy} = pso:velocity(5,0.7,X,Y,State#state.xvelocity,State#state.yvelocity,State#state.bestx,State#state.besty,Hx,Hy),
+	NewX = X+Vx,
+	NewY = Y+Vy,
+	 case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
+        true -> % We are off the screen!
+            {stop, shutdown, State};
+        false ->
+            NewTile = 
+            % This calculates if the human is still in it's initial tile
+            case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
+                {XTile, XTile, YTile, YTile} -> % In same tile
+                    Tile;
+                {_, NewXTile, _, NewYTile} ->
+                    tile:remove_entity(Tile, self(), Type),
+                    list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
+            end,
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
     gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,calc_state(aimless),State}.
+	{next_state,aimless_search,NewState#state{x = ReturnedX,y =ReturnedY,xvelocity = ReturnedX - X, yvelocity = ReturnedY -Y,fitness = Distance}}
+	end.
 
 active(move,State) ->
     gen_fsm:send_event_after(State#state.speed, move),
@@ -124,14 +160,10 @@ pause(unpause, #state{paused_state = PausedState} = State) ->
 
 %Events for fsm.	
 get_surroundings(Pid,#state{viewer=Viewer} = State) ->
-	Map = viewer:get_population(Viewer),
-		case maps:size(Map) of
-			0-> [];
-			_ -> Surroundings = maps:values(Map),
-					find_visible(Surroundings,State)
-		end.
+	Map = viewer:get_humans(Viewer).
 		
-calc_state(_Current_state) ->
+		
+calc_state(State) ->
 	aimless.
 
 find_visible(All,State) ->

@@ -71,10 +71,10 @@ handle_cast({update_humans, Tile, Entities}, #state{human_map = Hmap} = State) -
     {noreply, State#state{human_map = maps:put(Tile,Entities,Hmap)}}.
 
 handle_call(get_zombies,_From,State) ->
-    {reply,State#state.zombie_map,State};
+    {reply,maps:values(State#state.zombie_map),State};
 
 handle_call(get_humans,_From,State) ->
-    {reply,State#state.human_map,State}.
+    {reply,maps:values(State#state.human_map),State}.
 
 % enxpected message
 handle_info(Msg,State) ->
