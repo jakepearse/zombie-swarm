@@ -8,15 +8,18 @@
 % Inertia, accelration try 0.7,
 % CurrentXPosition & CurrentYPosition,
 % These can start at 0, but should move away from zero over time
-velocity(MaxVelocity, Inertia, CurrentPositionX, CurrentPositionY, CurrentX_velocity, CurrentY_velocity, PreviousBestX, PreviousBestY, TargetX, TargetY) ->
-  VelocityX = clamp(MaxVelocity, Inertia * CurrentX_velocity + random:uniform() * (PreviousBestX - CurrentPositionX) + random:uniform() * (TargetX - CurrentPositionX)),
-  VelocityY = clamp(MaxVelocity, Inertia * CurrentY_velocity + random:uniform() * (PreviousBestY - CurrentPositionY) + random:uniform() * (TargetY - CurrentPositionY)),
+velocity(MaxVelocity, Inertia, CurrentPositionX, CurrentPositionY, CurrentX_velocity, CurrentY_velocity, 
+	PreviousBestX, PreviousBestY, TargetX, TargetY) ->
+  VelocityX = clamp(MaxVelocity, Inertia * CurrentX_velocity + random:uniform() 
+  		* (PreviousBestX - CurrentPositionX) + random:uniform() * (TargetX - CurrentPositionX)),
+  VelocityY = clamp(MaxVelocity, Inertia * CurrentY_velocity + random:uniform() 
+  		* (PreviousBestY - CurrentPositionY) + random:uniform() * (TargetY - CurrentPositionY)),
   {round(VelocityX),round(VelocityY)}.
   
 clamp(MaxVelocity,Velocity) when Velocity < 0 andalso Velocity > MaxVelocity * -1 -> Velocity;
 clamp(MaxVelocity,Velocity) when Velocity < 0 -> MaxVelocity;
 clamp(MaxVelocity,Velocity) when Velocity < MaxVelocity -> Velocity;
-clamp(_,MaxVelocity) -> MaxVelocity.
+clamp(MaxVelocity,_) -> MaxVelocity.
 
 % I haven't tested this yet but its about right ...
 zombie_target(Zx,Zy,[]) ->
