@@ -25,8 +25,10 @@ clamp(MaxVelocity,_) -> MaxVelocity.
 zombie_target(Zx,Zy,[]) ->
 	notarget;
 zombie_target(ZombieX,ZombieY,ListOfHumans) ->
-	error_logger:error_report(ZombieX,ZombieY),
-  [Target|_OtherStuff] = lists:keysort(1,lists:map(fun([{HumanPid,{human,{X,Y}}}]) ->
-    {pythagoras:pyth(ZombieX,ZombieY,X,Y),{HumanPid,{X,Y}}} end, ListOfHumans)),
-	%error_logger:error_report(Target),
+  [Target|_OtherStuff] = 
+    lists:keysort(1,
+        lists:map(
+            fun({HumanPid,{human,{X,Y}}}) ->
+                {pythagoras:pyth(ZombieX,ZombieY,X,Y),{HumanPid,{X,Y}}} 
+            end, ListOfHumans)),
   Target.
