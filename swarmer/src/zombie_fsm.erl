@@ -105,7 +105,7 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
                     tile = Tile, type = Type} =  State) ->
 	Humans = get_surroundings(self(),State),
 	error_logger:error_report(X,Y),
-	[Distance,{HumanPid,{Hx,Hy}}] = pso:zombie_target(X,Y,Humans),
+	{Distance,{HumanPid,{Hx,Hy}}} = pso:zombie_target(X,Y,Humans),
 	
 	NewState = case Distance < BestFitness of
 		true ->
@@ -113,7 +113,7 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
 		false ->
 			State
 	end,
-	{Vx,Vy} = pso:velocity(5,0.7,X,Y,State#state.xvelocity,State#state.yvelocity,State#state.bestx,State#state.besty,Hx,Hy),
+	{Vx,Vy} = pso:velocity(5,0.73,X,Y,State#state.xvelocity,State#state.yvelocity,State#state.bestx,State#state.besty,Hx,Hy),
 	NewX = X+Vx,
 	NewY = Y+Vy,
 	 case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
