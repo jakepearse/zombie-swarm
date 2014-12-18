@@ -114,15 +114,9 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
 aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,bearing = Bearing, speed = Speed,
-                    tile = Tile, type = Type, viewer = Viewer} =  State) ->
+                    tile = Tile, type = Type, viewer = Viewer,
+                    bestx = BestX, besty = BestY} =  State) ->
 	Humans = get_surroundings(State#state.viewer),
-
-
-        % SWARMING BUG
-            % because humans move tile, and don't update their viewers
-            % zombies get confused, keep lookng for an entitiy that is no longer in the tile.
-            % humans need to update viewers
-            % then we can make it swarm
 
 	case pso:zombie_target(X,Y,Humans) of
         notarget ->
@@ -130,11 +124,17 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
             gen_fsm:send_event(self(),move),
             {next_state,aimless,State};
         {Distance,{_HumanPid,{Hx,Hy}}} -> 
-        	NewState = case Distance < BestFitness of
+        %% NEEDS CHANGING TO TWO SEPRATE CASES FOR SEARCHING
+        % I <3 CAPITALS
+        	NewBestFitness = case Distance < BestFitness of
         		true ->
-        			State#state{bestfitness = Distance,bestx=X,besty=Y};
+                    % add bestx and besty to state
+                    % possibly create a new state with all the things or no new things
+                    BestX = X,
+                    BestY = Y,
+                    Distance
         		false ->
-        			State
+        			BestFitness
         	end,
         	{Vx,Vy} = pso:velocity(5,0.73,X,Y,State#state.xvelocity,State#state.yvelocity,State#state.bestx,State#state.besty,Hx,Hy),
         	NewX = X+Vx,
@@ -157,7 +157,7 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
                     end,
                     {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
             gen_fsm:send_event_after(State#state.speed, move),
-        	{next_state,aimless_search,NewState#state{x = ReturnedX,y =ReturnedY,xvelocity = ReturnedX - X, yvelocity = ReturnedY -Y,fitness = Distance, viewer =  NewViewer}}
+        	{next_state,aimless_search,State#state{x = ReturnedX,y =ReturnedY,xvelocity = ReturnedX - X, yvelocity = ReturnedY -Y,fitness = Distance, viewer =  NewViewer, bestfitness = NewBestFitness}}
         	end
     end.
 active(move,State) ->

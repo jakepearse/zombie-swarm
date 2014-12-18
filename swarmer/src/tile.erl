@@ -207,9 +207,13 @@ handle_cast({summon_entity,{ID,{X,Y}, Type}},#state{human_map =Human_Map} =State
 
 %%%% Handle delete entity calls
 handle_cast({remove_entity,ID, Type},#state{zombie_map =Zombie_Map} =State) when Type == zombie ->
-    {noreply,State#state{zombie_map = maps:remove(ID,Zombie_Map)}};
+    NewMap = maps:remove(ID,Zombie_Map),
+    update_viewers(State#state.neighbours, Type, NewMap),
+    {noreply,State#state{zombie_map = NewMap}};
 handle_cast({remove_entity,ID, Type},#state{human_map =Human_Map} =State) when Type == human ->
-    {noreply,State#state{human_map = maps:remove(ID,Human_Map)}};
+    NewMap = maps:remove(ID,Human_Map),
+    update_viewers(State#state.neighbours, Type, NewMap),
+    {noreply,State#state{human_map = NewMap}};
 
 %%%% Handles setting of tiles viewer
 handle_cast({set_viewer, ViewerPid}, State) ->
