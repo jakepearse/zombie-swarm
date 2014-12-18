@@ -12,7 +12,7 @@
 -export([start_link/9,aimless/2,initial/2,aimless_search/2,active/2,
          active_search/2,chasing/2,chasing_search/2,calc_state/1,
          calc_aimlessbearing/3,start/1,pause/2,get_surroundings/1,
-		 find_visible/2,find_visible/3,startzombie/1]).
+		 find_visible/2,find_visible/3,startzombie/1, get_all_state/1]).
 
 %API
 -export([get_state/1, pause/1, unpause/1]).
@@ -57,6 +57,9 @@ unpause(Pid) ->
 
 get_state(Pid) ->
     catch gen_fsm:sync_send_all_state_event(Pid, get_state).
+
+get_all_state(Pid) ->
+    catch gen_fsm:sync_send_all_state_event(Pid, get_all_state).
 
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
 	random:seed(erlang:now()),
@@ -113,9 +116,14 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
                     num_columns = NumColumns, num_rows = NumRows,bearing = Bearing, speed = Speed,
                     tile = Tile, type = Type, viewer = Viewer} =  State) ->
 	Humans = get_surroundings(State#state.viewer),
-    % Need a case for get_surroundings -> []
-    % also, need to match notarget
-	% {Distance,{_HumanPid,{Hx,Hy}}} = pso:zombie_target(X,Y,Humans),
+
+
+        % SWARMING BUG
+            % because humans move tile, and don't update their viewers
+            % zombies get confused, keep lookng for an entitiy that is no longer in the tile.
+            % humans need to update viewers
+            % then we can make it swarm
+
 	case pso:zombie_target(X,Y,Humans) of
         notarget ->
             % gen_fsm:send_event_after(State#state.speed, move),
@@ -212,5 +220,7 @@ handle_sync_event(get_state, _From, StateName,
                          bearing = Bearing} = StateData) ->
     {reply,{ok,#entity_status{id = self(), x = X, y = Y, type = Type, 
                               current_activity = StateName, speed = Speed,
-                              bearing = Bearing}},StateName,StateData}.
+                              bearing = Bearing}},StateName,StateData};
 
+handle_sync_event(get_all_state, _From, StateName, State) ->
+    {reply,{ok,State},StateName,State}.

@@ -68,7 +68,7 @@ initial(start_human,State) ->
     
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
-                    tile = Tile, type = Type} = State) ->
+                    tile = Tile, type = Type, viewer = Viewer} = State) ->
     OldBearing = State#state.bearing,
     StaySame = random:uniform(?AIMLESS_STAY_COURSE),
     Bearing = case StaySame of
@@ -78,7 +78,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             OldBearing
     end,
     {NewX, NewY} = calc_aimlessbearing(Bearing,X,Y),
-   case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
+    case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
             {stop, shutdown, State};
         false ->
@@ -86,14 +86,18 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             % This calculates if the human is still in it's initial tile
             case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
                 {XTile, XTile, YTile, YTile} -> % In same tile
+                    NewViewer = Viewer,
                     Tile;
                 {_, NewXTile, _, NewYTile} ->
                     tile:remove_entity(Tile, self(), Type),
-                    list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
+                    T = list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile)),
+                    NewViewer = tile:get_viewer(T),
+                    T
             end,
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed),
-            gen_fsm:send_event_after(State#state.timeout, move),
-            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile}}
+
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
+            gen_fsm:send_event_after(State#state.speed, move),
+            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, viewer = NewViewer}}
     end.
 
 aimless_search(move,State) ->
