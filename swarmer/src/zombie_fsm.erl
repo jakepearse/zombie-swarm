@@ -11,7 +11,7 @@
 
 -export([start_link/9,aimless/2,initial/2,aimless_search/2,active/2,
          active_search/2,chasing/2,chasing_search/2,calc_state/1,
-         calc_aimlessbearing/3,start/1,pause/2,get_surroundings/2,
+         calc_aimlessbearing/3,start/1,pause/2,get_surroundings/1,
 		 find_visible/2,find_visible/3]).
 
 %API
@@ -103,8 +103,10 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,bearing = Bearing, speed = Speed,
                     tile = Tile, type = Type} =  State) ->
-	Humans = get_surroundings(self(),State),
-	{Distance,{HumanPid,{Hx,Hy}}} = pso:zombie_target(X,Y,Humans),
+	Humans = get_surroundings(State#state.viewer),
+    % Need a case for get_surroundings -> []
+    % also, need to match notarget
+	{Distance,{_HumanPid,{Hx,Hy}}} = pso:zombie_target(X,Y,Humans),
 	
 	NewState = case Distance < BestFitness of
 		true ->
@@ -158,19 +160,19 @@ pause(unpause, #state{paused_state = PausedState} = State) ->
 	{next_state,PausedState,State}.
 
 %Events for fsm.	
-get_surroundings(Pid,#state{viewer=Viewer} = State) ->
-	Map = viewer:get_humans(Viewer).
+get_surroundings(Viewer) ->
+	viewer:get_humans(Viewer).
 		
 		
-calc_state(State) ->
+calc_state(_State) ->
 	aimless.
 
 find_visible(All,State) ->
 	Visible = [],
 	find_visible(All,State,Visible).
-find_visible([],State,Visible) ->
+find_visible([],_State,Visible) ->
 	Visible;
-find_visible([[{Pid,{Otherx,Othery}}]|Tail],State,Visible) ->
+find_visible([[{Pid,{_Otherx,_Othery}}]|_Tail],_State,_Visible) ->
 	error_logger:error_report(Pid),
 	[].	
 calc_aimlessbearing(Rand,X,Y) ->

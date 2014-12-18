@@ -191,7 +191,7 @@ handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State
     update_viewers(State#state.neighbours, Type, NewMap),
     {reply,Pos,State#state{human_map = NewMap}}.
 
-%%%%-Casts----------------------------------------------------------------------
+%%%%-Casts--------------------- -------------------------------------------------
 
 %%%% Handle summon entity, ensure that no entities end up on the same coordinate
 %%%% This is only used for the initialisation stage of the application.
