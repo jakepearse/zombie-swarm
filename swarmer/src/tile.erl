@@ -172,7 +172,7 @@ handle_call(get_geometry,_From,State) ->
     {reply,State#state.coords, State};
 
 handle_call(get_viewer,_From,State) ->
-    {reply,State#state.viewer};
+    {reply,State#state.viewer,State};
 
 handle_call(get_neighbours,_From,State) ->
     {reply,State#state.neighbours};

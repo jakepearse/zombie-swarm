@@ -11,7 +11,7 @@
 
 -export([start_link/10,aimless/2,initial/2,aimless_search/2,active/2,
          active_search/2,chasing/2,chasing_search/2,calc_state/1,
-         calc_aimlessbearing/3,start/1,pause/2]).
+         calc_aimlessbearing/3,start/1,pause/2, start_human/1]).
 
 %API
 -export([get_state/1, pause/1, unpause/1]).
@@ -35,8 +35,11 @@ start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) ->
 
 
 %%% API!
-start(Pid) ->
-    gen_fsm:send_event(Pid,start).
+start(_Pid) ->
+    ok.
+
+start_human(Pid) ->
+    gen_fsm:send_event(Pid,start_human).
 
 pause(Pid) ->
     gen_fsm:send_all_state_event(Pid, pause).
@@ -59,7 +62,7 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
 %%%%%% State Machine
 %%%%%%==========================================================================
 
-initial(start,State) ->
+initial(start_human,State) ->
     gen_fsm:send_event_after(State#state.timeout, move),
     {next_state,calc_state(aimless),State}.
     
