@@ -125,7 +125,6 @@ handle_call(report,_From,State) ->
     Report = make_report(), 
     {reply,Report,State};
 
-
 handle_call(grid_info,_From,State) ->
   Rows = State#state.rows,
   Columns = State#state.columns,
