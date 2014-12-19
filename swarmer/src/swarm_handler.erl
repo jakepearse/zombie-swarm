@@ -37,6 +37,7 @@ websocket_handle({text, Json}, Req, State) ->
         Arrity = binary_to_integer(BinArrity),
         BinTileSize = proplists:get_value(<<"tileSize">>,Parsed),
         TileSize = binary_to_integer(BinTileSize),
+          error_logger:error_report(BinTileSize),
         enviroment:make_grid(Arrity,Arrity,TileSize),
         Status=jsx:encode(enviroment:get_grid_info()),
         {reply, [{text,Status}], Req, State};
@@ -53,7 +54,7 @@ websocket_handle({text, Json}, Req, State) ->
         Size = binary_to_integer(BinSize),
         enviroment:set_swarm(Size),
         % will need to be a param for mob soon
-        enviroment:set_mob(10),
+        enviroment:set_mob(100),
         Report = jsx:encode(enviroment:report()),
         {reply, [{text,Report}], Req, State};
 

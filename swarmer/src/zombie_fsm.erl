@@ -64,6 +64,7 @@ get_all_state(Pid) ->
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
 	random:seed(erlang:now()),
     tile:summon_entity(Tile,{self(),{X,Y}, zombie}),
+    %error_logger:error_report(TileSize),
 	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
                        bearing=random:uniform(360),type =zombie,
                        tile_size = TileSize, num_columns = NumColumns, 
@@ -112,54 +113,81 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, viewer = NewViewer}}
     end.
 
+
 aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,bearing = Bearing, speed = Speed,
-                    tile = Tile, type = Type, viewer = Viewer,
-                    bestx = BestX, besty = BestY} =  State) ->
+                    tile = Tile, type = Type, viewer = Viewer, bestx= BestX, besty = BestY} =  State) ->
 	Humans = get_surroundings(State#state.viewer),
-
+	error_logger:error_report(State),
 	case pso:zombie_target(X,Y,Humans) of
         notarget ->
             % gen_fsm:send_event_after(State#state.speed, move),
             gen_fsm:send_event(self(),move),
             {next_state,aimless,State};
+        
         {Distance,{_HumanPid,{Hx,Hy}}} -> 
-        %% NEEDS CHANGING TO TWO SEPRATE CASES FOR SEARCHING
-        % I <3 CAPITALS
-        	NewBestFitness = case Distance < BestFitness of
+			% first check if this is a better position that any previous one
+        	{NewBestFitness,NewBestX,NewBestY} = case Distance < BestFitness of
         		true ->
-                    % add bestx and besty to state
-                    % possibly create a new state with all the things or no new things
-                    BestX = X,
-                    BestY = Y,
-                    Distance
+                    % best state eva
+						{Distance,X,Y};
         		false ->
-        			BestFitness
+				% there's nothing to do here
+					{BestFitness,BestX,BestY}
         	end,
-        	{Vx,Vy} = pso:velocity(5,0.73,X,Y,State#state.xvelocity,State#state.yvelocity,State#state.bestx,State#state.besty,Hx,Hy),
-        	NewX = X+Vx,
-        	NewY = Y+Vy,
-        	 case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
-                true -> % We are off the screen!
-                    {stop, shutdown, State};
-                false ->
-                    NewTile = 
-                    % This calculates if the human is still in it's initial tile
-                    case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
+        
+        %this is where I call the pso to give me my new velocity
+        {Vx,Vy} = pso:velocity(3,0.2,X,Y,State#state.xvelocity,State#state.yvelocity,State#state.bestx,State#state.besty,Hx,Hy),
+        NewX = X+Vx,
+        NewY = Y+Vy,
+        
+        
+        {NewTile,NewViewer} = case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
+			true -> % We are off the screen!
+				{stop, shutdown, State},
+				{offGrid,offGrid};
+            false ->
+                % This calculates if the human is still in it's initial tile
+					case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
                         {XTile, XTile, YTile, YTile} -> % In same tile
-                       NewViewer = Viewer,
-                    Tile;
-                {_, NewXTile, _, NewYTile} ->
-                    tile:remove_entity(Tile, self(), Type),
-                    T = list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile)),
-                    NewViewer = tile:get_viewer(T),
-                    T
-                    end,
-                    {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
-            gen_fsm:send_event_after(State#state.speed, move),
-        	{next_state,aimless_search,State#state{x = ReturnedX,y =ReturnedY,xvelocity = ReturnedX - X, yvelocity = ReturnedY -Y,fitness = Distance, viewer =  NewViewer, bestfitness = NewBestFitness}}
-        	end
+							{Tile,Viewer};
+						{_, NewXTile, _, NewYTile} ->
+							tile:remove_entity(Tile, self(), Type),
+							T = list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile)),
+							V = tile:get_viewer(T),
+							{T,V}
+                    end
+        end,
+		
+		{ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
+		
+		%It's possible for the bestfitness to fall to <1 (the zombie ctaches the human) and then it will likely never chase a new target
+		% thats why the all head southeast
+		NewNewBestFitness = case BestFitness < 0.1 of
+			true ->
+				infinity;
+			false ->
+				BestFitness
+		end,
+		% I feel dumber just from writing that
+		
+        gen_fsm:send_event_after(State#state.speed, move),
+        	{next_state,aimless_search,
+        	State#state{
+				tile = NewTile,
+				viewer = NewViewer,
+				x = ReturnedX,
+				y = ReturnedY,
+				fitness = Distance,
+				bestfitness = NewNewBestFitness,
+				bestx = NewBestX,
+				besty = NewBestY,
+				xvelocity = ReturnedX - X,
+				yvelocity = ReturnedY - Y
+				}
+        	}
     end.
+    
 active(move,State) ->
     gen_fsm:send_event_after(State#state.speed, move),
 	{next_state,active_search,State}.

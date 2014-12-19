@@ -1,7 +1,7 @@
 function start() {
   var startjson = JSON.stringify({"type":"startzombies"});
   socket.send(startjson);
-  //socket.onmessage = function (x) {;}
+  socket.onmessage = function (x) {;}
   inspector.value ="";
   var gridScale = document.getElementById('gridScale').value;
   var dummy_json = JSON.stringify({"type":"report"});
