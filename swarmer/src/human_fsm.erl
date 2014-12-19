@@ -94,8 +94,9 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     NewViewer = tile:get_viewer(T),
                     T
             end,
-
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
+			% what is the measure of human fitness?
+			Fitness =0,
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed,Fitness),
             gen_fsm:send_event_after(State#state.speed, move),
             {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, viewer = NewViewer}}
     end.

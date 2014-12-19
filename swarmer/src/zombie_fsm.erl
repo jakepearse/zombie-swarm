@@ -11,7 +11,7 @@
 
 -export([start_link/9,aimless/2,initial/2,aimless_search/2,active/2,
          active_search/2,chasing/2,chasing_search/2,calc_state/1,
-         calc_aimlessbearing/3,start/1,pause/2,get_surroundings/1,
+         calc_aimlessbearing/3,start/1,pause/2,get_surrounding_humans/1,get_surrounding_zombies/1,
 		 find_visible/2,find_visible/3,startzombie/1, get_all_state/1]).
 
 %API
@@ -29,8 +29,8 @@
                 y,
                 type,
                 paused_state,
-				fitness = infinity,
-				bestfitness = infinity,
+				fitness,
+				bestfitness,
 				bestx,
 				besty,
 				xvelocity = 0,
@@ -60,11 +60,11 @@ get_state(Pid) ->
 
 get_all_state(Pid) ->
     catch gen_fsm:sync_send_all_state_event(Pid, get_all_state).
+    
 
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
 	random:seed(erlang:now()),
     tile:summon_entity(Tile,{self(),{X,Y}, zombie}),
-    %error_logger:error_report(TileSize),
 	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
                        bearing=random:uniform(360),type =zombie,
                        tile_size = TileSize, num_columns = NumColumns, 
@@ -80,8 +80,7 @@ initial(startzombie,State) ->
 	
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
-                    tile = Tile, type = Type, viewer = Viewer} = State) ->
-    % error_logger:error_report("got to aimless"),
+                    tile = Tile, type = Type, viewer = Viewer, fitness=Fitness} = State) ->
     OldBearing = State#state.bearing,
     StaySame = random:uniform(?AIMLESS_STAY_COURSE),
     Bearing = case StaySame of
@@ -108,7 +107,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     T
             end,
 
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed,Fitness),
             gen_fsm:send_event_after(State#state.speed, move),
             {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, viewer = NewViewer}}
     end.
@@ -116,9 +115,9 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
 aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,bearing = Bearing, speed = Speed,
-                    tile = Tile, type = Type, viewer = Viewer, bestx= BestX, besty = BestY} =  State) ->
-	Humans = get_surroundings(State#state.viewer),
-	error_logger:error_report(State),
+                    tile = Tile, type = Type, viewer = Viewer, bestx= BestX, besty = BestY, fitness = Fitness} =  State) ->
+	Humans = get_surrounding_humans(State#state.viewer),
+	%error_logger:error_report(Humans),
 	case pso:zombie_target(X,Y,Humans) of
         notarget ->
             % gen_fsm:send_event_after(State#state.speed, move),
@@ -137,7 +136,9 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
         	end,
         
         %this is where I call the pso to give me my new velocity
-        {Vx,Vy} = pso:velocity(3,0.2,X,Y,State#state.xvelocity,State#state.yvelocity,State#state.bestx,State#state.besty,Hx,Hy),
+        Zombies = get_surrounding_zombies(State#state.viewer),
+        %error_logger:error_report(Zombies),
+        {Vx,Vy} = pso:velocity(3,0.8,X,Y,State#state.xvelocity,State#state.yvelocity,State#state.bestx,State#state.besty,Hx,Hy,Zombies),
         NewX = X+Vx,
         NewY = Y+Vy,
         
@@ -159,7 +160,7 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
                     end
         end,
 		
-		{ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed),
+		{ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed,Fitness),
 		
 		%It's possible for the bestfitness to fall to <1 (the zombie ctaches the human) and then it will likely never chase a new target
 		% thats why the all head southeast
@@ -167,7 +168,7 @@ aimless_search(move,#state{x = X, y = Y, bestfitness = BestFitness, tile_size = 
 			true ->
 				infinity;
 			false ->
-				BestFitness
+				NewBestFitness
 		end,
 		% I feel dumber just from writing that
 		
@@ -213,9 +214,10 @@ pause(unpause, #state{paused_state = PausedState} = State) ->
 	{next_state,PausedState,State}.
 
 %Events for fsm.	
-get_surroundings(Viewer) ->
+get_surrounding_humans(Viewer) ->
 	viewer:get_humans(Viewer).
-		
+get_surrounding_zombies(Viewer) ->
+	viewer:get_zombies(Viewer).
 		
 calc_state(_State) ->
 	aimless.
@@ -226,7 +228,6 @@ find_visible(All,State) ->
 find_visible([],_State,Visible) ->
 	Visible;
 find_visible([[{Pid,{_Otherx,_Othery}}]|_Tail],_State,_Visible) ->
-	error_logger:error_report(Pid),
 	[].	
 calc_aimlessbearing(Rand,X,Y) ->
 	trigstuff:findcoordinates(Rand,X,Y).

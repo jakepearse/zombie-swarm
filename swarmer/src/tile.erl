@@ -17,7 +17,7 @@
 %%%% tile functions
 -export([summon_entity/2,
         remove_entity/3,
-        update_entity/5,
+        update_entity/6,
         get_geometry/1,
         set_viewer/2,
         get_viewer/1,
@@ -96,9 +96,9 @@ get_neighbours(Pid) ->
 %%%% Update the entities position on the tile.
 %%%% @end
 %%%%----------------------------------------------------------------------------
--spec update_entity(pid(),entity(),pos(),_,_) -> ok.
-update_entity(Pid, Entity, Pos, Bearing, _Speed) ->
-    gen_server:call(Pid, {update_entity, Entity, Pos, Bearing, _Speed}).
+-spec update_entity(pid(),entity(),pos(),_,_,_) -> ok.
+update_entity(Pid, Entity, Pos, Bearing, _Speed, Fitness) ->
+    gen_server:call(Pid, {update_entity, Entity, Pos, Bearing, _Speed, Fitness}).
 
 
 %%%%-Casts----------------------------------------------------------------------
@@ -182,11 +182,12 @@ handle_call(get_state,_From,State) ->
 
 %%%% Updates the entities position on the tile.
 %%%% Will also deal with a new entitiy being moved onto the tile
-handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State) when Type == zombie ->
-    NewMap = maps:put(ID,{Type,Pos},State#state.zombie_map),
+handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed,Fitness},_From, State) when Type == zombie ->
+    NewMap = maps:put(ID,{Type,Pos,Fitness},State#state.zombie_map),
+    %error_logger:error_report(NewMap),
     update_viewers(State#state.neighbours, Type, NewMap),
     {reply,Pos,State#state{zombie_map = NewMap}};
-handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State) when Type == human ->
+handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, _Fitness},_From, State) when Type == human ->
     NewMap = maps:put(ID,{Type,Pos},State#state.human_map),
     update_viewers(State#state.neighbours, Type, NewMap),
     {reply,Pos,State#state{human_map = NewMap}}.
@@ -197,7 +198,7 @@ handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed},_From, State
 %%%% This is only used for the initialisation stage of the application.
 %%%% No reply because the environment doesn't care where the new zombie ends up.
 handle_cast({summon_entity,{ID,{X,Y},Type}}, #state{zombie_map =Zombie_Map} =State) when Type == zombie ->
-    NewMap = maps:put(ID,{Type,{X,Y}},Zombie_Map),
+    NewMap = maps:put(ID,{Type,{X,Y},infinity},Zombie_Map),
     update_viewers(State#state.neighbours, Type, NewMap),
     {noreply,State#state{zombie_map = NewMap}};
 handle_cast({summon_entity,{ID,{X,Y}, Type}},#state{human_map =Human_Map} =State) when Type == human ->

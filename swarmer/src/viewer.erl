@@ -72,6 +72,7 @@ handle_cast({update_humans, Tile, Entities}, #state{human_map = Hmap} = State) -
 
 handle_call(get_zombies,_From,State) ->
     Map = lists:flatten(maps:values(State#state.zombie_map)),
+    %error_logger:error_report(Map),
     {reply,Map,State};
 
 handle_call(get_humans,_From,State) ->

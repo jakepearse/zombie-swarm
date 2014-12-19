@@ -54,7 +54,7 @@ websocket_handle({text, Json}, Req, State) ->
         Size = binary_to_integer(BinSize),
         enviroment:set_swarm(Size),
         % will need to be a param for mob soon
-        enviroment:set_mob(100),
+        enviroment:set_mob(1),
         Report = jsx:encode(enviroment:report()),
         {reply, [{text,Report}], Req, State};
 
