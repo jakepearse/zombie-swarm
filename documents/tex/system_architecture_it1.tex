@@ -1,0 +1,17 @@
+\pagestyle{empty}
+
+\section{System Architecture for Iteration One\\{\small\tt{J.~Mitchard}}}
+
+\begin{description}
+In order to begin writing the modules for the system, an effective design was needed to allow for all the neccesary communication to take place in the most effective means possible. This was something that had to be carried out before anything else could take place, as it would define how the system would work from the ground up.
+\end{description}
+\subsection{Design}
+The system we had initially intended to design was considerably less complicated than the one we have at present, and took a number of attempts to get a working solution. The architecture we have designed splits the system into a number of different sections, each having a process parent called a Supervisor in Erlang. The sections are as follows:
+\begin{itemize}
+\item Environment - This is intended to act as the communications switchboard between all of the other processes, that allows a lot of the neccesary control over the system. This handles calls to and from the websocket, and provides what control the system offers over the processes and their supervisors.
+\item Tile - This module controls the grid that the entities will navigate. Providing means of communicating between the Environment module and the population of the tile.
+\item Viewer - This is looked upon as an overseer of the population, designed around the grid system that we have implemented with the Tile Module. Each viewer can see into a surrounding neighbourhood of tiles, and as such knows about the processes within. An example of this is depicted here: % Insert picture of viewers/grid 
+\item Zombie - This module controls the functioning of the Zombie entities, particularly the desicion making and inteligence of them.
+\item Human - As with the Zombie module, the Human module controls the desicion making of the Humans, though this will be considerably more complicated than the Zombie moule.
+\end{itemize}
+
