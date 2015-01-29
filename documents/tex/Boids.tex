@@ -8,6 +8,24 @@ The Boids model is an example of an individual-based flocking algorithm used to 
 \subsubsection{The Boids Model}
 % more formal description of the Boids model
 The Boids Model defines a number of behaviours that allow for different entities to flock together.
+\begin{itemize}
+	\item Steering behaviours
+	\begin{itemize}
+		\item \emph{Seperation} - ensures that the entities will not overcrowd local flockmates. This prevents the flock converging on one entity and getting stuck in a localised swarm.
+		\item \emph{Alignment} - allows the flock to maintain a heading, by aligning other members of the flock to navigate to an average heading of nearby entitys.
+		\item \emph{Cohesion} - the oposite of seperation, this allows the indipendent entities to flock together by navigating towards nearby other nearby entitys.
+	\end{itemize}
+	\item Advanced navigation
+	\begin{itemize}
+		\item \emph{Collision Avoidance} - ensuring that the members of the flock do not bounce into other entities or obstacles. This is the ability to change heading instead of hitting an obstacle.
+	\end{itemize}
+	\item Attractors and Repulsors
+	\begin{itemize}
+		\item \emph{Flock Attraction} - an attraction to entities of similar type. This will be used by the Cohesion and Alignment steering behaviours.
+		\item \emph{Super Attractors} - other entities considered higher priority to flock towards than others.
+		\item \emph{Super Repulsors} - other entities considered a 'threat', flocks will prioritise moving away from these.
+	\end{itemize}
+\end{itemize}
 
 \subsection{The Boids Algorithm}
 This model will need some adapting to suit our own simulation. The model is intended to simulate the flocking of entities, however our project incorperates two seperate types of entities that will flock for different reasons and have distinct behavioural rules seperating them from each other.
@@ -17,5 +35,28 @@ Zombies and Humans will need to flock in different ways and for different reason
 
 In order to simulate a realistic situation of Zombies and Humans, this would mean that the Zombies must be a form of Super Repulsor to a Human; meaning that they will attempt to run away from the Zombies. Humans, however, are inherently more intelligent than the basic motor driven Zombies we are implementing. Whilst trying to escape, they will not just pick a direction and run. Whilst the aim for the Human entities would be to escape the horde of Zombies chasing it, collision avoidance must still be carried out when pathfinding an escape route. 
 
-
 \subsubsection{Pseudocode}
+In this final section we will define a rough pseudocode version of the Boids model for the two types of entities in our simulation.
+
+\subsubsubsection{Zombies}
+Check surrounding neighbourhood
+if	nothing 	->	move in a random direction, check again
+	zombie 		->	move in direction of other zombie
+	human 		->	move (fast) in direction of human target
+end
+
+Flocking
+	check average fitness of all other flockmembers
+	if 	self and no target 	->	move in a random direction
+		self and target		-> 	move towards target
+		flockmember 		-> 	move towards fittest flockmember
+	end
+	maintain flock cohesion
+		check distance between self and nearest flockmembers
+		adjust heading based on average heading in flock
+
+Collision avoidance
+	check next position
+		if not free, change heading
+
+\subsubsubsection{Humans}
