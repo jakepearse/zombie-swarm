@@ -1,11 +1,11 @@
 \pagestyle{empty}
 
 \section{The Boids Model\\{\small\tt J.~Mitchard}}
-After deciding that Partical Swarm Optimisation was not the most appropriate means of achievening our goal, we decided to implement an algorithm based on Boids.
+After deciding that Particle Swarm Optimisation was not the most appropriate means of achieving our goal, we decided to implement an algorithm based on Boids.
 
 \subsection{Boids}
 \subsubsection{What are Boids?}
-The Boids model is an example of an individual-based flocking algorithm used to simulate the behaviour of large numbers of autonomous entities. First designed in 1986 by Craig Reynolds, the model incorperates three simple steering behaviours in order to flock to other boids near itself.
+The Boids model is an example of an individual-based flocking algorithm used to simulate the behaviour of large numbers of autonomous entities. First designed in 1986 by Craig Reynolds, the model incorporates three simple steering behaviours in order to flock to other boids near itself.
 
 \subsubsection{The Boids Model}
 % more formal description of the Boids model
@@ -13,9 +13,9 @@ The Boids Model defines a number of behaviours that allow for different entities
 \begin{itemize}
 	\item Steering behaviours
 	\begin{itemize}
-		\item \emph{Seperation} - ensures that the entities will not overcrowd local flockmates. This prevents the flock converging on one entity and getting stuck in a localised swarm.
-		\item \emph{Alignment} - allows the flock to maintain a heading, by aligning other members of the flock to navigate to an average heading of nearby entitys.
-		\item \emph{Cohesion} - the oposite of seperation, this allows the indipendent entities to flock together by navigating towards nearby other nearby entitys.
+		\item \emph{Separation} - ensures that the entities will not overcrowd local flockmates. This prevents the flock converging on one entity and getting stuck in a localised swarm.
+		\item \emph{Alignment} - allows the flock to maintain a heading, by aligning other members of the flock to navigate to an average heading of nearby entities.
+		\item \emph{Cohesion} - the opposite of separation, this allows the independent entities to flock together by navigating towards nearby other nearby entities.
 	\end{itemize}
 	\item Advanced navigation
 	\begin{itemize}
@@ -30,10 +30,10 @@ The Boids Model defines a number of behaviours that allow for different entities
 \end{itemize}
 
 \subsection{The Boids Algorithm}
-This model will need some adapting to suit our own simulation. The model is intended to simulate the flocking of entities, however our project incorperates two seperate types of entities that will flock for different reasons and have distinct behavioural rules seperating them from each other.
+This model will need some adapting to suit our own simulation. The model is intended to simulate the flocking of entities, however our project incorporates two separate types of entities that will flock for different reasons and have distinct behavioural rules separating them from each other.
 
 \subsubsection{Boids In Context}
-Zombies and Humans will need to flock in different ways and for different reasons. We have decided that Zombies are not inherently inteligent, and would tend to 'flock' through being attracted to movement and noise of other Zombies. In a sense, a horde of Zombies will flock together wandering reasonably aimlessly until a Human entitiy enters the area. At this point the horde would shift behaviour and attempt to chase the Human(s) that are in range. This type of relation defines that a Human to a Zombie is a Super Attractor. Super Atractors intend to be prioritised higher than other behaviours, such as collision avoidance and flock coherancy, therefore allowing our horde of Zombies to demonstrate the type of behaviour displayed by Zombies in popular culture of getting stuck against obsticals in attempt to reach the Human by the shortest path possible.
+Zombies and Humans will need to flock in different ways and for different reasons. We have decided that Zombies are not inherently intelligent, and would tend to 'flock' through being attracted to movement and noise of other Zombies. In a sense, a horde of Zombies will flock together wandering reasonably aimlessly until a Human entity enters the area. At this point the horde would shift behaviour and attempt to chase the Human(s) that are in range. This type of relation defines that a Human to a Zombie is a Super Attractor. Super Attractors intend to be prioritised higher than other behaviours, such as collision avoidance and flock coherency, therefore allowing our horde of Zombies to demonstrate the type of behaviour displayed by Zombies in popular culture of getting stuck against obstacles in attempt to reach the Human by the shortest path possible.
 
 In order to simulate a realistic situation of Zombies and Humans, this would mean that the Zombies must be a form of Super Repulsor to a Human; meaning that they will attempt to run away from the Zombies. Humans, however, are inherently more intelligent than the basic motor driven Zombies we are implementing. Whilst trying to escape, they will not just pick a direction and run. Whilst the aim for the Human entities would be to escape the horde of Zombies chasing it, collision avoidance must still be carried out when pathfinding an escape route. 
 
@@ -53,12 +53,3 @@ Flocking
 		self and target		-> 	move towards target
 		flockmember 		-> 	move towards fittest flockmember
 	end
-	maintain flock cohesion
-		check distance between self and nearest flockmembers
-		adjust heading based on average heading in flock
-
-Collision avoidance
-	check next position
-		if not free, change heading
-
-% \subsubsection{Humans}
