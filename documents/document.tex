@@ -1,21 +1,25 @@
 \documentclass{article}
 \usepackage{times}
 \usepackage{mystyle}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+\definecolor{Gray}{gray}{0.9} % oh my god! why can't americans spell?
 %\usepackage{ifpdf}
-\includeonly{project_ouline.tex}
+%\includeonly{project_ouline.tex}
 \begin{document}
 \title{Realistic Concurrent Zombie Horde Simulation}
 
-\maketitle
+%\maketitle
 
 %\ifx\HCode\undefined \else
 %\CutAt{section}    % tell is to cut as if we did "htm,2", make
 %\fi                % section separate
 
-\tableofcontents
+%\tableofcontents
 %\listoffigures
 %\listoftables
-\clearpage
+%\clearpage
 \input{./tex/project_outline.tex}
 \input{./tex/Requirements_Specification.tex}
 \input{./tex/Languages_Research.tex}
@@ -25,6 +29,8 @@
 \input{./tex/zombies.tex}
 \input{./tex/biology.tex}
 
+\input{./tex/system_evolution.tex}
+\input{./tex/ParticleSwarm.tex}
 \input{./tex/Testing_Plan.tex}
 
 
