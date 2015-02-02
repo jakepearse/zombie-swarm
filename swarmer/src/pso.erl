@@ -1,5 +1,5 @@
 -module(pso).
--export([velocity/10,zombie_target/3]).
+-export([velocity/11,zombie_target/3]).
 
 % This is the pso movement function it needs 10 variables
 % it returns X velocity -- how far to move along the X axis & Y velocity (could be negative),
@@ -8,18 +8,30 @@
 % Inertia, accelration try 0.7,
 % CurrentXPosition & CurrentYPosition,
 % These can start at 0, but should move away from zero over time
-velocity(MaxVelocity, Inertia, CurrentPositionX, CurrentPositionY, CurrentX_velocity, CurrentY_velocity, PreviousBestX, PreviousBestY, TargetX, TargetY) ->
-  VelocityX = clamp(MaxVelocity, Inertia * CurrentX_velocity + random:uniform() * (PreviousBestX - CurrentPositionX) + random:uniform() * (TargetX - CurrentPositionX)),
-  VelocityY = clamp(MaxVelocity, Inertia * CurrentY_velocity + random:uniform() * (PreviousBestY - CurrentPositionY) + random:uniform() * (TargetY - CurrentPositionY)),
-  {VelocityX,VelocityY}.
+velocity(MaxVelocity, Inertia, CurrentPositionX, CurrentPositionY, CurrentX_velocity, CurrentY_velocity, 
+	PreviousBestX, PreviousBestY, TargetX, TargetY,ZombieList) ->
+	FitList = lists:map(fun(Z) -> {_,{_,{X,Y},D}} = Z, {D,X,Y} end,ZombieList),
+	error_logger:error_report(FitList),
+  VelocityX = clamp(MaxVelocity, Inertia * CurrentX_velocity + random:uniform() 
+  		* (PreviousBestX - CurrentPositionX) + random:uniform() * (TargetX - CurrentPositionX)),
+  VelocityY = clamp(MaxVelocity, Inertia * CurrentY_velocity + random:uniform() 
+  		* (PreviousBestY - CurrentPositionY) + random:uniform() * (TargetY - CurrentPositionY)),
+  {round(VelocityX),round(VelocityY)}.
   
 clamp(MaxVelocity,Velocity) when Velocity < 0 andalso Velocity > MaxVelocity * -1 -> Velocity;
 clamp(MaxVelocity,Velocity) when Velocity < 0 -> MaxVelocity;
 clamp(MaxVelocity,Velocity) when Velocity < MaxVelocity -> Velocity;
-clamp(_,MaxVelocity) -> MaxVelocity.
+clamp(MaxVelocity,_) -> MaxVelocity.
 
 % I haven't tested this yet but its about right ...
+zombie_target(_Zx,_Zy,[]) ->
+	notarget;
 zombie_target(ZombieX,ZombieY,ListOfHumans) ->
-  [Target|_OtherStuff] = lists:keysort(1,lists:map(fun({HumanPid,{X,Y}}) ->
-    {pythagoras:pyth(ZombieX,ZombieY,X,Y),HumanPid,{X,Y}} end, ListOfHumans)),
+	%error_logger:error_report(ListOfHumans),
+  [Target|_OtherStuff] = 
+    lists:keysort(1,
+        lists:map(
+            fun({HumanPid,{human,{X,Y}}}) ->
+                {pythagoras:pyth(ZombieX,ZombieY,X,Y),{HumanPid,{X,Y}}} 
+            end, ListOfHumans)),
   Target.

@@ -37,16 +37,24 @@ websocket_handle({text, Json}, Req, State) ->
         Arrity = binary_to_integer(BinArrity),
         BinTileSize = proplists:get_value(<<"tileSize">>,Parsed),
         TileSize = binary_to_integer(BinTileSize),
+          error_logger:error_report(BinTileSize),
         enviroment:make_grid(Arrity,Arrity,TileSize),
         Status=jsx:encode(enviroment:get_grid_info()),
         {reply, [{text,Status}], Req, State};
      
+      <<"startzombies">> ->
+        _ = lists:map(fun(X) -> {_,P,_,_} = X, zombie_fsm:startzombie(P) end,supervisor:which_children(zombie_sup)),
+        _= lists:map(fun(X) -> {_,P,_,_} = X, human_fsm:start_human(P) end,supervisor:which_children(human_sup)),
+        %stupid(A),
+        Reply ="whatever",
+        {reply,[{text,Reply}],Req,State};
+
      <<"swarm">> ->
         BinSize = proplists:get_value(<<"size">>,Parsed),
         Size = binary_to_integer(BinSize),
         enviroment:set_swarm(Size),
         % will need to be a param for mob soon
-        enviroment:set_mob(50),
+        enviroment:set_mob(1),
         Report = jsx:encode(enviroment:report()),
         {reply, [{text,Report}], Req, State};
 
@@ -85,3 +93,9 @@ websocket_terminate(_Reason, _Req, _State) ->
 terminate(_Reason, _Req, _State) ->
   error_logger:error_report("someother term started"),
   ok.
+
+% heres a function to recurse over a lists
+stupid([]) -> [];
+stupid([E|Es]) ->
+  zombie_fsm:startzombie(E),
+  stupid(Es).
