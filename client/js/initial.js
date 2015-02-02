@@ -1,4 +1,7 @@
 function start() {
+  var startjson = JSON.stringify({"type":"startzombies"});
+  socket.send(startjson);
+  socket.onmessage = function (x) {;}
   inspector.value ="";
   var gridScale = document.getElementById('gridScale').value;
   var dummy_json = JSON.stringify({"type":"report"});
@@ -13,7 +16,7 @@ function start() {
     update_circles(json,gridScale,swarmSize);
     for (var i = 0; i<inspectList.length; i++) {
       var element = inspectList[i];
-      inspector.value = "id: "+element.__data__.id+", Pos: "+element.__data__.x+","+element.__data__.y+"\n" + inspector.value;
+      inspector.value = "id: "+element.__data__.id+", Pos: "+element.__data__.x+","+element.__data__.y+","+element.__data__.viewer+"\n" + inspector.value;
     }
     };
   };
@@ -109,6 +112,7 @@ function changeColour(object) {
   d3.select(object)
   .style("fill","tomato")
   .style("stroke","indianred");
+  console.log(object);
   inspectList.push(object);
   
 }

@@ -1,70 +1,60 @@
 <HTML>
 <head>
-<LINK REL=StyleSheet HREF="css/swarmer.css" TYPE="text/css" MEDIA=screen>
+<!--<LINK REL=StyleSheet HREF="css/swarmer.css" TYPE="text/css" MEDIA=screen>-->
 <script src="js/d3.js" charset="utf-8"></script>
 <script src="js/fisheye.js" charset="utf-8"></script>
 <script src="js/initial.js" charset="utf-8"></script>
 <script src="js/update.js" charset="utf-8"></script>
-</head
+<!-- bootstrap yay -->
+<!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="css/bootstrap.min.css">
+<script src="js/bootstrap.min.js"></script>
+</head>
 <body>
-  <div id="controls-wrapper">
-    <div id="gridControls" class="control-panel">
-      <ul class="control-group">
-        <li>
-          <label for="arrity">Grid Arrity</label>
-          <input id="arrity" type="range" min="3" max="10" step="1" value="10" onChange="updateArrity(this.value)">
-        </li>
-        <li>
-          <label for="tileSize">Tile Size</label>
-          <input id="tileSize" type="range" min="10" max="100" step="10" value="50" onChange="updateArrity(this.value)">
-        </li>
-        <li>
-          <label for="gridScale">Grid Scale</label>
-          <input id="gridScale" type="range" min="1" max="10" step="1" value="3" onChange="updateArrity(this.value)">
-        </li>
-      </ul>
-    </div>
-  
-    <div id="simControls" class="control-panel">
-      <ul class="control-group">
-        <li>
-          <label for="swarmSize">Swarm Size</label>
-          <input id="swarmSize" type="range" min="5" max="500" value="50" step="1"  />
-        </li>
-        <li>
-          <label for="simSpeed">Simulation Speed</label>
-          <input id="simSpeed" type="range" min="3" max="30" value="3" step="3" disabled />
-        </li>
-        <li>
-          <label for="movespeed">Movement Speed</label>
-          <input id="movespeed" type="range" min="3" max="30" value="3" step="3"disabled />
-        </li>
-      </ul>
-    </div>
-  </div><!-- end control-wrapper -->
-    
-  <div id="inspector-wrapper">
-    <textarea id="inspector" readonly>hello i'm your textfield, try and edit me! Go on try!</textarea>
-    <div id="button-wrapper">
-      <ul class="control-group">
-        <li>
-          <button onClick="start()">Start</button>
-        </li>
-        <li>
-          <button>Pause</button>
-        </li>
-        <li>
-          <button>Reset</button>
-        </li>
-      </ul>
-    </div> <!-- end button-wrapper -->
-  </div> <!-- end  inspector-wrapper-->
+<div class="container-fluid">
+			<form>
+				<div class="row">
+					<div class="col-xs-6">
+						<div class="form-group">
+							<label for="arrity">Grid Arrity</label>
+							<input id="arrity" class="form-control" type="range" min="3" max="10" step="1" value="10" onChange="updateArrity(this.value)">
+							
+							<label for="tileSize">Tile Size</label>
+							<input id="tileSize" class="form-control" type="range" min="10" max="500" step="10" value="500" onChange="updateArrity(this.value)" disabled>
+						
+							<label for="gridScale">Grid Scale</label>
+							<input id="gridScale" class="form-control" type="range" min="1" max="10" step="1" value="3" onChange="updateArrity(this.value)">
+						</div>
+					</div>
+					<div class="col-xs-6">
+							<div class="form-group">
+							<label for="swarmSize">Swarm Size</label>
+							<input id="swarmSize" class="form-control" type="range" min="1" max="500" value="1" step="1"  />
+							
+							<label for="simSpeed">Simulation Speed</label>
+							<input id="simSpeed" class="form-control" type="range" min="3" max="30" value="3" step="3" disabled />
+							
+							<label for="movespeed">Movement Speed</label>
+							<input id="movespeed" class="form-control" type="range" min="3" max="30" value="3" step="3"disabled />
+						</div>
+										<button onClick="start()">Start</button>
+					<button>Pause</button>
+					<button>Reset</button>
+					</div>
 
-  <!-- main display -->
-  <svg>
-  </svg>
-  <!-- end of display -->
-
+				</div><!-- end of row -->
+	</form>
+		
+		<div class="span10">
+			<textarea id="inspector" class="form-control input-xlarge" readonly>hello i'm your textfield, try and edit me! Go on try!</textarea>
+			<!-- main display -->
+			<hr>
+			<svg>
+			</svg>
+			<!-- end of display -->
+		</div> <!-- end span10 -->
+	</div> <!-- end fluid row -->
+</div> <!-- end container -->
 </body>
 
 <script type="text/javascript">
@@ -76,7 +66,8 @@
   socket.onopen= function() {
     // collect rhe values from the controls
     var arrity = document.getElementById('arrity').value;
-    var tileSize = document.getElementById('tileSize').value;
+    //var tileSize = document.getElementById('tileSize').value;
+        var tileSize = "50";
     var gridScale = document.getElementById('gridScale').value;
     var swarmSize= document.getElementById("swarmSize").value;
     var simSpeed = document.getElementById("simSpeed").value;
