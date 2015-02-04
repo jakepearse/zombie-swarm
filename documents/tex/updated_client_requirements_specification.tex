@@ -1,0 +1,42 @@
+\pagestyle{empty}
+
+\section{Updated Client Requirements Specification\\{\small\tt{J.~Mitchard,R.~Hales}}}
+
+\subsection{The Web Client}
+Now we have decided to implement the client using Javascript and D3, we can make our requirements specifications more specific to the target platform.
+
+\subsection{What We Need}
+This first section will explain the parts of the client that we feel are most critical to the workings of our system. 
+
+We need the client to:
+\begin{itemize}
+	\item visually represents the current state of the simulation,
+	\item display the continuous changing states within the system efficiently,
+	\item be cross platform,
+	\begin{itemize}
+		\item this includes looking and functioning the same across different browsers,
+		\item this includes avoiding browser specific tools and API's,
+		\item this also means avoiding system specific API's such as Adobe Flash and Microsoft Silverlight that work differently or are not available on certain Operating Systems.
+	\end{itemize}
+	\item allow the user to start, reset and pause the simulation,
+	\item allow the user to control certain parameters of the simulation,
+	\item meet current web standards.
+\end{itemize}
+
+\subsection{What We Hope to Achieve}
+We would like the client to:
+\begin{itemize}
+	\item visually represents the current state of the simulation in an aesthetically pleasing manner,
+	\begin{itemize}
+		\item we would like the visualisation to display as much information as possible, without overcomplicating what is shown to the user,
+		\item because this is going to be a web based system, we think that scalability and efficiency are a higher priority than a graphically intensive visualisation.
+	\end{itemize}
+	\item seamlessly display the continuous changing states within the system efficiently,
+	\item host the Erlang server, and allow use of the system across the Internet.
+	\item provide intuitive controls for the user.
+\end{itemize}
+
+
+
+\clearpage
+\endinput
