@@ -1,0 +1,20 @@
+\pagestyle{empty}
+\section{Intelligence Research\\{\small\tt{R.~Hales}}}
+One of the most important decisions we had to make about the simulation was exactly how intelligent to make the human and zombie entities.
+\subsection{Factors in determining intelligence}
+The two biggest factors involved in deciding on an intelligence level for the entities, realism and time. Realism is how similar the simulated entities act compared to their real versions or in the case of zombies, a realistic model. Ideally our simulation should be as realistic as possible, but there is nearly no limit to how much attention to detail can go into making the entities realistic which is why we have to take into account our time restraint. Because of this we decided to create two models for intelligence, a base model that is intelligent enough to satisfactorily complete the project, and an advanced model that contains more features we would like to include but may not have time for.
+
+\subsection{Zombie Base Model}
+The zombie entities must be aware of their surroundings, be lightly attracted(ie move towards) other zombies within their surroundings and strongly attracted to humans within their surroundings. They also need to have collision detection to avoid clustering into one spot rather than forming a horde.
+
+\subsection{Zombie Advanced Model}
+As zombies are typically not shown to be intelligent, we actually intend to decrease the zombies intelligence if there is enough time. In particular we plan to decrease the zombies ability to detect collision when they are chasing humans, this will allow zombies to get stuck on obstacles while trying to catch people as often happens in zombie fiction.
+
+\subsection{Human Base Model}
+The human base model will be a modified version of the zombie base model. They must be aware of their surroundings, be lightly attracted to other humans and strongly repelled(ie move away from) zombies,they also need collision detection.
+
+\subsection{Human Advanced Model}
+If there is enough time , we plan to improve the path-finding of the human entities. As Intelligence is usually one of humanities biggest advantages against zombies we intend to make humans more capable of navigating obstacles, allowing them the possibility of outsmarting the zombies.
+\clearpage
+\endinput
+ 
