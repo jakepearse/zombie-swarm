@@ -5,11 +5,12 @@
   
   });
   
-  app.controller('panelController', function(){
-    this.PanelData = saneDefaultGrid;
-    
+  app.controller('PanelController', function(){
+    this.panelData = saneDefaultGrid;
+    this.arrity="wtf";
     this.update = function(newPanelData) {
       this.panelData = newPanelData;
+        console.log(this.panelData);
     };
     
     //this.isSelected = function(checkTab) {
@@ -34,7 +35,10 @@
       type:'setup',
       arrity:5,
       tileSize:50,
+      gridScale:2,
+      swarmSize:50,
+      popSize:50
     };
 
-  
+
 })();
