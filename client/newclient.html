@@ -5,28 +5,28 @@
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
 </head>
 
-<body ng-controller = "SwarmController as swarm">
-
+<body ng-controller = "SwarmController as swarmCtrl">
 <button type="button" class="btn" data-toggle="collapse" data-target="#controlPanel"><i class="glyphicon glyphicon-chevron-down"></i> <i class="glyphicon glyphicon-wrench"></i></button>
 <div id="controlPanel" class="collapse in">
   <form name="panelForm" ng-controller="PanelController as panelCtrl" ng-submit="update" ng-model-options="{ getterSetter: true }" class="form-inline">
     <fieldset>
         <label for="arrity" class="control-label">Grid Arrity</label>
-        <input id="arrity" class="form-control" type="range" min="3" max="10" step="1" value="10" ng-model="panelCtrl.panelData.arrity">{{panelCtrl.panelData.arrity}}
-        <label for="gridScale" class="control-label">Grid Scale</label>
-        <input id="gridScale" class="form-control" type="range" min="1" max="10" step="1" value="3" ng-model="panelCtrl.panelData.gridScale">
-        <label for="swarmSize" class="control-label">Swarm Size</label>
-        <input id="swarmSize" class="form-control" type="range" min="1" max="500" value="1" step="1"  ng-model="panelCtrl.panelData.swarmSize"/>
-        
-        <label for="popSize" class="control-label">Population Size</label>
-        <input id="popSize" class="form-control" type="range" min="1" max="500" value="1" step="1"  ng-model="panelCtrl.panelData.popSize"/>
+        <input id="arrity" class="form-control" type="range" min="3" max="10" step="1" ng-model="panelCtrl.arrity">
 
+        <label for="gridScale" class="control-label">Grid Scale</label>
+        <input id="gridScale" class="form-control" type="range" min="1" max="10" step="1" ng-model="panelCtrl.gridScale">
+
+        <label for="swarmSize" class="control-label">Swarm Size</label>
+        <input id="swarmSize" class="form-control" type="range" min="1" max="500" step="1"  ng-model="panelCtrl.swarmSize"/>
+
+        <label for="popSize" class="control-label">Population Size</label>
+        <input id="popSize" class="form-control" type="range" min="1" max="500" step="1"  ng-model="panelCtrl.popSize"/>
 
         <button type="submit" class="btn btn-primary">Start</button>
         <button type="button" class="btn">Pause</button>
         <button type="button" class="btn">Reset</button>
       </fieldset>
-  <pre>{{panelCtrl.panelData}}</pre>
+  <pre>arrity {{arritypanelCtrl.arrity}} scale={{panelCtrl.gridScale}} swarm={{panelCtrl.swarmSize}} pop={{panelCtrl.popSize}}</pre>
   </form>
   
   <div>

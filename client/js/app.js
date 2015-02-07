@@ -1,35 +1,17 @@
 (function(){
-  var app =angular.module('swarm',[]);
-  
+  var app = angular.module('swarm',[]);
+
   app.controller('SwarmController', function(){
   
   });
-  
   app.controller('PanelController', function(){
-    this.panelData = saneDefaultGrid;
-    this.arrity="wtf";
-    this.update = function(newPanelData) {
-      this.panelData = newPanelData;
-        console.log(this.panelData);
-    };
-    
-    //this.isSelected = function(checkTab) {
-      //return this.tab === checkTab;
-    //};
-    
+      
   });
   
-  
-  app.controller('SwarmController', function(){
-   // this.review = {};
-    
-    //this.addReview = function(product) {
-     // product.reviews.push(this.review);
-     // this.review = {};
-    //};
-  });
-  
-  
+
+  // this stuff declared at the outer lexical scope is accessible
+  // inside the inner functions ...
+  // I'm not sure wheter this is a good idea
   var saneDefaultGrid = 
     {
       type:'setup',
@@ -39,6 +21,9 @@
       swarmSize:50,
       popSize:50
     };
-
-
+	
+	var arrity = saneDefaultGrid.arrity;
+	var gridScale = saneDefaultGrid.gridScale;
+	var swarmSize = saneDefaultGrid.swamSize;
+	var popSize = saneDefaultGrid.popSize;
 })();
