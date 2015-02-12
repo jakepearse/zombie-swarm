@@ -1,0 +1,69 @@
+\pagestyle{empty}
+\section{\tt viewer.erl}
+\subsection{Module}
+\verb+viewer+
+\subsection{Depends}
+{\tt n/a}
+\subsection{Module Summary}
+The \verb+viewer+ allows entities to 'look' at it's surroundings.
+\subsection{Description}
+Each \verb+viewer+ has two maps, each holding the a map of \verb+tile+ (key) and entities (values) in the surrounding tiles, this is updated every time an entitiy moves.
+\subsection{Exports}
+All of these functions use Erlangs built in gen\_server behaviours, so as to comply with OTP design principles. This is defined in \footnote{http:erlang.org/doc/man/gen\_server.html}.
+\begin{itemize}
+	\item {\tt start\_link} - 
+		\begin{itemize}
+			\item Description - A function built into Erlang, to spawn a linked-process with given parameters.
+		\end{itemize}
+
+	\item {\tt update\_humans}
+		\begin{itemize}
+			\item Description - A function to update the position of a human entitiy.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+viewer+.
+					\item {\tt Tile} - The Pid of the tile the entitiy is currently on.
+					\item {\tt Entity} - The Pid of the entity to update.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt update\_zombies}
+		\begin{itemize}
+			\item Description - A function to update the position of a zombie entitiy.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+viewer+.
+					\item {\tt Tile} - The Pid of the tile the entitiy is currently on.
+					\item {\tt Entity} - The Pid of the entity to update.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt get\_humans}
+		\begin{itemize}
+			\item Description - A function to return the the map of humans currently visible to the \verb+viewer+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+viewer+.
+				\end{itemize}
+			\item Returns:
+				\begin{itemize}
+					\item {\tt Humans} - A map containing the humans known to the \verb+viewer+.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt get\_zombies}
+		\begin{itemize}
+			\item Description - A function to return the the map of zombies currently visible to the \verb+viewer+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+viewer+.
+				\end{itemize}
+			\item Returns:
+				\begin{itemize}
+					\item {\tt Humans} - A map containing the zombies known to the \verb+viewer+.
+				\end{itemize}
+		\end{itemize}
+
+\end{itemize}
+\clearpage
+\endinput
