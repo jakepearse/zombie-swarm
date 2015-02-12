@@ -1,0 +1,17 @@
+\pagestyle{empty}
+\section{\tt swarm\_server.erl}
+A part of the Cowboy Erlang web server framework, \verb+swarm_server+ defines the routing rules used in web socket requests. It's a fairly typical example of a Cowboy application  as it only maps to a single handler
+\subsection{Module}
+\verb+swarm_server+
+\subsection{Depends}
+{\tt cowboy}
+\subsection{Module Summary}
+Defines and compiles routing rules used by the web socket server and starts the server.
+\subsection{Description}
+Implements the \verb+application+ behaviour.
+Set the URL and port for the service provides a way to start the web socket server.
+\subsection{Exports}
+Standard functions defined in the {\tt application} behaviour.
+Cowboy routing patterns are defined in the Cowboy documentation\footnote{http://ninenines.eu/docs/en/cowboy/HEAD/guide/routing/}
+\clearpage
+\endinput

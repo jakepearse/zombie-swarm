@@ -1,0 +1,23 @@
+\pagestyle{empty}
+\section{\tt swarm\_handler.erl}
+A part of the Cowboy Erlang web server framework, \verb+swarm_handler+ provides two-way handling of JSON messages (via the jsx module) over a web socket.
+\subsection{Module}
+\verb+swarm_handler+
+\subsection{Depends}
+{\tt cowboy \linebreak
+jsx}
+\subsection{Module Summary}
+Maps incoming requests from the web socket to appropriate modules and functions.
+Derives JSON structured data, describing the current state of the simulation via web socket.
+\subsection{Description}
+Implements the \verb+cowboy_websocket_handler+ behaviour.
+This module provides the link between the simulation and client, JSON objects are received via web socket and matched to the required action. The only exported function of note is: \linebreak
+\verb+websocket_handle/3+.
+\subsection{Exports}
+\begin{align*}& \tt {websocket\_handle(\{text,Json\},Request,State)}\rightarrow \\ 
+& \tt \{reply, [\{text,Message\}], Request, State\}\end{align*} 
+The incoming JSON message must contain a Type attribute, used to determine where to route the message, any other data required to process the request is also encoded in the JSON.\linebreak
+The \verb+cowboy_websocket_handler+ documentation\footnote{http://ninenines.eu/docs/en/cowboy/1.0/manual/cowboy\_websocket\_handler/}
+ describes all general functions exported as part of the behaviour.
+\clearpage
+\endinput
