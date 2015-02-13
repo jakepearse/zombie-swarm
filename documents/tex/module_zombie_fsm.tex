@@ -1,0 +1,65 @@
+\pagestyle{empty}
+\section{\tt zombie\_fsm.erl}
+\subsection{Module}
+\verb+zombie_fsm+
+\subsection{Depends}
+{\tt n/a}
+\subsection{Module Summary}
+The \verb+zombie_fsm+ simulates the zombie entities used in the simulation.
+\subsection{Description}
+The \verb+zombie_fsm+ is a finite state machine built using Erlangs gen\_fsm behaviour.The entities move by changing states after a set amount of time,upon changing state the entities recalculate their new position(X,Y co-ordinate) and heading before changing states again. 
+\subsection{Exports}
+\begin{itemize}
+\item {\tt start\_link} -
+\begin{itemize}
+\item Description - A function built into Erlang, to spawn a linked-process with given parameters.
+\end{itemize}
+\item {\tt initial}
+\begin{itemize}
+\item Description - The initial state of the FSM, waits for a start message before changing to a state that starts simulating movement.
+\item Parameters:
+\begin{itemize}
+\item {\tt State} - Contains the state of the FSM (ie. it's speed,location,heading and the viewer and tile it is linked with currently).
+\end{itemize}
+\end{itemize}
+\item {\tt aimless}
+\begin{itemize}
+\item Description - The state an entity will enter when it is unable to locate any other entities.The entity will move in a random direction before changing state to search for other entities.
+\item Parameters:
+\begin{itemize}
+\item {\tt State} - Contains the state of the FSM (ie. it's speed,location,heading and the viewer and tile it is linked with currently).
+\end{itemize}
+\end{itemize}
+\item {\tt aimless\_search}
+\begin{itemize}
+\item Description - The state an entity will enter after being in the aimless state.In this state the entity searchs for other entities before changing to a new state based on what entities(if any) where found.
+\item Parameters:
+\begin{itemize}
+\item {\tt State} - Contains the state of the FSM (ie. it's speed,location,heading and the viewer and tile it is linked with currently).
+\end{itemize}
+\end{itemize}
+\item {\tt pause}
+\begin{itemize}
+\item Description - A state that an entity will enter whenever it gets a pause message, from this state the entity will wait for an unpause message and then continue from the state it was in prior to the pause message being received.
+\item Parameters:
+\begin{itemize}
+\item {\tt State} - Contains the state of the FSM (ie. it's speed,location,heading and the viewer and tile it is linked with currently).
+\end{itemize}
+\end{itemize}
+\item {\tt calc\_state}
+\begin{itemize}
+\item Description - A function that calculates the next state the FSM should go into.
+\end{itemize}
+\item {\tt calc\_aimlessbearing}
+\begin{itemize}
+\item Description - A function that moves an entity according to a random bearing.
+\item Parameters:
+\begin{itemize}
+\item {\tt Rand} - A random number between 0-360 to be used as the random bearing.
+\item {\tt X} - The current X co-ordinate of the entity.
+\item {\tt Y} - The current Y co-ordinate of the entity.
+\end{itemize}
+\end{itemize}
+\end{itemize}
+\clearpage
+\endinput
