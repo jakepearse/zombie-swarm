@@ -1,0 +1,144 @@
+\pagestyle{empty}
+\section{\tt tile.erl}
+\subsection{Module}
+\verb+tile+
+\subsection{Depends}
+{\tt n/a}
+\subsection{Module Summary}
+Provides a persistant area in which entities can move through, multiple instances of \verb+tile+ create a grid.
+Maintains a neighbourhood of other instances of \verb+tile+ to allow for cross tile comminication through the use of the \verb+viewer+ *ADD REF TO VIEWER* module
+\subsection{Description}
+Each \verb+tile+ is created with a set of parameters, forming the unique ID and the geometry of each instance.
+Each \verb+tile+ knows it's own geometry, it's connected \verb+viewer+, it's neighbouring tiles and their associated viewer. As well as a map of it's current population.
+\subsection{Exports}
+All of these functions use Erlangs built in gen\_server behaviours, so as to comply with OTP design principles. This is defined in \footnote{http:erlang.org/doc/man/gen\_server.html}
+\begin{itemize}
+	\item {\tt start\_link} - 
+		\begin{itemize}
+			\item Description - A function built into Erlang, to spawn a linked-process with given parameters.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt name} - A unique atom registered to the \verb+Erlang+ server.
+					\item {\tt x} - The starting coordinate for X.
+					\item {\tt y} - The starting coordinate for Y.
+					\item {\tt size} - The size to create the tile.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt summon\_entity}
+		\begin{itemize}
+			\item Description - A function to place a given entity on the \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+					\item {\tt Entity} - The entity to place on the tile.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt remove\_entity}
+		\begin{itemize}
+			\item Description - A function to remove a given entity from the \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+					\item {\tt Entity} - The entity to remove from the tile.
+					\item {\tt Type} - An atom defining to what type the entity is.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt update\_entity}
+		\begin{itemize}
+			\item Description - A function to update a given entity on the \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+					\item {\tt Entity} - The entity to update.
+					\item {\tt Pos} - A tuple with the new position.
+					\item {\tt Bearing} - The bearing of the Entity.
+					\item {\tt Speef} - The 'speed' the entity is travelling at.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt get\_geometry}
+		\begin{itemize}
+			\item Description - A function to return the geometry of the \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+				\end{itemize}
+			\item Returns:
+				\begin{itemize}
+					\item {\tt Coords} - A tuple containing the geometry for the \verb+tile+.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt set\_viewer}
+		\begin{itemize}
+			\item Description - A function to assign a \verb+viewer+ to a \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+					\item {\tt ViewerPid} - The Pid of the viewer to assign.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt get\_viewer}
+		\begin{itemize}
+			\item Description - A function to return the assigned \verb+viewer+ of the \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+				\end{itemize}
+			\item Returns:
+				\begin{itemize}
+					\item {\tt Viewer} - The Pid of the \verb+viewer+ for the \verb+tile+
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt set\_neighbours}
+		\begin{itemize}
+			\item Description - A function to assign a list of \verb+viewer+ Pids to a \verb+tile+, forming the grids neighbourhood.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+					\item {\tt NeighbourPids} -A list of neighbouring Pid's.
+				\end{itemize}
+		\end{itemize}	
+
+	\item {\tt get\_neighbours}
+		\begin{itemize}
+			\item Description - A function to return the list of neighbouring \verb+viewer+ Pids of the \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+				\end{itemize}
+			\item Returns:
+				\begin{itemize}
+					\item {\tt Neighbours} - A list of neighbouring Pid's.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt terminate}
+		\begin{itemize}
+			\item Description - A function to to end the process of the \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt get\_state}
+		\begin{itemize}
+			\item Description - A function to return everything in the state of the \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Pid} - The process ID for the \verb+tile+.
+				\end{itemize}
+			\item Returns:
+				\begin{itemize}
+					\item {\tt State} - All the information held in the \verb+tile+ (zombie\_map, human\_map, xorigin, yorigin, xlimit, ylimit, coords, viewer, neighbours)
+				\end{itemize}
+		\end{itemize}	
+\end{itemize}
+\clearpage
+\endinput
