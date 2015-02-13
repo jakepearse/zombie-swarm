@@ -1,0 +1,84 @@
+\pagestyle{empty}
+\section{\tt enviironment.erl}
+\subsection{Module}
+\verb+environment+
+\subsection{Depends}
+{\tt n/a}
+\subsection{Module Summary}
+The \verb+environment+ module has two main roles in the system, to build the initial system and to report to the client.
+\subsection{Description}
+Though, once created, the different processes within the system act independently, there has to be something of a 'controlling' process that sets up the environment in the first place. This is where the \verb+environment+ module comes in; it uses the \verb+tile+, \verb+viewer+, \verb+human+ and \verb+zombie+ modules parent supervisor modules to create a specific number of processes depending on the parameters set by the user.
+After the setup stage, the \verb+environment+ modules role becomes that of a reporting agent between the client and server.
+\subsection{Exports}
+All of these functions use Erlangs built in gen\_server behaviours, so as to comply with OTP design principles. This is defined in \footnote{http:erlang.org/doc/man/gen\_server.html}.
+\begin{itemize}
+	\item {\tt start\_link} - 
+		\begin{itemize}
+			\item Description - A function built into Erlang, to spawn a linked-process with given parameters.
+		\end{itemize}
+
+	\item {\tt make\_grid}
+		\begin{itemize}
+			\item Description - A function to create a grid of tiles.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Rows} - The amount of \verb+tile+ instances to spawn for the y axis.
+					\item {\tt Collumns} - The amount of \verb+tile+ instances to spawn for the x axis.
+					\item {\tt TileSize} - The size of the each \verb+tile+, in pixels.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt get\_grid\_info}
+		\begin{itemize}
+			\item Description - A function to return the information about the grid.
+			\item Returns:
+				\begin{itemize}
+					\item {\tt GridInfo} - As a list, it returns the Rows, Collumns and TileSize.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt report}
+		\begin{itemize}
+			\item Description - A function to create and return a report of the current state.
+			\item Returns:
+				\begin{itemize}
+					\item {\tt Report} - A list of the current state of all entities.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt pause\_entities}
+		\begin{itemize}
+			\item Description - A function to cause all the entities to wait until an unpause message is received.
+		\end{itemize}
+
+	\item {\tt unpause\_entities}
+		\begin{itemize}
+			\item Description - A function to cause all the entities to continue running.
+		\end{itemize}
+
+	\item {\tt start\_entities}
+		\begin{itemize}
+			\item Description - A function to cause all the entities to start running, this function begins the simulation.
+		\end{itemize}
+
+	\item {\tt set\_swarm}
+		\begin{itemize}
+			\item Description - A function to spawn x amount of \verb+zombie+ instances, and to add them to a \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Num} - The amount of \verb+zombie+ instances to spawn.
+				\end{itemize}
+		\end{itemize}
+
+	\item {\tt set\_mob}
+		\begin{itemize}
+			\item Description - A function to spawn x amount of \verb+human+ instances, and to add them to a \verb+tile+.
+			\item Parameters:
+				\begin{itemize}
+					\item {\tt Num} - The amount of \verb+human+ instances to spawn.
+				\end{itemize}
+		\end{itemize}
+
+\end{itemize}
+\clearpage
+\endinput
