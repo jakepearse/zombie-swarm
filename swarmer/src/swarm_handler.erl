@@ -33,10 +33,9 @@ websocket_handle({text, Json}, Req, State) ->
     Type = proplists:get_value(<<"type">>,Parsed),
     case Type of
       <<"setup">> ->
-        BinArrity = proplists:get_value(<<"arrity">>,Parsed),
-        Arrity = binary_to_integer(BinArrity),
-        BinTileSize = proplists:get_value(<<"tileSize">>,Parsed),
-        TileSize = binary_to_integer(BinTileSize),
+        Arrity = proplists:get_value(<<"arrity">>,Parsed),
+        % Now TileSize must be a hardcoded value.
+        TileSize=50,
         enviroment:make_grid(Arrity,Arrity,TileSize),
         Status=jsx:encode(enviroment:get_grid_info()),
         {reply, [{text,Status}], Req, State};
