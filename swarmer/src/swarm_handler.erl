@@ -33,20 +33,23 @@ websocket_handle({text, Json}, Req, State) ->
     Type = proplists:get_value(<<"type">>,Parsed),
     case Type of
       <<"setup">> ->
-        BinArrity = proplists:get_value(<<"arrity">>,Parsed),
-        Arrity = binary_to_integer(BinArrity),
-        BinTileSize = proplists:get_value(<<"tileSize">>,Parsed),
-        TileSize = binary_to_integer(BinTileSize),
+        Arrity = proplists:get_value(<<"arrity">>,Parsed),
+        % Now TileSize must be a hardcoded value.
+        TileSize=50,
         enviroment:make_grid(Arrity,Arrity,TileSize),
         Status=jsx:encode(enviroment:get_grid_info()),
         {reply, [{text,Status}], Req, State};
      
      <<"swarm">> ->
-        BinSize = proplists:get_value(<<"size">>,Parsed),
-        Size = binary_to_integer(BinSize),
+        %BinSize = proplists:get_value(<<"size">>,Parsed),
+        Size = proplists:get_value(<<"size">>,Parsed),
+        		error_logger:error_report(Size),
+        %Size = binary_to_integer(BinSize),
         enviroment:set_swarm(Size),
         % will need to be a param for mob soon
         enviroment:set_mob(50),
+        %enviroment:start_entities(),
+        %enviroment:pause_entities(),
         Report = jsx:encode(enviroment:report()),
         {reply, [{text,Report}], Req, State};
 
@@ -54,6 +57,11 @@ websocket_handle({text, Json}, Req, State) ->
         Report = jsx:encode(enviroment:report()),
         {reply, [{text,Report}], Req, State};
       
+      <<"start">> ->
+		error_logger:error_report("hit start"),
+		%enviroment:unpause_entities(),
+		{reply,[{text,"ok"}], Req, State};
+		
       _ ->
     error_logger:error_report({"Unknown message type", Type}),
               {noreply, Req, State}
