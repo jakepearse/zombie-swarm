@@ -18,6 +18,10 @@ handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
 
+% Record to Props List, for reporting
+-define(R2P(Record), record_to_propslist(#state{} = Record) ->
+            lists:zip(record_info(fields, Record), tl(tuple_to_list(Record)))).
+
 -record(state,{
 % map viewer PID's to respective tiles
   viewerPropList,
@@ -261,22 +265,17 @@ get_tile(Xpos,Ypos,#state{viewerPropList = ViewerPropList, tileSize = TileSize})
   {Tile,Viewer}.
 
 %% Makes a report for the client.
-%% This report contains a list of lists, built from polling the zombie_sup
-%% for current position of all it's children.
+%% This report contains a props list of all the states for each supervisors children.
 make_report() ->
     lists:filtermap(
         fun({_Id, Pid, _Type, [Module]}) ->
             case Module:get_state(Pid) of
-                {ok, #entity_status{id = ID, x = X, y = Y, 
-                                    speed = Speed, bearing = Bearing, 
-                                    type = Type} = _EntityStatus} ->
-                   {true, [{id, list_to_binary(pid_to_list(ID))},{type,Type}, 
-                            {x,X}, {y,Y}, {speed,Speed}, {bearing, Bearing}]};
+                {ok,StateData} ->
+                    {true, StateData};
                 _ ->
                     false
-            end
+            end 
         end, get_entities_list()).
-%% ADD OTHER SUPERVISORS IF MORE THAN JUST ZOMBIES
 
 make_neighbourhood(TileList,ViewerPropList) ->
   ViewerGeomList = setup_neighbours(ViewerPropList),

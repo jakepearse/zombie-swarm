@@ -2,6 +2,10 @@
 -author("Robert Hales rsjh3@kent.ac.uk").
 -define(AIMLESS_STAY_COURSE, 8).
 
+% Record to Props List, for reporting
+-define(R2P(Record), record_to_propslist(#state{} = Record) ->
+            lists:zip(record_info(fields, Record), tl(tuple_to_list(Record)))).
+
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
 
@@ -23,6 +27,7 @@
                 num_columns,
                 num_rows,
                 viewer,
+                viewerStr,
                 speed,
                 bearing,
                 x,
@@ -50,8 +55,9 @@ get_state(Pid) ->
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
 	random:seed(erlang:now()),
     tile:summon_entity(Tile,{self(),{X,Y}, zombie}),
-	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
+	{ok,initial,#state{id = list_to_binary(pid_to_list(self())), tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
                        bearing=random:uniform(360),type =zombie,
+                       viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows}}.
 
@@ -156,10 +162,11 @@ handle_info(_,StateName,StateData)->
 handle_event(pause, StateName, StateData) ->
     {next_state,pause,StateData#state{paused_state = StateName}}.
 
-handle_sync_event(get_state, _From, StateName, 
-                  #state{x = X, y = Y, speed = Speed, type = Type,
-                         bearing = Bearing} = StateData) ->
-    {reply,{ok,#entity_status{id = self(), x = X, y = Y, type = Type, 
-                              current_activity = StateName, speed = Speed,
-                              bearing = Bearing}},StateName,StateData}.
+handle_sync_event(get_state, _From, StateName, StateData) ->
+    PropList = record_to_proplist(StateData),
+    PropListJson = proplists:delete(viewer,PropList),
+    {reply, {ok,PropListJson}, StateName,StateData}.
+
+record_to_proplist(#state{} = Record) ->
+    lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
 
