@@ -61,7 +61,7 @@
 		
 	$scope.update = function() {
 		var inspector = angular.element("#inspector");
-		console.log(inspector);
+		// console.log(inspector);
 		var startjson = JSON.stringify({"type":"start"});
 		socket.send(startjson);
 		socket.onmessage = function (x) {;}
@@ -75,6 +75,7 @@
 			socket.send(dummy_json);
 			socket.onmessage = function(evt) {
 				var report_json = JSON.parse(evt.data);
+				console.log(report_json);
 				update_circles(report_json,$scope.gridScale,$scope.swarmSize);
 				for (var i = 0; i<inspectList.length; i++) {
 					var element = inspectList[i];
