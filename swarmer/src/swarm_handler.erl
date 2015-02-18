@@ -41,11 +41,15 @@ websocket_handle({text, Json}, Req, State) ->
         {reply, [{text,Status}], Req, State};
      
      <<"swarm">> ->
-        BinSize = proplists:get_value(<<"size">>,Parsed),
-        Size = binary_to_integer(BinSize),
+        %BinSize = proplists:get_value(<<"size">>,Parsed),
+        Size = proplists:get_value(<<"size">>,Parsed),
+        		error_logger:error_report(Size),
+        %Size = binary_to_integer(BinSize),
         enviroment:set_swarm(Size),
         % will need to be a param for mob soon
         enviroment:set_mob(50),
+        %enviroment:start_entities(),
+        %enviroment:pause_entities(),
         Report = jsx:encode(enviroment:report()),
         {reply, [{text,Report}], Req, State};
 
@@ -53,6 +57,11 @@ websocket_handle({text, Json}, Req, State) ->
         Report = jsx:encode(enviroment:report()),
         {reply, [{text,Report}], Req, State};
       
+      <<"start">> ->
+		error_logger:error_report("hit start"),
+		%enviroment:unpause_entities(),
+		{reply,[{text,"ok"}], Req, State};
+		
       _ ->
     error_logger:error_report({"Unknown message type", Type}),
               {noreply, Req, State}
