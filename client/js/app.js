@@ -16,7 +16,8 @@
     $scope.swarmSize = 50;
     $scope.popSize = 20;
     
-    var json = JSON.stringify({"type":"setup","arrity":$scope.arrity});
+    $scope.update = function() {
+    var json = JSON.stringify({"type":"setup","arrity":$scope.arrity,"swarmSize":$scope.swarmSize,"popSize":$scope.popSize});
     var socket= new WebSocket('ws://localhost:8080/websocket');
     
     // the onopen event hook triggers this
@@ -24,42 +25,36 @@
 		socket.send(json);
 		// this is in the event of a reply coming back
 		socket.onmessage = function(evt) {
-		// parse the data from the reply json object
-		var data = JSON.parse(evt.data);;
-		// update the grid visulaisation
-		$scope.updateGrid($scope.arrity);
-		};
-	};
-	
-	// this is in a seperate function so it can be triggered when the input field is updated
-	$scope.updateGrid = function() {
-		// compile a 'setup' typed JSON
-		var update_json = JSON.stringify({"type":"setup","arrity":$scope.arrity});
-		socket.send(update_json);
-		socket.onmessage = function(evt) {
-			var data = JSON.parse(evt.data);
+			// parse the data from the reply json object
+			var data = JSON.parse(evt.data);;
+			// update the grid visulaisation
+			
 			// draw the grid
-			setup_grid(data.rows,data.tileSize,$scope.gridScale);
+			var gridInfo = data.pop();
+			setup_grid(gridInfo.rows,gridInfo.tileSize,$scope.gridScale);
+			draw_circles(data,$scope.gridScale);
+			};
 		};
 	};
 	
-	$scope.updateZoom = function() {
-		//setup_grid($scope.arrity,50,$scope.gridScale);
-		$scope.updateGrid();
-		};
+	
+	//$scope.updateZoom = function() {
+		////setup_grid($scope.arrity,50,$scope.gridScale);
+		//$scope.updateGrid();
+		//};
 		
-	$scope.updateSwarm = function() {
-		var swarm_json = JSON.stringify({"type":"swarm","size":$scope.swarmSize});
-		socket.send(swarm_json);
-		socket.onmessage = function(sw) {
-          // draw the swarm 
-          swarm_data = JSON.parse(sw.data);
-          //console.log(swarm_data);
-          draw_circles(swarm_data,$scope.gridScale);
-        };    
-	};
+	//$scope.updateSwarm = function() {
+		//var swarm_json = JSON.stringify({"type":"swarm","size":$scope.swarmSize});
+		//socket.send(swarm_json);
+		//socket.onmessage = function(sw) {
+          //// draw the swarm 
+          //swarm_data = JSON.parse(sw.data);
+          ////console.log(swarm_data);
+          //draw_circles(swarm_data,$scope.gridScale);
+        //};    
+	//};
 		
-	$scope.update = function() {
+	$scope.start = function() {
 		var inspector = angular.element("#inspector");
 		console.log(inspector);
 		var startjson = JSON.stringify({"type":"start"});
@@ -83,7 +78,7 @@
     };
   };
 };
-
+	$scope.update();
   }]);//end of 'PanelController'  
   
 })();
