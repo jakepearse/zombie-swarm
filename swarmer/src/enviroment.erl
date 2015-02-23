@@ -7,7 +7,8 @@
 
 %%% API
 -export([start_link/0,make_grid/3,get_grid_info/0,report/0, 
-         pause_entities/0, unpause_entities/0, start_entities/0]).
+         pause_entities/0, unpause_entities/0, start_entities/0,
+         type_pause_unpause/2]).
 
 %%%% internal functions for debugging these can be deleted later
 -export([get_state/0,set_swarm/1,set_mob/1]).
@@ -117,6 +118,14 @@ pause_entities() ->
 unpause_entities() -> 
   do_unpause_entities().
 
+%%%%------------------------------------------------------------------------------
+%%%% @doc
+%% Pauses or unpauses entities of a specific type.
+%%%% @end
+%%%%------------------------------------------------------------------------------
+type_pause_unpause(Action,Type) -> 
+  do_action_entities_type(Action,Type).
+
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
@@ -169,6 +178,7 @@ handle_cast({swarm,Num},State) ->
   supervisor:terminate_child(swarm_sup, zombie_sup),
   supervisor:restart_child(swarm_sup, zombie_sup),
   create_swarm(State,Num),
+  do_action_entities_type(pause, zombies),  
   {noreply,State};
 
 handle_cast({mob,Num},State) ->
@@ -177,6 +187,7 @@ handle_cast({mob,Num},State) ->
   supervisor:terminate_child(swarm_sup, human_sup),
   supervisor:restart_child(swarm_sup, human_sup),
   create_mob(State,Num),
+  do_action_entities_type(pause, humans),
   {noreply,State}.
 
 % other gen_server stuff
@@ -322,11 +333,48 @@ do_pause_entities() ->
 do_unpause_entities() ->
     apply_to_all_entities(unpause).
 
+do_action_entities_type(Action,Type) ->
+    case Action of
+      pause ->
+        case Type of
+          humans ->
+            apply_to_all__humans(pause);
+          zombies ->
+            apply_to_all_zombies(pause)
+        end;
+      unpause ->
+        case Type of
+          humans ->
+            apply_to_all__humans(unpause);
+          zombies ->
+            apply_to_all_zombies(unpause)
+        end
+    end.
+
 apply_to_all_entities(Fun) ->
     lists:foreach(
         fun({_Id, Pid, _Type, [Module]}) ->
             Module:Fun(Pid)
         end, get_entities_list()).
 
+apply_to_all_zombies(Fun) ->
+    lists:foreach(
+        fun({_Id, Pid, _Type, [Module]}) ->
+            Module:Fun(Pid)
+        end, get_zombies_list()).
+
+apply_to_all__humans(Fun) ->
+    lists:foreach(
+        fun({_Id, Pid, _Type, [Module]}) ->
+            Module:Fun(Pid)
+        end, get_humans_list()).
+
 get_entities_list() ->
   supervisor:which_children(zombie_sup) ++ supervisor:which_children(human_sup).
+
+get_zombies_list() ->
+  supervisor:which_children(zombie_sup).
+
+get_humans_list() ->
+  supervisor:which_children(human_sup).
+
