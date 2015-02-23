@@ -15,10 +15,11 @@
     $scope.gridScale = 4;
     $scope.swarmSize = 50;
     $scope.popSize = 20;
-    
-    $scope.update = function() {
-    var json = JSON.stringify({"type":"setup","arrity":$scope.arrity,"swarmSize":$scope.swarmSize,"popSize":$scope.popSize});
     var socket= new WebSocket('ws://localhost:8080/websocket');
+
+    $scope.update = function() {
+    d3.select("svg").html("");
+    var json = JSON.stringify({"type":"setup","arrity":$scope.arrity,"swarmSize":$scope.swarmSize,"popSize":$scope.popSize});
     
     // the onopen event hook triggers this
     socket.onopen = function() {
@@ -47,7 +48,7 @@
 		//var swarm_json = JSON.stringify({"type":"swarm","size":$scope.swarmSize});
 		//socket.send(swarm_json);
 		//socket.onmessage = function(sw) {
-          //// draw the swarm 
+		//// draw the swarm 
           //swarm_data = JSON.parse(sw.data);
           ////console.log(swarm_data);
           //draw_circles(swarm_data,$scope.gridScale);
