@@ -2,10 +2,6 @@
 -author("Robert Hales rsjh3@kent.ac.uk").
 -define(AIMLESS_STAY_COURSE, 8).
 
-% Record to Props List, for reporting
--define(R2P(Record), record_to_propslist(#state{} = Record) ->
-            lists:zip(record_info(fields, Record), tl(tuple_to_list(Record)))).
-
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
 
@@ -129,7 +125,7 @@ pause(unpause, #state{paused_state = PausedState} = State) ->
 	{next_state,PausedState,State}.
 
 %Events for fsm.	
-get_surroundings(Pid,#state{viewer=Viewer} = State) ->
+get_surroundings(_Pid,#state{viewer=Viewer} = State) ->
 	Map = viewer:get_population(Viewer),
 		case maps:size(Map) of
 			0-> [];
@@ -143,9 +139,9 @@ calc_state(_Current_state) ->
 find_visible(All,State) ->
 	Visible = [],
 	find_visible(All,State,Visible).
-find_visible([],State,Visible) ->
+find_visible([],_State,Visible) ->
 	Visible;
-find_visible([[{Pid,{Otherx,Othery}}]|Tail],State,Visible) ->
+find_visible([[{Pid,{_Otherx,_Othery}}]|_Tail],_State,_Visible) ->
 	error_logger:error_report(Pid),
 	[].	
 calc_aimlessbearing(Rand,X,Y) ->
