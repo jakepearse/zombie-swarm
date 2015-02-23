@@ -34,13 +34,10 @@
         <button type="button" class="btn">Pause</button>
         <button type="button" class="btn">Reset</button>
       </fieldset>
+                  <h2>Inspector</h2>
+  <div ng-repeat="item in inspectList">
+    <p id="inspector" style="width:100%;" class="form-control input-xlarge" ng-model="item.id" >{{item.id}}</p>
   </form>
-  
-  <div>
-    <h2>Inspector</h2>
-
-    <textarea id="inspector" class="form-control input-xlarge" readonly>hello i'm your textfield, try and edit me! Go on try!</textarea>
-  </div>
 </div>
 
 <!-- main display -->
