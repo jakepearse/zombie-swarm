@@ -34,10 +34,18 @@ websocket_handle({text, Json}, Req, State) ->
     case Type of
       <<"setup">> ->
         Arrity = proplists:get_value(<<"arrity">>,Parsed),
+        Size = proplists:get_value(<<"swarmSize">>,Parsed),
+        Pop = proplists:get_value(<<"popSize">>,Parsed),
         % Now TileSize must be a hardcoded value.
         TileSize=50,
         enviroment:make_grid(Arrity,Arrity,TileSize),
-        Status=jsx:encode(enviroment:get_grid_info()),
+        enviroment:set_swarm(Size),
+        enviroment:set_mob(Pop),
+        GridInfo = [enviroment:get_grid_info()],
+        %error_logger:error_report(GridInfo),
+        Report = enviroment:report(),
+        %error_logger:error_report(Report),
+        Status=jsx:encode(Report++GridInfo),
         {reply, [{text,Status}], Req, State};
      
      <<"swarm">> ->

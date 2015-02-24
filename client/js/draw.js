@@ -63,12 +63,11 @@ function strokeColour(ob) {
   return "seagreen";
 }
 
-function changeColour(object) {
+function changeColour(object,d,inspectList) {
   d3.select(object)
   .style("fill","tomato")
   .style("stroke","indianred");
-  console.log(object);
-  inspectList.push(object);
+  inspectList.push(d);
   
 }
 
@@ -81,8 +80,9 @@ function update_circles(data,gridScale,swarmSize) {
     .transition()
     .attr("cx", function(d) { return d.x*gridScale; })
     .attr("cy", function(d) { return d.y*gridScale; })
+    .attr("id", function(d) { return d.id; })
     .duration(300);
-   
+
    svg.selectAll("circle")
       .each(function(d,i) {
         //Find corresponding pid in data list
@@ -98,16 +98,17 @@ function update_circles(data,gridScale,swarmSize) {
       })
 }
 
-function draw_circles(data,gridScale) {
+function draw_circles(data,gridScale,$scope) {
   var svg = d3.select("svg");
       svg.selectAll("circle")
         .data(data)
         .enter().append("circle")
-        .on("click", function() {changeColour(this);})
+        .on("click", function(d) {changeColour(this,d,$scope.inspectList);})
         .attr("class", function(d) {return d.type; })
         .attr("r", gridScale)
         .attr("cx", function(d) { return d.x*gridScale; })
         .attr("cy", function(d) { return d.y*gridScale; })
+        .attr("id", function(d) { return d.id; })
         .style("fill",function(d) { return setColour(d);})
         .style("stroke", function(d) { return strokeColour(d);})
         .style("stroke-width",0.5*gridScale);
