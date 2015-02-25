@@ -68,7 +68,7 @@ get_state() ->
 %%%% @end
 %%%%------------------------------------------------------------------------------
 make_grid(Rows,Columns,TileSize) ->
-  gen_server:cast(?MODULE,{make_grid,{Rows,Columns,TileSize}}).
+  gen_server:call(?MODULE,{make_grid,{Rows,Columns,TileSize}}).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -146,14 +146,9 @@ handle_call(grid_info,_From,State) ->
   {reply,[{<<"rows">>,Rows},{<<"columns">>,Columns},{<<"tileSize">>,Size}],State};
 
 handle_call(get_state,_From,State) ->
-    {reply,State,State}.
+    {reply,State,State};
 
-handle_call(terminate,State) ->
-  {stop,normal,State}.
-
-% casts
-
-handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
+handle_call({make_grid,{Rows,Columns,TileSize}},_From,State) ->
   %%kinda hacky but works....kill supervisors, start supervisors, why not....
   %kill entities
   supervisor:terminate_child(swarm_sup, zombie_sup),
@@ -170,8 +165,13 @@ handle_cast({make_grid,{Rows,Columns,TileSize}},State) ->
   Viewers=add_viewers(Grid),
   
   make_neighbourhood(Grid,Viewers),
-  {noreply,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers}};
+  %error_logger:error_report(State#state.viewerPropList),
+  {reply,ok,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers}}.
 
+handle_call(terminate,State) ->
+  {stop,normal,State}.
+
+% casts
 handle_cast({swarm,Num},State) ->
   %%kinda hacky but works....kill supervisors, start supervisors, why not....
   %kill entities
@@ -201,6 +201,7 @@ terminate(normal,_State) ->
 
 code_change(_OldVsn, State,_Extra) ->
     {ok,State}.
+
 
 %%%%%%=============================================================================
 %%%%%% Internal Functions
