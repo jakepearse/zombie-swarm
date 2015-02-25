@@ -23,6 +23,7 @@
                 num_columns,
                 num_rows,
                 viewer,
+                viewerStr,
                 speed,
                 bearing,
                 x,
@@ -50,8 +51,10 @@ get_state(Pid) ->
 init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
 	random:seed(erlang:now()),
     tile:summon_entity(Tile,{self(),{X,Y}, zombie}),
-	{ok,initial,#state{tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
+	{ok,initial,#state{id = list_to_binary(pid_to_list(self())), 
+                       tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
                        bearing=random:uniform(360),type =zombie,
+                       viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows}}.
 
@@ -123,7 +126,7 @@ pause(unpause, #state{paused_state = PausedState} = State) ->
 	{next_state,PausedState,State}.
 
 %Events for fsm.	
-get_surroundings(Pid,#state{viewer=Viewer} = State) ->
+get_surroundings(_Pid,#state{viewer=Viewer} = State) ->
 	Map = viewer:get_population(Viewer),
 		case maps:size(Map) of
 			0-> [];
@@ -137,9 +140,9 @@ calc_state(_Current_state) ->
 find_visible(All,State) ->
 	Visible = [],
 	find_visible(All,State,Visible).
-find_visible([],State,Visible) ->
+find_visible([],_State,Visible) ->
 	Visible;
-find_visible([[{Pid,{Otherx,Othery}}]|Tail],State,Visible) ->
+find_visible([[{Pid,{_Otherx,_Othery}}]|_Tail],_State,_Visible) ->
 	error_logger:error_report(Pid),
 	[].	
 calc_aimlessbearing(Rand,X,Y) ->
@@ -156,10 +159,11 @@ handle_info(_,StateName,StateData)->
 handle_event(pause, StateName, StateData) ->
     {next_state,pause,StateData#state{paused_state = StateName}}.
 
-handle_sync_event(get_state, _From, StateName, 
-                  #state{x = X, y = Y, speed = Speed, type = Type,
-                         bearing = Bearing} = StateData) ->
-    {reply,{ok,#entity_status{id = self(), x = X, y = Y, type = Type, 
-                              current_activity = StateName, speed = Speed,
-                              bearing = Bearing}},StateName,StateData}.
+handle_sync_event(get_state, _From, StateName, StateData) ->
+    PropList = record_to_proplist(StateData),
+    PropListJson = proplists:delete(viewer,PropList),
+    {reply, {ok,PropListJson}, StateName,StateData}.
+
+record_to_proplist(#state{} = Record) ->
+    lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
 
