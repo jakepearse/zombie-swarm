@@ -1,8 +1,12 @@
 -module(boids_functions).
 -author("Robert Hales rsjh3@kent.ac.uk").
+
+
 -define(SUPER_EFFECT, 0.03).
 -define(FLOCKING_EFFECT,0.05).
 -define(VELOCITY_EFFECT,0.04).
+
+
 -export([super_attractor/4,super_repulsor/4,collision_avoidance/4,
 	flocking/3,flocking/6,velocity/3,velocity/6,limit_speed/5,limit_speed/4]).
 

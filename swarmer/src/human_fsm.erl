@@ -29,7 +29,9 @@
                 y,
                 timeout,
                 type,
-                paused_state}).
+                paused_state,
+                x_velocity,
+                y_velocity}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
@@ -56,7 +58,8 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
                        bearing=random:uniform(360), timeout=Timeout,type =human,
                        viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
-                       num_rows = NumRows}}.
+                       num_rows = NumRows,
+                       x_velocity = 0, y_velocity = 0}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -68,16 +71,23 @@ initial(start,State) ->
     
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
-                    tile = Tile, type = Type} = State) ->
-    OldBearing = State#state.bearing,
-    StaySame = random:uniform(?AIMLESS_STAY_COURSE),
-    Bearing = case StaySame of
-        1 ->
-            random:uniform(360);
-        _ ->
-            OldBearing
-    end,
-    {NewX, NewY} = calc_aimlessbearing(Bearing,X,Y),
+                    tile = Tile, type = Type,
+                    x_velocity = X_Velocity, y_velocity = Y_Velocity} = State) ->
+    % OldBearing = State#state.bearing,
+    % StaySame = random:uniform(?AIMLESS_STAY_COURSE),
+    % Bearing = case StaySame of
+    %     1 ->
+    %         random:uniform(360);
+    %     _ ->
+    %         OldBearing
+    % end,
+    % {NewX, NewY} = calc_aimlessbearing(Bearing,X,Y),
+
+
+    NewX = X,
+    NewY = Y,
+    Bearing = 0,
+
    case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
             {stop, shutdown, State};
@@ -91,7 +101,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     tile:remove_entity(Tile, self(), Type),
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed),
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed, {X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, move),
             {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile}}
     end.
