@@ -41,7 +41,7 @@ websocket_handle({text, Json}, Req, State) ->
         enviroment:make_grid(Arrity,Arrity,TileSize),
         GridInfo = [enviroment:get_grid_info()],
         % error_logger:error_report(enviroment:get_state()),
-        %error_logger:error_report(GridInfo),
+        % error_logger:error_report(GridInfo),
         enviroment:set_swarm(Size),
         enviroment:set_mob(Pop),
         Report = enviroment:report(),

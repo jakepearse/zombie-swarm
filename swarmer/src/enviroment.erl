@@ -14,7 +14,7 @@
 -export([get_state/0,set_swarm/1,set_mob/1]).
 
 %%%% gen_server callbacks
--export([code_change/3,handle_cast/2,handle_call/2,handle_call/3,
+-export([code_change/3,handle_call/2,handle_call/3,
 handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
@@ -84,7 +84,7 @@ report() ->
 %%%% @end
 %%%%------------------------------------------------------------------------------
 set_swarm(Num) -> 
-  gen_server:cast(?MODULE,{swarm,Num}).
+  gen_server:call(?MODULE,{swarm,Num}).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -92,7 +92,7 @@ set_swarm(Num) ->
 %%%% @end
 %%%%------------------------------------------------------------------------------
 set_mob(Num) -> 
-  gen_server:cast(?MODULE,{mob,Num}).
+  gen_server:call(?MODULE,{mob,Num}).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -125,6 +125,7 @@ unpause_entities() ->
 %%%%------------------------------------------------------------------------------
 type_pause_unpause(Action,Type) -> 
   do_action_entities_type(Action,Type).
+
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -162,33 +163,32 @@ handle_call({make_grid,{Rows,Columns,TileSize}},_From,State) ->
   supervisor:terminate_child(swarm_sup, viewer_sup),
   supervisor:restart_child(swarm_sup, viewer_sup),
   Grid = populate_grid(Rows,Columns,TileSize),
+
   Viewers=add_viewers(Grid),
-  
+  % error_logger:error_report(Viewers),
+
   make_neighbourhood(Grid,Viewers),
   %error_logger:error_report(State#state.viewerPropList),
-  {reply,ok,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers}}.
+  {reply,ok,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers}};
 
-handle_call(terminate,State) ->
-  {stop,normal,State}.
-
-% casts
-handle_cast({swarm,Num},State) ->
-  %%kinda hacky but works....kill supervisors, start supervisors, why not....
+handle_call({swarm,Num},_From,State) ->
   %kill entities
   supervisor:terminate_child(swarm_sup, zombie_sup),
   supervisor:restart_child(swarm_sup, zombie_sup),
   create_swarm(State,Num),
   do_action_entities_type(pause, zombies),  
-  {noreply,State};
+  {reply,ok,State};
 
-handle_cast({mob,Num},State) ->
-  %%kinda hacky but works....kill supervisors, start supervisors, why not....
+handle_call({mob,Num},_From,State) ->
   %kill entities
   supervisor:terminate_child(swarm_sup, human_sup),
   supervisor:restart_child(swarm_sup, human_sup),
   create_mob(State,Num),
   do_action_entities_type(pause, humans),
-  {noreply,State}.
+  {reply,ok,State}.
+
+handle_call(terminate,State) ->
+  {stop,normal,State}.
 
 % other gen_server stuff
 
@@ -248,9 +248,10 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State
     GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
-            Xpos = random:uniform(GridXSize),
-            Ypos= random:uniform(GridYSize),
+            Xpos = random:uniform(GridXSize-1),
+            Ypos= random:uniform(GridYSize-1),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
+            % error_logger:error_report({Tile,Viewer}),
             {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,300,0]),
             %temporary fix
             zombie_fsm:start(Zombie)
@@ -262,8 +263,8 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,N
     GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
-            Xpos = random:uniform(GridXSize),
-            Ypos= random:uniform(GridYSize),
+            Xpos = random:uniform(GridXSize-1),
+            Ypos= random:uniform(GridYSize-1),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
             %temporary fix
