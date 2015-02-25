@@ -40,11 +40,15 @@ flocking([],Count,Totalx,Totaly,X,Y)->
 	Changey = ((Avgy - Y)* ?FLOCKING_EFFECT),
 	{Changex,Changey};
 flocking([H|Ts],Count,Totalx,Totaly,X,Y)->
-	{EX,EY} = H,
+	{_, {_,{_,{{EX,EY},{_,_}}}}} = H,
 	Newcount = Count + 1,
 	Newtotalx = Totalx + EX,
 	Newtotaly = Totaly + EY,
 	flocking(Ts,Newcount,Newtotalx,Newtotaly,X,Y).
+
+
+% 33.13608305156178: {<0.239.0>,{human,{{152,97},{0,0}}}}
+
 
 %Makes an entity match velocity with other entities in it's flock.
 velocity([],X,Y) ->

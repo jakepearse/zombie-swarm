@@ -1,6 +1,9 @@
 -module(zombie_fsm).
 -author("Robert Hales rsjh3@kent.ac.uk").
+
 -define(AIMLESS_STAY_COURSE, 8).
+-define(SIGHT,75).
+-define(PERSONAL_SPACE, 3).
 
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
@@ -31,7 +34,9 @@
                 type,
                 paused_state,
                 x_velocity,
-                y_velocity}).
+                y_velocity,
+                z_list,
+                h_list}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing) -> 
 	gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing],[]).
@@ -84,15 +89,39 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     % {NewX, NewY} = calc_aimlessbearing(Bearing,X,Y),
 
 
-    NewX = X,
-    NewY = Y,
+    % Build a list of nearby zombies
+    Zombie_List = viewer:get_zombies(State#state.viewer),
+    No_self_list = lists:keydelete(self(),1,Zombie_List),
+
+    Zlist = lists:keysort(1,lists:map(fun({ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
+        {pythagoras:pyth(X,Y,ZX,ZY),{ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}} end,
+        No_self_list)),
+
+
+    % Build a list of nearby humans
+    Human_List = viewer:get_humans(State#state.viewer),
+    DistanceList = lists:map(fun({Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
+        {pythagoras:pyth(X,Y,HX,HY),{Hpid,{human,{{HX,HY},{HXV,HYV}}}}} end,
+        Human_List),
+
+
+    Hlist = lists:keysort(1,DistanceList),
+
+
+    {BoidsX,BoidsY} = make_choice(Zlist,Hlist,State), 
+    
+    New_X_Velocity = X_Velocity + BoidsX,
+    New_Y_Velocity = Y_Velocity + BoidsY,
+
+    NewX = X + New_X_Velocity,
+    NewY = Y + New_Y_Velocity,  
+
     Bearing = 0,
 
     case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
             {stop, shutdown, State};
         false ->
-            error_logger:error_report(viewer:get_zombies(State#state.viewer)),
             NewTile = 
             % This calculates if the human is still in it's initial tile
             case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
@@ -102,7 +131,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     tile:remove_entity(Tile, self(), Type),
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed, {X_Velocity, Y_Velocity}),
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed, {New_X_Velocity, New_Y_Velocity}),
             gen_fsm:send_event_after(State#state.speed, move),
             {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile}}
     end.
@@ -178,3 +207,9 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
 
+make_choice([],[],_State) ->
+    {0,0};
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|_Zlist],_,State) when Dist < ?PERSONAL_SPACE ->
+    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY);
+make_choice(Zlist,_, State) ->
+    boids_functions:flocking(Zlist,State#state.x,State#state.y).

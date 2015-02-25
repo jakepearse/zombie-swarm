@@ -187,7 +187,7 @@ handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_F
     update_viewers(State#state.neighbours, Type, NewMap),
     {reply,Pos,State#state{zombie_map = NewMap}};
 handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_From, State) when Type == human ->
-    NewMap = maps:put(ID,{Type,Pos, Velocity},State#state.human_map),
+    NewMap = maps:put(ID,{Type,{Pos, Velocity}},State#state.human_map),
     update_viewers(State#state.neighbours, Type, NewMap),
     {reply,Pos,State#state{human_map = NewMap}}.
 
