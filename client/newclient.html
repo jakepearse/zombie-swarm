@@ -19,24 +19,30 @@
   <form name="panelForm" ng-controller="PanelController as panelCtrl" ng-submit="start()"  class="form-inline">
     <fieldset>
         <label for="arrity" class="control-label">Grid Arrity</label>
-        <input type="number" name="gridArrity" class="form-control"  min="1" max="10" ng-model="arrity" ng-change="update()"/>
-
+        <select name="gridArrity" class="form-control" data-ng-model="arrity" data-ng-options="item for item in arrityOpts" ng-change="update()"></select>
+        
         <label for="gridScale" class="control-label">Grid Scale</label>
-        <input name="gridScale" class="form-control" type="number" min="1" max="10" ng-model="gridScale" ng-change="update()"/>
+        <select name="gridScale" class="form-control" data-ng-model="gridScale" data-ng-options="item for item in gridScaleOpts" ng-change="update()"></select>
 
         <label for="swarmSize" class="control-label">Swarm Size</label>
-        <input name="swarmSize" class="form-control" type="number" min="1" max="500" ng-model="swarmSize" ng-change="update()"/>
+        <select name="swarmSize" class="form-control" data-ng-model="swarmSize" data-ng-options="item for item in swarmSizeOpts" ng-change="update()"></select>
 
         <label for="popSize" class="control-label">Population Size</label>
-        <input name="popSize" class="form-control" type="number" min="1" max="500" step="1"  ng-model="popSize" ng-change="update()"/>
+        <select name="popSize" class="form-control" data-ng-model="popSize" data-ng-options="item for item in popSizeOpts" ng-change="update()"></select>
 
-        <button type="submit" class="btn btn-primary">Start</button>
+        <button id="start-btn" type="submit" class="btn btn-primary" ng-disabled="{{runningFlag}}" >Start</button>
         <button type="button" class="btn">Pause</button>
         <button type="button" class="btn">Reset</button>
       </fieldset>
-                  <h2>Inspector</h2>
-  <div ng-repeat="item in inspectList">
-    <p id="inspector" style="width:100%;" class="form-control input-xlarge" ng-model="item.id" >{{item.id}}</p>
+     <h2>Inspector</h2>
+	<div class="container-fluid">
+		<div class="row-fluid">
+			<div class="span8 bg" ng-repeat="item in realInspectList">
+				<h4>{{item.type}} #{{item.id}}</h4>
+				<p>x:{{item.x}},y:{{item.y}}</p>
+			</div>
+		</div>
+	</div>
   </form>
 </div>
 

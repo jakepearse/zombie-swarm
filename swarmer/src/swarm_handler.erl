@@ -39,10 +39,11 @@ websocket_handle({text, Json}, Req, State) ->
         % Now TileSize must be a hardcoded value.
         TileSize=50,
         enviroment:make_grid(Arrity,Arrity,TileSize),
-        enviroment:set_swarm(Size),
-        enviroment:set_mob(Pop),
         GridInfo = [enviroment:get_grid_info()],
         % error_logger:error_report(enviroment:get_state()),
+        %error_logger:error_report(GridInfo),
+        enviroment:set_swarm(Size),
+        enviroment:set_mob(Pop),
         Report = enviroment:report(),
         % error_logger:error_report(Report),
         Status=jsx:encode(Report++GridInfo),
@@ -66,8 +67,8 @@ websocket_handle({text, Json}, Req, State) ->
         {reply, [{text,Report}], Req, State};
       
       <<"start">> ->
-		error_logger:error_report("hit start"),
-		%enviroment:unpause_entities(),
+		%error_logger:error_report("hit start"),
+		enviroment:unpause_entities(),
 		{reply,[{text,"ok"}], Req, State};
 		
       _ ->
