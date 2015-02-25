@@ -63,11 +63,11 @@ function strokeColour(ob) {
   return "seagreen";
 }
 
-function changeColour(object,d,inspectList) {
+function changeColour(object,d,$scope) {
   d3.select(object)
   .style("fill","tomato")
   .style("stroke","indianred");
-  inspectList.push(d);
+  $scope.inspectList.push(d);
   
 }
 
@@ -103,7 +103,7 @@ function draw_circles(data,gridScale,$scope) {
       svg.selectAll("circle")
         .data(data)
         .enter().append("circle")
-        .on("click", function(d) {changeColour(this,d,$scope.inspectList);})
+        .on("click", function(d) {changeColour(this,d,$scope);})
         .attr("class", function(d) {return d.type; })
         .attr("r", gridScale)
         .attr("cx", function(d) { return d.x*gridScale; })
