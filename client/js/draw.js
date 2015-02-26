@@ -9,16 +9,23 @@ function setup_grid(arrity,tileSize,gridScale) {
   for (var i = 0; i <= arrity; i++) {
     list.push(i*tileSize);
   };
+  draw_background(arrity,tileSize,gridScale);
   draw_hlines(arrity,tileSize,gridScale,list);
   draw_vlines(arrity,tileSize,gridScale,list);
 }
 
-
-function draw_hlines(arrity,tileSize,gridScale,list) {
+function draw_background(arrity,tileSize,gridScale){
    var svg = d3.select("svg")
     .attr("height",(arrity*tileSize)*gridScale)
     .attr("width",(arrity*tileSize)*gridScale)
-    .selectAll("hline")
+    .append("rect")
+      .attr("height",(arrity*tileSize)*gridScale)
+      .attr("width",(arrity*tileSize)*gridScale)
+      .style("fill","#FFFEE8");
+    };
+
+function draw_hlines(arrity,tileSize,gridScale,list) {
+   var svg = d3.select("svg").selectAll("hline")
     .data(list)
     .enter().append("line")
     .attr("class","xline")
