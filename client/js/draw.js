@@ -51,9 +51,9 @@ function draw_vlines(arrity,tileSize,gridScale,list) {
 
 function setColour(ob) {
   if (ob.type==="human"){
-    return "steelblue";
+    return "img/hume.png";
   }
-  return "darkseagreen";
+  return "img/zomb.png";
 }
   
 function strokeColour(ob) {
@@ -64,9 +64,14 @@ function strokeColour(ob) {
 }
 
 function changeColour(object,d,$scope) {
+  var inv;
+  if (d.type==="human"){
+    inv = "img/inv_hume.png";
+  }else{ inv = "img/inv_zomb.png";}
   d3.select(object)
-  .style("fill","tomato")
-  .style("stroke","indianred");
+  //.style("fill","tomato")
+  //.style("stroke","indianred")
+  .attr("xlink:href",inv);
   $scope.inspectList.push(d);
   
 }
@@ -75,15 +80,15 @@ function update_circles(data,gridScale,swarmSize) {
  // console.log(data);
   //var anim_time = Math.abs(0.3*swarmSize.value);
     var svg = d3.select("svg");
-    svg.selectAll("circle")
+    svg.selectAll("image")
     .data(data, function(d) { return d.id; })
     .transition()
-    .attr("cx", function(d) { return d.x*gridScale; })
-    .attr("cy", function(d) { return d.y*gridScale; })
+    .attr("x", function(d) { return d.x*gridScale; })
+    .attr("y", function(d) { return d.y*gridScale; })
     .attr("id", function(d) { return d.id; })
     .duration(300);
 
-   svg.selectAll("circle")
+   svg.selectAll("image")
       .each(function(d,i) {
         //Find corresponding pid in data list
         for (var j=0;j<data.length;j++) {
@@ -100,16 +105,29 @@ function update_circles(data,gridScale,swarmSize) {
 
 function draw_circles(data,gridScale,$scope) {
   var svg = d3.select("svg");
-      svg.selectAll("circle")
+      svg.selectAll("image")
         .data(data)
-        .enter().append("circle")
+        .enter().append("image")
         .on("click", function(d) {changeColour(this,d,$scope);})
         .attr("class", function(d) {return d.type; })
-        .attr("r", gridScale)
-        .attr("cx", function(d) { return d.x*gridScale; })
-        .attr("cy", function(d) { return d.y*gridScale; })
+        //.attr("r", gridScale)
+         //.attr("height", "16")
+        // .attr("width","16")
+        // .attr("x", function(d) { return d.x*gridScale; })
+       // .attr("y", function(d) { return d.y*gridScale; })
+        //.attr("cx", function(d) { return d.x*gridScale; })
+        //.attr("cy", function(d) { return d.y*gridScale; })
         .attr("id", function(d) { return d.id; })
-        .style("fill",function(d) { return setColour(d);})
+        //.style("fill",function(d) { return setColour(d);})
+        //.attr("fill","url(#zomb)")
         .style("stroke", function(d) { return strokeColour(d);})
-        .style("stroke-width",0.5*gridScale);
+        //.style("stroke-width",0.5*gridScale)
+        //.attr("viewBox", "0 0 16 16")
+        //.append("image")
+        .attr("x",function(d) { return d.x*gridScale; })
+        .attr("y", function(d) { return d.y*gridScale; })
+        .attr("width",gridScale*2)
+        .attr("height",gridScale*2)
+          .attr("xlink:href", function(d) {return setColour(d);})
+        ;
 	};
