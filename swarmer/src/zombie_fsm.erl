@@ -4,6 +4,7 @@
 -define(AIMLESS_STAY_COURSE, 8).
 -define(SIGHT,75).
 -define(PERSONAL_SPACE, 3).
+-define(LIMIT,5).
 
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
@@ -112,9 +113,9 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
-
-    NewX = X + New_X_Velocity,
-    NewY = Y + New_Y_Velocity,  
+    {Limited_X_Velocity,Limited_Y_Velocity} = boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity),
+    NewX = X + Limited_X_Velocity,
+    NewY = Y + Limited_Y_Velocity,  
 
     Bearing = 0,
 
@@ -209,7 +210,18 @@ record_to_proplist(#state{} = Record) ->
 
 make_choice([],[],_State) ->
     {0,0};
+
+%make_choice(_,[{Dist, {_,{_,{{_,_},{_,_}}}}}|_Hlist],State) when Dist < ?PERSONAL_SPACE ->
+%    KILL HUMAN;
+
 make_choice([{Dist, {_,{_,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|_Zlist],_,State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY);
+
+make_choice(_,[{Dist, {_,{_,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|_Hlist],State) ->
+    boids_functions:super_attractor(State#state.x,State#state.y,HeadX,HeadY);
+
 make_choice(Zlist,_, State) ->
-    boids_functions:flocking(Zlist,State#state.x,State#state.y).
+    {Fx,Fy} = boids_functions:flocking(Zlist,State#state.x,State#state.y),
+    {Vx,Vy} = boids_functions:velocity(Zlist,State#state.x_velocity,State#state.y_velocity),
+    {(Fx+Vx),(Fy+Vy)}.
+

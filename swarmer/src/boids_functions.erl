@@ -2,9 +2,10 @@
 -author("Robert Hales rsjh3@kent.ac.uk").
 
 
--define(SUPER_EFFECT, 0.03).
--define(FLOCKING_EFFECT,0.05).
--define(VELOCITY_EFFECT,0.04).
+-define(SUPER_EFFECT, 0.3).
+-define(FLOCKING_EFFECT,0.5).
+-define(VELOCITY_EFFECT,0.5).
+-define(COHESION_EFFECT,0.2).
 
 
 -export([super_attractor/4,super_repulsor/4,collision_avoidance/4,
@@ -12,20 +13,20 @@
 
 %Changes the velocity of the entity to move towards a super attractor.
 super_attractor(X,Y,Attx,Atty) ->
-	Changex = X + (?SUPER_EFFECT*(Attx-X)),
-	Changey = Y + (?SUPER_EFFECT*(Atty-Y)),
+	Changex = (?SUPER_EFFECT*(Attx-X)),
+	Changey =(?SUPER_EFFECT*(Atty-Y)),
 	{Changex,Changey}.
 
 %Changes the velocity of the entity to move away from a super repulsor.
 super_repulsor(X,Y,Repx,Repy) ->
-	Changex = X - (?SUPER_EFFECT*(Repx-X)),
-	Changey = Y - (?SUPER_EFFECT*(Repy-Y)),
+	Changex = - (?SUPER_EFFECT*(Repx-X)),
+	Changey = - (?SUPER_EFFECT*(Repy-Y)),
 	{Changex,Changey}.
 
 %Prevents entities from colliding.
 collision_avoidance(X,Y,Otherx,Othery) ->
-	Changex = X + (X - Otherx),
-	Changey = Y + (Y - Othery),
+	Changex = (X - Otherx)* ?COHESION_EFFECT,
+	Changey = (Y - Othery)* ?COHESION_EFFECT,
 	{Changex,Changey}.
 
 %Makes an entity move towards the average locations of the entities in its flock.
@@ -62,7 +63,7 @@ velocity([],Count,Totalx,Totaly,X,Y)->
 	Changey = ((Avgy - Y)* ?VELOCITY_EFFECT),
 	{Changex,Changey};
 velocity([H|Ts],Count,Totalx,Totaly,X,Y)->
-	{EX,EY} = H,
+	{_, {_,{_,{{_,_},{EX,EY}}}}} = H,
 	Newcount = Count + 1,
 	Newtotalx = Totalx + EX,
 	Newtotaly = Totaly + EY,
