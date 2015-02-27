@@ -109,6 +109,10 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     Hlist = lists:keysort(1,DistanceList),
 
 
+    Zlist_Json = jsonify_list(Zlist),
+    Hlist_Json = jsonify_list(Hlist),
+
+
     {BoidsX,BoidsY} = make_choice(Zlist,Hlist,State), 
     
     New_X_Velocity = X_Velocity + BoidsX,
@@ -134,7 +138,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             end,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed, {New_X_Velocity, New_Y_Velocity}),
             gen_fsm:send_event_after(State#state.speed, move),
-            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile}}
+            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json}}
     end.
 
 aimless_search(move,State) ->
@@ -214,10 +218,10 @@ make_choice([],[],_State) ->
 %make_choice(_,[{Dist, {_,{_,{{_,_},{_,_}}}}}|_Hlist],State) when Dist < ?PERSONAL_SPACE ->
 %    KILL HUMAN;
 
-make_choice([{Dist, {_,{_,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|_Zlist],_,State) when Dist < ?PERSONAL_SPACE ->
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],_,State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY);
 
-make_choice(_,[{Dist, {_,{_,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|_Hlist],State) ->
+make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Hlist],State) ->
     boids_functions:super_attractor(State#state.x,State#state.y,HeadX,HeadY);
 
 make_choice(Zlist,_, State) ->
@@ -225,3 +229,18 @@ make_choice(Zlist,_, State) ->
     {Vx,Vy} = boids_functions:velocity(Zlist,State#state.x_velocity,State#state.y_velocity),
     {(Fx+Vx),(Fy+Vy)}.
 
+
+jsonify_list([]) ->
+    [];
+jsonify_list(List) ->
+    jsonify_list(List,[]).
+
+jsonify_list([], List) ->
+    List;
+jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], List) ->
+    StringPid = list_to_binary(pid_to_list(Pid)),
+    NewList = [
+    [{id, StringPid},{type, Type}, {dist, Dist}, {}]
+
+     | List],
+    jsonify_list(Ls, NewList).
