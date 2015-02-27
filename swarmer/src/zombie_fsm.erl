@@ -157,7 +157,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             end,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed, {New_X_Velocity, New_Y_Velocity}),
             gen_fsm:send_event_after(State#state.speed, move),
-            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json}}
+            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json, x_velocity = Limited_X_Velocity,y_velocity = Limited_Y_Velocity}}
     end.
 
 aimless_search(move,State) ->
