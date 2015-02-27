@@ -1,6 +1,10 @@
 -module(human_fsm).
 -author("Joe Mitchard jm710").
+
 -define(AIMLESS_STAY_COURSE, 8).
+-define(SIGHT,100).
+-define(PERSONAL_SPACE, 3).
+-define(LIMIT,5).
 
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
@@ -73,22 +77,36 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
                     x_velocity = X_Velocity, y_velocity = Y_Velocity} = State) ->
-    % OldBearing = State#state.bearing,
-    % StaySame = random:uniform(?AIMLESS_STAY_COURSE),
-    % Bearing = case StaySame of
-    %     1 ->
-    %         random:uniform(360);
-    %     _ ->
-    %         OldBearing
-    % end,
-    % {NewX, NewY} = calc_aimlessbearing(Bearing,X,Y),
+
+    % Build a list of nearby zombies
+    Zombie_List = viewer:get_zombies(State#state.viewer),
+    Zlist = lists:keysort(1,lists:map(fun({ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
+        {pythagoras:pyth(X,Y,ZX,ZY),{ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}} end,
+        Zombie_List)),
 
 
-    NewX = X,
-    NewY = Y,
+    % Build a list of nearby humans
+    Human_List = viewer:get_humans(State#state.viewer),
+    No_self_list = lists:keydelete(self(),1,Human_List),
+    DistanceList = lists:map(fun({Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
+        {pythagoras:pyth(X,Y,HX,HY),{Hpid,{human,{{HX,HY},{HXV,HYV}}}}} end,
+        No_self_list),
+
+
+    Hlist = lists:keysort(1,DistanceList),
+
+
+    {BoidsX,BoidsY} = make_choice(Hlist,Zlist,State), 
+
+    New_X_Velocity = X_Velocity + BoidsX,
+    New_Y_Velocity = Y_Velocity + BoidsY,
+    {Limited_X_Velocity,Limited_Y_Velocity} = boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity),
+    NewX = X + Limited_X_Velocity,
+    NewY = Y + Limited_Y_Velocity,  
+
     Bearing = 0,
 
-   case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
+    case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
             {stop, shutdown, State};
         false ->
@@ -152,14 +170,7 @@ handle_info(_,StateName,StateData)->
 
 handle_event(pause, StateName, StateData) ->
     {next_state,pause,StateData#state{paused_state = StateName}}.
-
-% handle_sync_event(get_state, _From, StateName, 
-%                   #state{x = X, y = Y, speed = Speed, type = Type,
-%                          bearing = Bearing} = StateData) ->
-%     {reply,{ok,#entity_status{id = self(), x = X, y = Y, type = Type, 
-%                               current_activity = StateName, speed = Speed,
-%                               bearing = Bearing}},StateName,StateData}.
-%                               
+                           
 handle_sync_event(get_state, _From, StateName, StateData) ->
     PropList = record_to_proplist(StateData),
     PropListJson = proplists:delete(viewer,PropList),
@@ -167,3 +178,22 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
 
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
+
+
+% BOIDS
+make_choice([],[],_State) ->
+    {0,0};
+
+% Collision Avoidance
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Hlist],_,State) when Dist < ?PERSONAL_SPACE ->
+    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY);
+
+% Repulsor
+make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],State) ->
+    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY);
+
+% Flock
+make_choice(Hlist,_, State) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y),
+    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity),
+    {(Fx+Vx),(Fy+Vy)}.
