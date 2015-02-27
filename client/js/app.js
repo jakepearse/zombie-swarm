@@ -14,8 +14,8 @@
     $scope.arrityOpts = [3,4,5,6,7,8,9,10];
     $scope.arrity = $scope.arrityOpts[2];
     $scope.gridScaleOpts = [1,2,3,4,5,6,7,8,9,10];
-    $scope.gridScale = $scope.gridScaleOpts[3];
-    $scope.swarmSizeOpts = [5,10,20,30,40,50,100,200,500];
+    $scope.gridScale = $scope.gridScaleOpts[5];
+    $scope.swarmSizeOpts = [5,10,20,30,40,50,100,200,500,1000];
     $scope.swarmSize = $scope.swarmSizeOpts[2];
     $scope.popSizeOpts = [5,10,20,30,40,50,60];
     $scope.popSize = $scope.popSizeOpts[1];
@@ -67,9 +67,9 @@
 		socket.send(startjson);
 		socket.onmessage = function (x) {;};
 		var dummy_json = JSON.stringify({"type":"report"});
-		//This sends the "update" message to the socket every 1000ms
+		//This sends the "update" message to the socket every X ms
 		// and updates the circles with the recived data
-		setInterval(function() {doUpdate()},300);
+		setInterval(function() {doUpdate()},210);
 		function doUpdate() {
 			socket.send(dummy_json);
 			socket.onmessage = function(evt) {
