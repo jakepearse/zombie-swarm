@@ -96,6 +96,10 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     Hlist = lists:keysort(1,DistanceList),
 
 
+    Zlist_Json = jsonify_list(Zlist),
+    Hlist_Json = jsonify_list(Hlist),
+
+
     {BoidsX,BoidsY} = make_choice(Hlist,Zlist,State), 
 
     New_X_Velocity = X_Velocity + BoidsX,
@@ -121,7 +125,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             end,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed, {X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, move),
-            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile}}
+            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, , z_list = Zlist_Json, h_list = Hlist_Json}}
     end.
 
 aimless_search(move,State) ->
@@ -197,3 +201,16 @@ make_choice(Hlist,_, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity),
     {(Fx+Vx),(Fy+Vy)}.
+
+
+jsonify_list([]) ->
+    [];
+jsonify_list(List) ->
+    jsonify_list(List,[]).
+
+jsonify_list([], List) ->
+    List;
+jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], List) ->
+    StringPid = list_to_binary(pid_to_list(Pid)),
+    NewList = [[{id, StringPid},{type, Type}, {dist, Dist}, {x, HeadX}, {y, HeadY}, {x_velocity, Head_X_Vel}, {y_velocity, Head_Y_Vel}]| List],
+    jsonify_list(Ls, NewList).
