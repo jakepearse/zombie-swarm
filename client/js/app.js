@@ -59,17 +59,17 @@
 
 	$scope.start = function() {
 		$scope.runningFlag=!$scope.runningFlag;
-		console.log($scope.runningFlag);
+		//console.log($scope.runningFlag);
 		$scope.startbtn = angular.element("#start-btn");
 		$scope.startbtn.html("Stop");
-		console.log($scope.startbtn);
+		//console.log($scope.startbtn);
 		var startjson = JSON.stringify({"type":"start"});
 		socket.send(startjson);
 		socket.onmessage = function (x) {;};
 		var dummy_json = JSON.stringify({"type":"report"});
 		//This sends the "update" message to the socket every X ms
 		// and updates the circles with the recived data
-		setInterval(function() {doUpdate()},210);
+		setInterval(function() {doUpdate()},300);
 		function doUpdate() {
 			socket.send(dummy_json);
 			socket.onmessage = function(evt) {
@@ -79,7 +79,7 @@
         for (var i =0;i<$scope.inspectList.length;i++){
 			$scope.realInspectList.push(report_json[(report_json.map(function(e) { return e.id; }).indexOf($scope.inspectList[i].id))]);
 		};
-		console.log($scope.realInspectList);
+		//console.log($scope.realInspectList);
 		$scope.$apply();
 	};  
     };
