@@ -91,22 +91,41 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
 
     % Build a list of nearby zombies
-    Zombie_List = viewer:get_zombies(State#state.viewer),
-    No_self_list = lists:keydelete(self(),1,Zombie_List),
+    ZombieList = viewer:get_zombies(State#state.viewer),
 
-    Zlist = lists:keysort(1,lists:map(fun({ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-        {pythagoras:pyth(X,Y,ZX,ZY),{ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}} end,
-        No_self_list)),
+    NoSelfList = lists:keydelete(self(),1,ZombieList),
+
+    Z_DistanceList = lists:map(fun(
+                                {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
+                                    {pythagoras:pyth(X,Y,ZX,ZY),
+                                    {ZomPid,{ZType,{{ZX,ZY},
+                                    {ZX_Velocity,ZY_Velocity}}}}} 
+                            end,NoSelfList),
+
+    Z_FilteredList = lists:filter(
+                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
+                                    Dist =< ?SIGHT
+                                end,Z_DistanceList),
+
+    Zlist = lists:keysort(1,Z_FilteredList),
 
 
     % Build a list of nearby humans
-    Human_List = viewer:get_humans(State#state.viewer),
-    DistanceList = lists:map(fun({Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-        {pythagoras:pyth(X,Y,HX,HY),{Hpid,{human,{{HX,HY},{HXV,HYV}}}}} end,
-        Human_List),
+    HumanList = viewer:get_humans(State#state.viewer),
 
+    H_DistanceList = lists:map(fun(
+                                {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
+                                    {pythagoras:pyth(X,Y,HX,HY),
+                                    {Hpid,{human,{{HX,HY},
+                                    {HXV,HYV}}}}} 
+                            end,HumanList),
 
-    Hlist = lists:keysort(1,DistanceList),
+    H_FilteredList = lists:filter(
+                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
+                                    Dist =< ?SIGHT
+                                end,H_DistanceList),
+
+    Hlist = lists:keysort(1,H_FilteredList),
 
 
     Zlist_Json = jsonify_list(Zlist),
