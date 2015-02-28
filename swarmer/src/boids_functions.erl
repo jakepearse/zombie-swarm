@@ -18,9 +18,16 @@ super_attractor(X,Y,Attx,Atty) ->
 	{Changex,Changey}.
 
 %Changes the velocity of the entity to move away from a super repulsor.
+super_repulsor(X,_Y,Repx,_Repy) when X =:= Repx ->
+	Changex = - 1,
+	{Changex,0};
+super_repulsor(_X,Y,_Repx,Repy) when Y =:= Repy ->
+	Changey = - 1,
+	{0,Changey};
+
 super_repulsor(X,Y,Repx,Repy) ->
-	Changex = - (?SUPER_EFFECT*(Repx-X)),
-	Changey = - (?SUPER_EFFECT*(Repy-Y)),
+	Changex = - 1/(?SUPER_EFFECT*(Repx-X)),
+	Changey = - 1/(?SUPER_EFFECT*(Repy-Y)),
 	{Changex,Changey}.
 
 %Prevents entities from colliding.
