@@ -1,7 +1,7 @@
 -module(trigstuff).
 -author("Robert Hales rsjh3@kent.ac.uk").
 -define(MOVEMENT_DISTANCE, 3).
--export([findcoordinates/3]).
+-export([findcoordinates/3,round/2]).
 findcoordinates(0,X,Y)->
 	{X,round(Y + ?MOVEMENT_DISTANCE)};
 findcoordinates(360,X,Y)->
@@ -33,3 +33,7 @@ findcoordinates(Bearing,X,Y) when Bearing > 270, Bearing < 360 ->
 	{NewX,NewY};
 findcoordinates(_Bearing,X,Y)->
 	{X,Y}.
+
+round(Num,Precision) ->
+	P = math:pow(10,Precision),
+	round(Num * P) / P.
