@@ -1,37 +1,38 @@
 //
 //	Lines
 //
-function setup_grid(arrity,tileSize,gridScale,obString) {
+function setup_grid(arrity,tileSize,gridScale,obArray) {
   arrity = parseInt(arrity);
   tileSize = parseInt(tileSize);
   gridScale = parseInt(gridScale);
+     var svg=d3.select("svg")
+      .attr("height",arrity*tileSize*gridScale)
+      .attr("width",arrity*tileSize*gridScale);
   var list =[];
   for (var i = 0; i <= arrity; i++) {
-    list.push(i*tileSize);
+    list.push(i*tileSize)
+    draw_background(arrity,tileSize,gridScale,obArray,i);
   };
-  //draw_background(arrity,tileSize,gridScale,obString);
+  //draw_background(arrity,tileSize,gridScale,obArray);
   draw_hlines(arrity,tileSize,gridScale,list);
   draw_vlines(arrity,tileSize,gridScale,list);
 }
 
-//function draw_background(arrity,tileSize,gridScale,obString){
-   //var svg = d3.select("svg")
-   //.selectAll("rect")
-   //.data(obString.split(""))
-   //.enter().append("rect")
-   //.attr("class","tileMap")
-    //.attr("height",gridScale)
-    //.attr("width",gridScale)
-    //.attr("x", function(d,i) { return Math.floor(i,tileSize)*gridScale; })
-    //.attr("y", function(d,i,j) { return (i%tileSize)*gridScale; })
-    //.style("fill",function(d) { return obColour(d); } )
-    //;
-    //}
+function draw_background(arrity,tileSize,gridScale,list){
+   var svg = d3.select("svg")
+   .selectAll("g")
+   .data(list)
+   .enter().append("g")
+   .attr("class","tile")
+   
+   
+    ;
+    }
 
 function obColour(b) {
   if (b==="t") {
-    return "black";};
-    return "white";
+    return "#000000";}
+    return "#FFFFFF";
   };
 
 
@@ -142,10 +143,10 @@ function draw_circles(data,gridScale,$scope) {
         //.style("stroke-width",0.5*gridScale)
         //.attr("viewBox", "0 0 16 16")
         //.append("image")
-        .attr("x",function(d) { return d.x*gridScale; })
-        .attr("y", function(d) { return d.y*gridScale; })
-        .attr("width",gridScale*2)
-        .attr("height",gridScale*2)
+        .attr("x",function(d) { return (d.x-gridScale/2)*gridScale; })
+        .attr("y", function(d) { return (d.y-gridScale/2)*gridScale; })
+        .attr("width",gridScale)
+        .attr("height",gridScale)
           .attr("xlink:href", function(d) {return setColour(d);})
         ;
 	};
