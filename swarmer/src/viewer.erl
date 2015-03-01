@@ -13,7 +13,8 @@ handle_info/2,init/1,terminate/2]).
 
 -record(state, {tile_map=maps:new(),
                 zombie_map = maps:new(),
-                human_map = maps:new()}).
+                human_map = maps:new(),
+                item_map = maps:new()}).
 
 %%%%%%==========================================================================
 %%%%%% API

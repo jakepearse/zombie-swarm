@@ -6,6 +6,10 @@
 -define(PERSONAL_SPACE, 3).
 -define(LIMIT,5).
 
+% Behaviour Parameters
+-define(INITIAL_HUNGER,100).
+-define(INITIAL_ENERGY,100).
+
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
 
@@ -37,7 +41,9 @@
                 x_velocity,
                 y_velocity,
                 z_list,
-                h_list}).
+                h_list,
+                hunger,
+                energy}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
@@ -65,7 +71,8 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
                        viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows,
-                       x_velocity = 0, y_velocity = 0}}.
+                       x_velocity = 0, y_velocity = 0,
+                       hunger = ?INITIAL_HUNGER, energy = ?INITIAL_ENERGY}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -78,44 +85,14 @@ initial(start,State) ->
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
-                    x_velocity = X_Velocity, y_velocity = Y_Velocity} = State) ->
+                    x_velocity = X_Velocity, y_velocity = Y_Velocity,
+                    viewer = Viewer} = State) ->
 
     % Build a list of nearby zombies
-    ZombieList = viewer:get_zombies(State#state.viewer),
-
-    Z_DistanceList = lists:map(fun(
-                                {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-                                    {pythagoras:pyth(X,Y,ZX,ZY),
-                                    {ZomPid,{ZType,{{ZX,ZY},
-                                    {ZX_Velocity,ZY_Velocity}}}}} 
-                                end,ZombieList),
-
-    Z_FilteredList = lists:filter(
-                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
-                                    Dist =< ?SIGHT
-                                end,Z_DistanceList),
-
-    Zlist = lists:keysort(1,Z_FilteredList),
-
+    Zlist = build_zombie_list(Viewer, X, Y),
 
     % Build a list of nearby humans
-    HumanList = viewer:get_humans(State#state.viewer),
-    
-    NoSelfList = lists:keydelete(self(),1,HumanList),
-
-    H_DistanceList = lists:map(fun(
-                                {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-                                    {pythagoras:pyth(X,Y,HX,HY),
-                                    {Hpid,{human,{{HX,HY},
-                                    {HXV,HYV}}}}} 
-                            end,NoSelfList),
-
-    H_FilteredList = lists:filter(
-                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
-                                    Dist =< ?SIGHT
-                                end,H_DistanceList),
-
-    Hlist = lists:keysort(1,H_FilteredList),
+    Hlist = build_human_list(Viewer, X, Y),
 
 
     Zlist_Json = jsonify_list(Zlist),
@@ -236,3 +213,45 @@ jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], 
     StringPid = list_to_binary(pid_to_list(Pid)),
     NewList = [[{id, StringPid},{type, Type}, {dist, Dist}, {x, HeadX}, {y, HeadY}, {x_velocity, Head_X_Vel}, {y_velocity, Head_Y_Vel}]| List],
     jsonify_list(Ls, NewList).
+
+
+build_zombie_list(Viewer, X, Y) ->
+    ZombieList = viewer:get_zombies(Viewer),
+
+    Z_DistanceList = lists:map(fun(
+                                {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
+                                    {pythagoras:pyth(X,Y,ZX,ZY),
+                                    {ZomPid,{ZType,{{ZX,ZY},
+                                    {ZX_Velocity,ZY_Velocity}}}}} 
+                                end,ZombieList),
+
+    Z_FilteredList = lists:filter(
+                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
+                                    Dist =< ?SIGHT
+                                end,Z_DistanceList),
+
+    Zlist = lists:keysort(1,Z_FilteredList),
+    %return
+    Zlist.
+
+
+build_human_list(Viewer, X, Y) ->
+    HumanList = viewer:get_humans(Viewer),
+    
+    NoSelfList = lists:keydelete(self(),1,HumanList),
+
+    H_DistanceList = lists:map(fun(
+                                {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
+                                    {pythagoras:pyth(X,Y,HX,HY),
+                                    {Hpid,{human,{{HX,HY},
+                                    {HXV,HYV}}}}} 
+                            end,NoSelfList),
+
+    H_FilteredList = lists:filter(
+                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
+                                    Dist =< ?SIGHT
+                                end,H_DistanceList),
+
+    Hlist = lists:keysort(1,H_FilteredList),
+    %return
+    Hlist.

@@ -24,7 +24,9 @@
         set_neighbours/2,
         get_neighbours/1,
         terminate/1,
-        get_state/1]).
+        get_state/1,
+        place_item/2,
+        remove_item/2]).
 
 
 -define(SERVER, ?MODULE).
@@ -42,6 +44,7 @@
 
 -record(state, {zombie_map=maps:new() :: maps:maps(),
                 human_map=maps:new() :: maps:maps(),
+                item_map=maps:new() :: maps:maps(),
                 xorigin  ::  coord(),
                 yorigin  ::  coord(),
                 xlimit  ::  coord(),
@@ -100,6 +103,21 @@ get_neighbours(Pid) ->
 update_entity(Pid, Entity, Pos, Bearing, _Speed, Velocity) ->
     gen_server:call(Pid, {update_entity, Entity, Pos, Bearing, _Speed,Velocity}).
 
+%%%%----------------------------------------------------------------------------
+%%%% @doc
+%%%% Place an item on the tile.
+%%%% @end
+%%%%----------------------------------------------------------------------------
+place_item(Pid, Item) ->
+    gen_server:call(Pid, {place_item, Item}).
+
+%%%%----------------------------------------------------------------------------
+%%%% @doc
+%%%% Remove an item from the tile
+%%%% @end
+%%%%----------------------------------------------------------------------------
+remove_item(Pid, Item) ->
+    gen_server:call(Pid, {remove_item, Item}).
 
 %%%%-Casts----------------------------------------------------------------------
 
@@ -179,6 +197,14 @@ handle_call(get_neighbours,_From,State) ->
 
 handle_call(get_state,_From,State) ->
     {reply,State,State};
+
+handle_call({place_item, {ID,X,Y,Type,Item}}, _From, #state{item_map = ItemMap} = State) ->
+    NewMap = maps:put({ID,X,Y,Type,Item}, ItemMap),
+    {reply, ok, State#state{item_map = NewMap}};
+
+handle_call({remove_item, {ID,_,_,_,_}}, _From, #state{item_map = ItemMap} = State) ->
+    NewMap = maps:remove(ID, ItemMap),
+    {reply, ok, State#state{item_map = NewMap}};
 
 %%%% Updates the entities position on the tile.
 %%%% Will also deal with a new entitiy being moved onto the tile

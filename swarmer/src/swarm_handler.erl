@@ -44,6 +44,7 @@ websocket_handle({text, Json}, Req, State) ->
         % error_logger:error_report(GridInfo),
         enviroment:set_swarm(Size),
         enviroment:set_mob(Pop),
+        enviroment:set_items(10),
         Report = enviroment:report(),
         % error_logger:error_report(Report),
         Status=jsx:encode(Report++GridInfo),
