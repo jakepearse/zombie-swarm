@@ -21,6 +21,24 @@
     $scope.popSize = $scope.popSizeOpts[1];
     $scope.runningFlag=false;
     
+    // just while we get going
+    $scope.obString = "................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................ttt...............................................ttttttttttt.......................................ttttttttttttttttt.................................ttttttttttttttttttttttttt.........................tttttttttttttttttttttttttt........................tttttttttttttttttttttttttt........................tttttttttttttttttttttttttt........................tttttttttttttttttttttttttt........................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt........................tttttttttttttttttttttttttt........................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt.......................ttttttttttttttttttttttttttt......................tttttttttttttttttttttttttttt......................tttttttttttttttttttttttttttt......................tttttttttttttttttttttttttttt......................tttttttttttttttttttttttttttt.....................ttttttttttttttttttttttttttttt.....................tttttttttttttttttttttttttttttt....................tttttttttttttttttttttttttttttt....................tttttttttttttttttttttttttttttt...................tttttttttttt..................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................................";
+    //
+    $scope.obArray = $scope.obString.split("");
+    //for (var i=0;i<50;i++){
+      //$scope.obArray.push([]);
+      //for (var j = 0;j<50;j++){
+	//if ($scope.obString[i*j] ==="t") {
+	  //$scope.obArray[i][j]=true;
+
+	//} else {
+	  //$scope.obArray[i][j]=false;
+	//}
+      //}
+    //}
+    //console.log(JSON.stringify($scope.obArray));
+    
+    
     socket = new WebSocket('ws://localhost:8080/websocket');
     var json = JSON.stringify({"type":"setup","arrity":$scope.arrity,"swarmSize":$scope.swarmSize,"popSize":$scope.popSize});
     $scope.inspectList = [];
@@ -33,7 +51,7 @@
       // update the grid visulaisation
       // draw the grid
       var gridInfo = data.pop();
-      setup_grid(gridInfo.rows,gridInfo.tileSize,$scope.gridScale);
+      setup_grid(gridInfo.rows,gridInfo.tileSize,$scope.gridScale,$scope.obString);
       draw_circles(data,$scope.gridScale,$scope);
       };
     };

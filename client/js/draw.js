@@ -1,7 +1,7 @@
 //
 //	Lines
 //
-function setup_grid(arrity,tileSize,gridScale) {
+function setup_grid(arrity,tileSize,gridScale,obString) {
   arrity = parseInt(arrity);
   tileSize = parseInt(tileSize);
   gridScale = parseInt(gridScale);
@@ -9,20 +9,31 @@ function setup_grid(arrity,tileSize,gridScale) {
   for (var i = 0; i <= arrity; i++) {
     list.push(i*tileSize);
   };
-  draw_background(arrity,tileSize,gridScale);
+  //draw_background(arrity,tileSize,gridScale,obString);
   draw_hlines(arrity,tileSize,gridScale,list);
   draw_vlines(arrity,tileSize,gridScale,list);
 }
 
-function draw_background(arrity,tileSize,gridScale){
-   var svg = d3.select("svg")
-    .attr("height",(arrity*tileSize)*gridScale)
-    .attr("width",(arrity*tileSize)*gridScale)
-    .append("rect")
-      .attr("height",(arrity*tileSize)*gridScale)
-      .attr("width",(arrity*tileSize)*gridScale)
-      .style("fill","#FFFEE8");
-    };
+//function draw_background(arrity,tileSize,gridScale,obString){
+   //var svg = d3.select("svg")
+   //.selectAll("rect")
+   //.data(obString.split(""))
+   //.enter().append("rect")
+   //.attr("class","tileMap")
+    //.attr("height",gridScale)
+    //.attr("width",gridScale)
+    //.attr("x", function(d,i) { return Math.floor(i,tileSize)*gridScale; })
+    //.attr("y", function(d,i,j) { return (i%tileSize)*gridScale; })
+    //.style("fill",function(d) { return obColour(d); } )
+    //;
+    //}
+
+function obColour(b) {
+  if (b==="t") {
+    return "black";};
+    return "white";
+  };
+
 
 function draw_hlines(arrity,tileSize,gridScale,list) {
    var svg = d3.select("svg").selectAll("hline")
