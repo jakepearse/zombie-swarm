@@ -11,20 +11,23 @@ function setup_grid(arrity,tileSize,gridScale,obArray) {
   var list =[];
   for (var i = 0; i <= arrity; i++) {
     list.push(i*tileSize)
-    draw_background(arrity,tileSize,gridScale,obArray,i);
   };
-  //draw_background(arrity,tileSize,gridScale,obArray);
+  draw_background(arrity,tileSize,gridScale,obArray);
   draw_hlines(arrity,tileSize,gridScale,list);
   draw_vlines(arrity,tileSize,gridScale,list);
 }
 
-function draw_background(arrity,tileSize,gridScale,list){
+function draw_background(arrity,tileSize,gridScale,obArray){
    var svg = d3.select("svg")
-   .selectAll("g")
-   .data(list)
-   .enter().append("g")
-   .attr("class","tile")
-   
+   .selectAll("rect")
+   .data(obArray)
+   .enter().append("rect")
+   .attr("class","ob")
+   .attr("height",gridScale)
+   .attr("width",gridScale)
+   .attr("y",function(d) { var y=tileSize*arrity; return Math.floor(d/y)*gridScale; })
+   .attr("x",function(d) { var x=tileSize*arrity; return (d%x)*gridScale; })
+   .style("fill","black")
    
     ;
     }
@@ -88,16 +91,12 @@ function changeColour(object,d,$scope) {
     inv = "img/inv_hume.png";
   }else{ inv = "img/inv_zomb.png";}
   d3.select(object)
-  //.style("fill","tomato")
-  //.style("stroke","indianred")
   .attr("xlink:href",inv);
   $scope.inspectList.push(d);
   
 }
 
 function update_circles(data,gridScale,swarmSize) {
- // console.log(data);
-  //var anim_time = Math.abs(0.3*swarmSize.value);
     var svg = d3.select("svg");
     svg.selectAll("image")
     .data(data, function(d) { return d.id; })

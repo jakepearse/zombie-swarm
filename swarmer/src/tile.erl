@@ -24,7 +24,9 @@
         set_neighbours/2,
         get_neighbours/1,
         terminate/1,
-        get_state/1]).
+        get_state/1,
+        check_obs/2,
+        set_obs_list/2]).
 
 
 -define(SERVER, ?MODULE).
@@ -48,7 +50,8 @@
                 ylimit  ::  coord(),
                 coords  ::  tuple(),
                 viewer  ::  pid(),
-                neighbours  ::  [pid()]}). 
+                neighbours  ::  [pid()],
+                obs_list=[] :: list()}). 
 
 %%%%%%==========================================================================
 %%%%%% API
@@ -91,6 +94,13 @@ get_viewer(Pid) ->
 get_neighbours(Pid) ->
     gen_server:call(Pid, get_neighbours).
 
+
+set_obs_list(Pid,New_obs_list) ->
+	gen_server:call(Pid,{set_obs_list,New_obs_list}).
+	
+check_obs(Pid,Pos) ->
+	gen_server:call(Pid,{check_obs,Pos}).
+	
 %%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Update the entities position on the tile.
@@ -113,6 +123,8 @@ update_entity(Pid, Entity, Pos, Bearing, _Speed, Velocity) ->
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
 
+
+
 %%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Remove an entity from the tile.
@@ -130,6 +142,7 @@ remove_entity(Pid, Entity, Type) ->
 -spec get_state(pid()) -> ok.
 get_state(Pid) ->
   gen_server:call(Pid,get_state).
+ 
   
 %%%%----------------------------------------------------------------------------
 %%%% @doc
@@ -156,6 +169,7 @@ set_neighbours(Pid, NeighbourPids) ->
 %%%%----------------------------------------------------------------------------
 terminate(Pid) ->
     gen_server:cast(Pid, terminate).
+    
 
 %%%%%%==========================================================================
 %%%%%% gen_server Callbacks
@@ -189,7 +203,13 @@ handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_F
 handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_From, State) when Type == human ->
     NewMap = maps:put(ID,{Type,{Pos, Velocity}},State#state.human_map),
     update_viewers(State#state.neighbours, Type, NewMap),
-    {reply,Pos,State#state{human_map = NewMap}}.
+    {reply,Pos,State#state{human_map = NewMap}};
+    
+handle_call({set_obs_list,New_obs_list},_From,State) ->
+	{reply,ok,State#state{obs_list=New_obs_list}};
+	
+handle_call({check_obs,Pos},_From,State) ->
+	{reply,do_check_obs(Pos,State#state.obs_list),State}.
 
 %%%%-Casts----------------------------------------------------------------------
 
@@ -262,6 +282,11 @@ update_viewers([V|Vs], Type, EntityMap) when Type =:= human ->
     viewer:update_humans(V, {self(), maps:to_list(EntityMap)}),
     update_viewers(Vs, Type, EntityMap).
 
+-spec do_check_obs(pos(),list()) -> boolean().
+
+do_check_obs({X,Y},Obs_list) ->
+	lists:any(fun(C) -> C=={X,Y} end,Obs_list).
+	
 %%%%-Notes----------------------------------------------------------------------
 
 % get pid of registered process wheris(module)

@@ -8,7 +8,7 @@
 %%% API
 -export([start_link/0,make_grid/3,get_grid_info/0,report/0, 
          pause_entities/0, unpause_entities/0, start_entities/0,
-         type_pause_unpause/2]).
+         type_pause_unpause/2,create_obs/2]).
 
 %%%% internal functions for debugging these can be deleted later
 -export([get_state/0,set_swarm/1,set_mob/1]).
@@ -126,6 +126,8 @@ unpause_entities() ->
 type_pause_unpause(Action,Type) -> 
   do_action_entities_type(Action,Type).
 
+create_obs(Obs_list,TileSize) ->
+	gen_server:call(?MODULE,{create_obs_map,Obs_list,TileSize}).
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -185,8 +187,18 @@ handle_call({mob,Num},_From,State) ->
   supervisor:restart_child(swarm_sup, human_sup),
   create_mob(State,Num),
   do_action_entities_type(pause, humans),
-  {reply,ok,State}.
+  {reply,ok,State};
 
+handle_call({create_obs_map,Obs_list,GridSize},_From,State) ->
+	Cord_list = lists:map(fun(I)-> {X,Y}={I div GridSize,I rem GridSize},{T,V} = get_tile(X,Y,State),{T,{X,Y}} end,Obs_list), 
+	%Obs_map = map:new(),
+	
+	%lists:foreach(fun({T,{X,Y}}) -> maps:
+	%% you are here !!
+	%error_logger:error_report(Cord_list),
+	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
+	{reply,ok,State}.
+	
 handle_call(terminate,State) ->
   {stop,normal,State}.
 
