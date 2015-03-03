@@ -189,13 +189,9 @@ handle_call({mob,Num},_From,State) ->
   do_action_entities_type(pause, humans),
   {reply,ok,State};
 
+%%% map a list of integers to [{Tile,{X,Y}},...] and pushes them into the relevant tile's State#state.obs_list
 handle_call({create_obs_map,Obs_list,GridSize},_From,State) ->
 	Cord_list = lists:map(fun(I)-> {X,Y}={I div GridSize,I rem GridSize},{T,V} = get_tile(X,Y,State),{T,{X,Y}} end,Obs_list), 
-	%Obs_map = map:new(),
-	
-	%lists:foreach(fun({T,{X,Y}}) -> maps:
-	%% you are here !!
-	%error_logger:error_report(Cord_list),
 	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
 	{reply,ok,State}.
 	

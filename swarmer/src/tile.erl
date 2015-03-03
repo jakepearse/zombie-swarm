@@ -97,7 +97,8 @@ get_neighbours(Pid) ->
 
 set_obs_list(Pid,New_obs_list) ->
 	gen_server:call(Pid,{set_obs_list,New_obs_list}).
-	
+
+%%% provides api call to check if a pos() is obstructed
 check_obs(Pid,Pos) ->
 	gen_server:call(Pid,{check_obs,Pos}).
 	
@@ -205,9 +206,11 @@ handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_F
     update_viewers(State#state.neighbours, Type, NewMap),
     {reply,Pos,State#state{human_map = NewMap}};
     
+%%%% pushes a list of obstructed coordinates into the state
 handle_call({set_obs_list,New_obs_list},_From,State) ->
 	{reply,ok,State#state{obs_list=New_obs_list}};
-	
+
+%%% boolean check for obstruction of a pos()
 handle_call({check_obs,Pos},_From,State) ->
 	{reply,do_check_obs(Pos,State#state.obs_list),State}.
 
@@ -282,8 +285,12 @@ update_viewers([V|Vs], Type, EntityMap) when Type =:= human ->
     viewer:update_humans(V, {self(), maps:to_list(EntityMap)}),
     update_viewers(Vs, Type, EntityMap).
 
--spec do_check_obs(pos(),list()) -> boolean().
 
+
+%%%==============
+%%% This is called to check if a coordinate pair is obstructed
+%%% =============
+-spec do_check_obs(pos(),list()) -> boolean().
 do_check_obs({X,Y},Obs_list) ->
 	lists:any(fun(C) -> C=={X,Y} end,Obs_list).
 	
