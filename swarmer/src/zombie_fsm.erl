@@ -137,7 +137,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
     {Limited_X_Velocity,Limited_Y_Velocity} = boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity),
-    NewX = X + Limited_X_Velocity,
+    NewX = X + trigstuff:round(Limited_X_Velocity,2),
     NewY = Y + Limited_Y_Velocity,  
 
     Bearing = 0,
@@ -234,8 +234,10 @@ record_to_proplist(#state{} = Record) ->
 make_choice([],[],_State) ->
     {0,0};
 
-%make_choice(_,[{Dist, {_,{_,{{_,_},{_,_}}}}}|_Hlist],State) when Dist < ?PERSONAL_SPACE ->
+make_choice(_,[{Dist, {Pid,{_,{{_,_},{_,_}}}}}|_Hlist],_State) when Dist < ?PERSONAL_SPACE ->
 %    KILL HUMAN;
+    supervisor:terminate_child(human_sup, Pid),
+    {0,0};
 
 make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],_,State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY);
