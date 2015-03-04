@@ -8,10 +8,10 @@
 %%% API
 -export([start_link/0,make_grid/3,get_grid_info/0,report/0, 
          pause_entities/0, unpause_entities/0, start_entities/0,
-         type_pause_unpause/2]).
+         type_pause_unpause/2,create_obs/2]).
 
 %%%% internal functions for debugging these can be deleted later
--export([get_state/0,set_swarm/1,set_mob/1]).
+-export([get_state/0,set_swarm/1,set_mob/1,set_items/1]).
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_call/2,handle_call/3,
@@ -96,6 +96,14 @@ set_mob(Num) ->
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
+%% Place items on the map
+%%%% @end
+%%%%------------------------------------------------------------------------------
+set_items(Num) -> 
+  gen_server:call(?MODULE,{items,Num}).
+
+%%%%------------------------------------------------------------------------------
+%%%% @doc
 %% create Num zombies and add add them to the tiles
 %%%% @end
 %%%%------------------------------------------------------------------------------
@@ -126,6 +134,8 @@ unpause_entities() ->
 type_pause_unpause(Action,Type) -> 
   do_action_entities_type(Action,Type).
 
+create_obs(Obs_list,TileSize) ->
+	gen_server:call(?MODULE,{create_obs_map,Obs_list,TileSize}).
 
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
@@ -185,8 +195,21 @@ handle_call({mob,Num},_From,State) ->
   supervisor:restart_child(swarm_sup, human_sup),
   create_mob(State,Num),
   do_action_entities_type(pause, humans),
-  {reply,ok,State}.
+  {reply,ok,State};
 
+handle_call({items,Num},_From,State) ->
+  %kill entities
+  supervisor:terminate_child(swarm_sup, supplies_sup),
+  supervisor:restart_child(swarm_sup, supplies_sup),
+  place_items(State,Num),
+  {reply,ok,State};
+
+%%% map a list of integers to [{Tile,{X,Y}},...] and pushes them into the relevant tile's State#state.obs_list
+handle_call({create_obs_map,Obs_list,GridSize},_From,State) ->
+	Cord_list = lists:map(fun(I)-> {X,Y}={I div GridSize,I rem GridSize},{T,_V} = get_tile(X,Y,State),{T,{X,Y}} end,Obs_list), 
+	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
+  {reply,ok,State}.
+	
 handle_call(terminate,State) ->
   {stop,normal,State}.
 
@@ -269,6 +292,26 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,N
             {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
             %temporary fix
             human_fsm:start(Human)
+        end,lists:seq(1,Num)).
+
+% creates and places a number of randomly positioned supplies.
+place_items(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,Num) ->
+    GridXSize=TileSize*Columns,
+    GridYSize=TileSize*Rows,
+    lists:foreach(
+        fun(_) ->
+            Xpos = random:uniform(GridXSize-1),
+            Ypos= random:uniform(GridYSize-1),
+            {Tile,Viewer} = get_tile(Xpos,Ypos,State),
+            % draw to pick type of item for randomisation
+            case random:uniform(3) of
+              1 ->
+                supervisor:start_child(supplies_sup,[food, apple, Xpos,Ypos,Tile,Viewer]);
+              2 ->
+                supervisor:start_child(supplies_sup,[food, orange, Xpos,Ypos,Tile,Viewer]);
+              3 ->
+                supervisor:start_child(supplies_sup,[food, banana, Xpos,Ypos,Tile,Viewer])
+            end
         end,lists:seq(1,Num)).
 
 %% search for a tile by X,Y in the viewerPropList

@@ -1,28 +1,43 @@
 //
 //	Lines
 //
-function setup_grid(arrity,tileSize,gridScale) {
+function setup_grid(arrity,tileSize,gridScale,obArray) {
   arrity = parseInt(arrity);
   tileSize = parseInt(tileSize);
   gridScale = parseInt(gridScale);
+     var svg=d3.select("svg")
+      .attr("height",arrity*tileSize*gridScale)
+      .attr("width",arrity*tileSize*gridScale);
   var list =[];
   for (var i = 0; i <= arrity; i++) {
-    list.push(i*tileSize);
+    list.push(i*tileSize)
   };
-  draw_background(arrity,tileSize,gridScale);
+  draw_background(arrity,tileSize,gridScale,obArray);
   draw_hlines(arrity,tileSize,gridScale,list);
   draw_vlines(arrity,tileSize,gridScale,list);
 }
 
-function draw_background(arrity,tileSize,gridScale){
+function draw_background(arrity,tileSize,gridScale,obArray){
    var svg = d3.select("svg")
-    .attr("height",(arrity*tileSize)*gridScale)
-    .attr("width",(arrity*tileSize)*gridScale)
-    .append("rect")
-      .attr("height",(arrity*tileSize)*gridScale)
-      .attr("width",(arrity*tileSize)*gridScale)
-      .style("fill","#FFFEE8");
-    };
+   .selectAll("rect")
+   .data(obArray)
+   .enter().append("rect")
+   .attr("class","ob")
+   .attr("height",gridScale)
+   .attr("width",gridScale)
+   .attr("y",function(d) { var y=tileSize*arrity; return Math.floor(d/y)*gridScale; })
+   .attr("x",function(d) { var x=tileSize*arrity; return (d%x)*gridScale; })
+   .style("fill","black")
+   
+    ;
+    }
+
+function obColour(b) {
+  if (b==="t") {
+    return "#000000";}
+    return "#FFFFFF";
+  };
+
 
 function draw_hlines(arrity,tileSize,gridScale,list) {
    var svg = d3.select("svg").selectAll("hline")
@@ -76,16 +91,12 @@ function changeColour(object,d,$scope) {
     inv = "img/inv_hume.png";
   }else{ inv = "img/inv_zomb.png";}
   d3.select(object)
-  //.style("fill","tomato")
-  //.style("stroke","indianred")
   .attr("xlink:href",inv);
   $scope.inspectList.push(d);
   
 }
 
 function update_circles(data,gridScale,swarmSize) {
- // console.log(data);
-  //var anim_time = Math.abs(0.3*swarmSize.value);
     var svg = d3.select("svg");
     svg.selectAll("image")
     .data(data, function(d) { return d.id; })
@@ -131,10 +142,10 @@ function draw_circles(data,gridScale,$scope) {
         //.style("stroke-width",0.5*gridScale)
         //.attr("viewBox", "0 0 16 16")
         //.append("image")
-        .attr("x",function(d) { return d.x*gridScale; })
-        .attr("y", function(d) { return d.y*gridScale; })
-        .attr("width",gridScale*2)
-        .attr("height",gridScale*2)
+        .attr("x",function(d) { return (d.x-gridScale/2)*gridScale; })
+        .attr("y", function(d) { return (d.y-gridScale/2)*gridScale; })
+        .attr("width",gridScale)
+        .attr("height",gridScale)
           .attr("xlink:href", function(d) {return setColour(d);})
         ;
 	};

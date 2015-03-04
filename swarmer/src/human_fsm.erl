@@ -4,7 +4,17 @@
 -define(AIMLESS_STAY_COURSE, 8).
 -define(SIGHT,100).
 -define(PERSONAL_SPACE, 3).
+
+%Variables for boids.
 -define(LIMIT,5).
+-define(SUPER_EFFECT, 0.3).
+-define(FLOCKING_EFFECT,0.5).
+-define(VELOCITY_EFFECT,0.5).
+-define(COHESION_EFFECT,0.2).
+
+% Behaviour Parameters
+-define(INITIAL_HUNGER,100).
+-define(INITIAL_ENERGY,100).
 
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
@@ -37,7 +47,9 @@
                 x_velocity,
                 y_velocity,
                 z_list,
-                h_list}).
+                h_list,
+                hunger,
+                energy}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
@@ -65,7 +77,8 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
                        viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows,
-                       x_velocity = 0, y_velocity = 0}}.
+                       x_velocity = 0, y_velocity = 0,
+                       hunger = ?INITIAL_HUNGER, energy = ?INITIAL_ENERGY}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -78,45 +91,16 @@ initial(start,State) ->
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
-                    x_velocity = X_Velocity, y_velocity = Y_Velocity} = State) ->
+                    x_velocity = X_Velocity, y_velocity = Y_Velocity,
+                    viewer = Viewer} = State) ->
 
     % Build a list of nearby zombies
-    ZombieList = viewer:get_zombies(State#state.viewer),
-
-    Z_DistanceList = lists:map(fun(
-                                {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-                                    {pythagoras:pyth(X,Y,ZX,ZY),
-                                    {ZomPid,{ZType,{{ZX,ZY},
-                                    {ZX_Velocity,ZY_Velocity}}}}} 
-                                end,ZombieList),
-
-    Z_FilteredList = lists:filter(
-                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
-                                    Dist =< ?SIGHT
-                                end,Z_DistanceList),
-
-    Zlist = lists:keysort(1,Z_FilteredList),
-
+    Zlist = build_zombie_list(Viewer, X, Y),
 
     % Build a list of nearby humans
-    HumanList = viewer:get_humans(State#state.viewer),
-    
-    NoSelfList = lists:keydelete(self(),1,HumanList),
+    Hlist = build_human_list(Viewer, X, Y),
 
-    H_DistanceList = lists:map(fun(
-                                {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-                                    {pythagoras:pyth(X,Y,HX,HY),
-                                    {Hpid,{human,{{HX,HY},
-                                    {HXV,HYV}}}}} 
-                            end,NoSelfList),
-
-    H_FilteredList = lists:filter(
-                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
-                                    Dist =< ?SIGHT
-                                end,H_DistanceList),
-
-    Hlist = lists:keysort(1,H_FilteredList),
-
+    Olist = viewer:get_obs(Viewer),
 
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
@@ -204,7 +188,7 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
 
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
-
+ 
 
 % BOIDS
 make_choice([],[],_State) ->
@@ -212,17 +196,21 @@ make_choice([],[],_State) ->
 
 % Collision Avoidance
 make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Hlist],_,State) when Dist < ?PERSONAL_SPACE ->
-    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY);
+    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
 % Repulsor
 make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],State) ->
-    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY);
+    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
 % Flock
 make_choice(Hlist,_, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity),
+    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)}.
+
+
+
+
 
 
 jsonify_list([]) ->
@@ -236,3 +224,45 @@ jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], 
     StringPid = list_to_binary(pid_to_list(Pid)),
     NewList = [[{id, StringPid},{type, Type}, {dist, Dist}, {x, HeadX}, {y, HeadY}, {x_velocity, Head_X_Vel}, {y_velocity, Head_Y_Vel}]| List],
     jsonify_list(Ls, NewList).
+
+
+build_zombie_list(Viewer, X, Y) ->
+    ZombieList = viewer:get_zombies(Viewer),
+
+    Z_DistanceList = lists:map(fun(
+                                {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
+                                    {pythagoras:pyth(X,Y,ZX,ZY),
+                                    {ZomPid,{ZType,{{ZX,ZY},
+                                    {ZX_Velocity,ZY_Velocity}}}}} 
+                                end,ZombieList),
+
+    Z_FilteredList = lists:filter(
+                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
+                                    Dist =< ?SIGHT
+                                end,Z_DistanceList),
+
+    Zlist = lists:keysort(1,Z_FilteredList),
+    %return
+    Zlist.
+
+
+build_human_list(Viewer, X, Y) ->
+    HumanList = viewer:get_humans(Viewer),
+    
+    NoSelfList = lists:keydelete(self(),1,HumanList),
+
+    H_DistanceList = lists:map(fun(
+                                {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
+                                    {pythagoras:pyth(X,Y,HX,HY),
+                                    {Hpid,{human,{{HX,HY},
+                                    {HXV,HYV}}}}} 
+                            end,NoSelfList),
+
+    H_FilteredList = lists:filter(
+                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
+                                    Dist =< ?SIGHT
+                                end,H_DistanceList),
+
+    Hlist = lists:keysort(1,H_FilteredList),
+    %return
+    Hlist.

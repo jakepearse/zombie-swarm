@@ -21,4 +21,6 @@ init([]) ->
                     permanent,infinity,supervisor,[zombie_sup]},
     HumanSup = {human_sup, {human_sup, start_link, []},
                 permanent,infinity,supervisor,[human_sup]},
-	{ok,{{one_for_one,1,60},[Environment,TileSup,ViewerSup,ZombieSup,HumanSup]}}.
+    SuppliesSup = {supplies_sup, {supplies_sup, start_link, []},
+                permanent,infinity,supervisor,[supplies_sup]},
+	{ok,{{one_for_one,1,60},[Environment,TileSup,ViewerSup,ZombieSup,HumanSup,SuppliesSup]}}.
