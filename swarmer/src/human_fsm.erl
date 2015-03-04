@@ -100,6 +100,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     % Build a list of nearby humans
     Hlist = build_human_list(Viewer, X, Y),
 
+    Olist = viewer:get_obs(Viewer),
 
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
@@ -206,6 +207,10 @@ make_choice(Hlist,_, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)}.
+
+
+
+
 
 
 jsonify_list([]) ->

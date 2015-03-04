@@ -109,9 +109,7 @@ handle_cast({update_items, Tile, Items}, #state{item_map = Imap} = State) ->
     {noreply, State#state{item_map = maps:put(Tile,Items,Imap)}};
 
 handle_cast({update_obs, Tile, ObsList}, #state{obs_map = ObsMap} = State) ->
-    NewMap = maps:put(Tile,ObsList,ObsMap),
-    error_logger:error_report(NewMap),
-    {noreply, State#state{obs_map = NewMap}}.
+    {noreply, State#state{obs_map = maps:put(Tile,ObsList,ObsMap)}}.
 
 
 handle_call(get_zombies,_From,State) ->
