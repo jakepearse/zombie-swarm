@@ -49,12 +49,12 @@ get_state(Pid) ->
 picked_up(Pid) ->
 	gen_server:call(Pid,picked_up).
 
-
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
 
 init([Type, Item, X, Y, Tile, Viewer]) ->
+	tile:place_item(Tile, {self(),X,Y,Type,Item}),
     {ok, #state{id = self(), type = Type, x = X, y = Y, 
     			tile = Tile, viewer = Viewer}}.
 
@@ -64,15 +64,13 @@ handle_call(get_state, _From, State) ->
 	{reply, State,State};
 handle_call(picked_up, _From, State) ->
 	{reply, ok, State};
-handle_call(place, _From, #state{tile = Tile, x = X, y = Y, type = Type, item = Item} = State) ->
-	tile:place_item(Tile, {self(),X,Y,Type,Item});
-handle_call(Request, From, State) ->
+handle_call(Request, _From, State) ->
     {stop, unexpected_call, {undefined, Request}, State}.
 
-handle_cast(Request, State) ->
+handle_cast(_Request, State) ->
     {stop, unexpected_cast, State}.
 
-handle_info(Info, State) ->
+handle_info(_Info, State) ->
     {noreply, State}.
 
 terminate(_Reason, _State) ->

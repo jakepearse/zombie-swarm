@@ -199,7 +199,7 @@ handle_call(get_state,_From,State) ->
     {reply,State,State};
 
 handle_call({place_item, {ID,X,Y,Type,Item}}, _From, #state{item_map = ItemMap} = State) ->
-    NewMap = maps:put({ID,X,Y,Type,Item}, ItemMap),
+    NewMap = maps:put(ID,{X,Y,Type,Item}, ItemMap),
     {reply, ok, State#state{item_map = NewMap}};
 
 handle_call({remove_item, {ID,_,_,_,_}}, _From, #state{item_map = ItemMap} = State) ->
