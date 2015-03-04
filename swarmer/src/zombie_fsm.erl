@@ -4,7 +4,13 @@
 -define(AIMLESS_STAY_COURSE, 8).
 -define(SIGHT,75).
 -define(PERSONAL_SPACE, 3).
+
+%Variables for boids.
 -define(LIMIT,5).
+-define(SUPER_EFFECT, 0.3).
+-define(FLOCKING_EFFECT,0.5).
+-define(VELOCITY_EFFECT,0.5).
+-define(COHESION_EFFECT,0.2).
 
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
@@ -137,7 +143,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
     {Limited_X_Velocity,Limited_Y_Velocity} = boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity),
-    NewX = X + Limited_X_Velocity,
+    NewX = X + trigstuff:round(Limited_X_Velocity,2),
     NewY = Y + Limited_Y_Velocity,  
 
     Bearing = 0,
@@ -234,18 +240,20 @@ record_to_proplist(#state{} = Record) ->
 make_choice([],[],_State) ->
     {0,0};
 
-%make_choice(_,[{Dist, {_,{_,{{_,_},{_,_}}}}}|_Hlist],State) when Dist < ?PERSONAL_SPACE ->
+make_choice(_,[{Dist, {Pid,{_,{{_,_},{_,_}}}}}|_Hlist],_State) when Dist < ?PERSONAL_SPACE ->
 %    KILL HUMAN;
+    supervisor:terminate_child(human_sup, Pid),
+    {0,0};
 
 make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],_,State) when Dist < ?PERSONAL_SPACE ->
-    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY);
+    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
 make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Hlist],State) ->
-    boids_functions:super_attractor(State#state.x,State#state.y,HeadX,HeadY);
+    boids_functions:super_attractor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
 make_choice(Zlist,_, State) ->
-    {Fx,Fy} = boids_functions:flocking(Zlist,State#state.x,State#state.y),
-    {Vx,Vy} = boids_functions:velocity(Zlist,State#state.x_velocity,State#state.y_velocity),
+    {Fx,Fy} = boids_functions:flocking(Zlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Zlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)}.
 
 
