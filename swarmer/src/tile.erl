@@ -200,10 +200,12 @@ handle_call(get_state,_From,State) ->
 
 handle_call({place_item, {ID,X,Y,Type,Item}}, _From, #state{item_map = ItemMap} = State) ->
     NewMap = maps:put(ID,{X,Y,Type,Item}, ItemMap),
+    update_viewers(State#state.neighbours, items, NewMap),
     {reply, ok, State#state{item_map = NewMap}};
 
 handle_call({remove_item, {ID,_,_,_,_}}, _From, #state{item_map = ItemMap} = State) ->
     NewMap = maps:remove(ID, ItemMap),
+    update_viewers(State#state.neighbours, items, NewMap),
     {reply, ok, State#state{item_map = NewMap}};
 
 %%%% Updates the entities position on the tile.
@@ -286,7 +288,10 @@ update_viewers([V|Vs], Type, EntityMap) when Type =:= zombie ->
     update_viewers(Vs, Type, EntityMap);
 update_viewers([V|Vs], Type, EntityMap) when Type =:= human ->
     viewer:update_humans(V, {self(), maps:to_list(EntityMap)}),
-    update_viewers(Vs, Type, EntityMap).
+    update_viewers(Vs, Type, EntityMap);
+update_viewers([V|Vs], items, ItemMap) ->
+    viewer:update_items(V, {self(), maps:to_list(ItemMap)}),
+    update_viewers(Vs, items, ItemMap).
 
 %%%%-Notes----------------------------------------------------------------------
 
