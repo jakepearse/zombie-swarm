@@ -100,13 +100,12 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     % Build a list of nearby humans
     Hlist = build_human_list(Viewer, X, Y),
 
-    Olist = viewer:get_obs(Viewer),
-
+    Olist = build_obs_list(viewer:get_obs(Viewer),X,Y),
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
 
 
-    {BoidsX,BoidsY} = make_choice(Hlist,Zlist,State), 
+    {BoidsX,BoidsY} = make_choice(Hlist,Zlist,Olist,State), 
 
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
@@ -191,19 +190,23 @@ record_to_proplist(#state{} = Record) ->
  
 
 % BOIDS
-make_choice([],[],_State) ->
+make_choice([],[],[],_State) ->
     {0,0};
 
+%Obstruction Avoidance
+%make_choice(_Hlist,_Zlist,[{D,{_,{_,{{OX,OY},{_,_}}}}}|_Olist_Tail],State) when D < ?PERSONAL_SPACE div 2 ->
+%boids_functions:super_repulsor(State#state.x, State#state.y, OX, OY,?SUPER_EFFECT);
+
 % Collision Avoidance
-make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Hlist],_,State) when Dist < ?PERSONAL_SPACE ->
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Hlist],_,_Olist,State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
 % Repulsor
-make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],State) ->
+make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],_OList,State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
 % Flock
-make_choice(Hlist,_, State) ->
+make_choice(Hlist,_,_Olist,State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)}.
@@ -266,3 +269,8 @@ build_human_list(Viewer, X, Y) ->
     Hlist = lists:keysort(1,H_FilteredList),
     %return
     Hlist.
+
+build_obs_list(Olist, X,Y) ->
+    O_DistanceList = lists:map(fun({ObX,ObY}) -> {pythagoras:pyth(X,Y,ObX,ObY),{noPid,{obstruction,{{ObX,ObY},{0,0}}}}} end, Olist),
+    %sort the list by distance
+    lists:keysort(1,O_DistanceList).
