@@ -7,13 +7,15 @@
 
 %Variables for boids.
 -define(LIMIT,5).
+-define(TIRED_LIMIT,2).
+-define(HUNGRY_LIMIT,4).
 -define(SUPER_EFFECT, 0.3).
 -define(FLOCKING_EFFECT,0.5).
 -define(VELOCITY_EFFECT,0.5).
 -define(COHESION_EFFECT,0.2).
 
 % Behaviour Parameters
--define(INITIAL_HUNGER,100).
+-define(INITIAL_HUNGER,50).
 -define(INITIAL_ENERGY,100).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
@@ -119,7 +121,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     % creates a new value for hunger and food, showing the humans getting
     % hungry over time
-    {NewHunger, NewEnergy,NewHungerState} = case Hunger of
+    {NewHunger, NewEnergy, NewHungerState} = case Hunger of
         HValue when HValue =< 0 ->
             case Energy of 
                 EVAlue when EVAlue =< ?TIRED_LEVEL ->
@@ -133,24 +135,40 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             {Hunger-1, Energy, not_hungry}
     end,
 
+    NearestItem = get_nearest_item(Ilist,{X,Y}),
+
+    % error_logger:error_report(NearestItem),
+
     {BoidsX, BoidsY} = case NewHungerState of 
         tired ->
             % need to limit speed drastically
-            {BX, BY} = make_choice(Hlist,Zlist,State),
+            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State);
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
-            {BX, BY} = make_choice(Hlist,Zlist,State),
+            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State);
         hungry ->
             % search for food, but also boids
-            {BX, BY} = make_choice(Hlist,Zlist,State),
+            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State);
         not_hungry ->
             % save any food you find to a map, boids as normal
-            {BX, BY} = make_choice(Hlist,Zlist,State),
+            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State)
     end,
 
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
-    {Limited_X_Velocity,Limited_Y_Velocity} = boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity),
+
+    {Limited_X_Velocity,Limited_Y_Velocity} = case NewHungerState of
+        tired ->
+            % need to limit speed drastically
+            boids_functions:limit_speed(?TIRED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
+        very_hungry ->
+            % need to search for food, boids a little, but also limit speed
+            boids_functions:limit_speed(?HUNGRY_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
+        _ ->
+            % need to search for food, boids a little, but also limit speed
+            boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity)
+    end,
+
     NewX = X + Limited_X_Velocity,
     NewY = Y + Limited_Y_Velocity,  
 
@@ -236,28 +254,83 @@ record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
  
 
-% BOIDS
-make_choice([],[],_State) ->
+%%%%%%==========================================================================
+%%%%%% Boids Functions
+%%%%%%==========================================================================
+
+
+make_choice([],[],_NearestItem, _HungerState, _State) ->
     {0,0};
 
 % Collision Avoidance
-make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Hlist],_,State) when Dist < ?PERSONAL_SPACE ->
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_,State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
-% Repulsor
-make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],State) ->
+% nearest item -> {<0.253.0>,{233,61,food,banana}}
+% repulsor
+make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, not_hungry, State) ->
+    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
+make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, hungry, State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
 % Flock
-make_choice(Hlist,_, State) ->
+make_choice(Hlist,_,_NearestItem, not_hungry, State) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+    {(Fx+Vx),(Fy+Vy)};
+
+make_choice(Hlist,_,_NearestItem, hungry, State) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+    {(Fx+Vx),(Fy+Vy)};
+
+% hungry, move towards items
+make_choice(_,_,{_,{ItemX,ItemY,_,_}}, very_hungry, State) ->
+    boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
+
+make_choice(_,_,{_,{ItemX,ItemY,_,_}}, tired, State) ->
+    boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
+
+% hungry, but no items found
+%%%%%% This needs to refer to memory, and pathfind towards a nearby food source %%%%%%
+make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],nothing_found, very_hungry, State) ->
+    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
+
+make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],nothing_found, tired, State) ->
+    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
+
+make_choice(Hlist,_,nothing_found, very_hungry, State) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+    {(Fx+Vx),(Fy+Vy)};
+
+make_choice(Hlist,_,nothing_found, tired, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)}.
 
 
+get_nearest_item([],_) ->
+    nothing_found;
+get_nearest_item([I|Is], {HumanX, HumanY}) ->
+    get_nearest_item(Is, {HumanX, HumanY}, I).
+
+get_nearest_item([], _, NearestItem) ->
+    NearestItem;
+get_nearest_item([Item|Is], {HumanX, HumanY}, NearestItem) ->
+    get_nearest_item(Is, {HumanX, HumanY}, Item);
+get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}}) ->
+    NextItem = pythagoras:pyth(NearestX, NearestY, HumanX, HumanY),
+    case pythagoras:pyth(X, Y, HumanX, HumanY) of
+        Value when Value < NextItem ->
+            get_nearest_item(Is, {HumanX, HumanY}, {ID, {X,Y,Type,Item}});
+        _ -> 
+            get_nearest_item(Is, {HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}})
+    end.
 
 
 
+%%%%% PRIVATE FUNS
 
 jsonify_list([]) ->
     [];
@@ -312,3 +385,15 @@ build_human_list(Viewer, X, Y) ->
     Hlist = lists:keysort(1,H_FilteredList),
     %return
     Hlist.
+
+
+
+% Zombies start with a small population of zombies
+% Zombies spread
+% Humans want to find food
+
+% Humans need a goal, and a local obstacle list 
+%     maybe include zombies in that list
+% Use astar to find a path to your current goal (items, moving)
+% astar takes X,Y,Tx,Ty,obsList ->
+%   returns list of a path

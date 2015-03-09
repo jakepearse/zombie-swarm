@@ -147,6 +147,7 @@ init([]) ->
 %%% calls   
 handle_call(report,_From,State) ->
     Report = make_report(), 
+    % error_logger:error_report(Report),
     {reply,Report,State};
 
 
@@ -331,7 +332,7 @@ make_report() ->
                 _ ->
                     false
             end 
-        end, get_entities_list()).
+        end, get_report_list()).
 
 make_neighbourhood(TileList,ViewerPropList) ->
   ViewerGeomList = setup_neighbours(ViewerPropList),
@@ -417,9 +418,17 @@ apply_to_all__humans(Fun) ->
 get_entities_list() ->
   supervisor:which_children(zombie_sup) ++ supervisor:which_children(human_sup).
 
+get_report_list() ->
+  supervisor:which_children(zombie_sup) ++ 
+    supervisor:which_children(human_sup) ++ 
+    supervisor:which_children(supplies_sup).
+    
 get_zombies_list() ->
   supervisor:which_children(zombie_sup).
 
 get_humans_list() ->
   supervisor:which_children(human_sup).
+
+get_supplies_list() ->
+  supervisor:which_children(supplies_sup).
 
