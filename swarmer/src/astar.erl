@@ -2,28 +2,29 @@
 -export([findpath/3,nodeNeighbours/4]).
 
 rebuildPath(A,B) ->
-
+% fill this in later =)
     B.
 
-% generates a list of all neighbours of Node that are not in Obs_List
-%nodeNeighbours([{_F,Parent,NodeG,{NodeX,NodeY}}],G,{GoalX,GoalY},Obs_List)->
+
+%nodeNeighbours({_F,Parent,NodeG,{NodeX,NodeY}},G,{GoalX,GoalY},Obs_List)->
   %%{NodeX,NodeY} = Node,
   %Node = {_F,Parent,G,{NodeX,NodeY}},
   %N=lists:filter(fun(Z) -> lists:any(fun(W) -> not (W==Z) end, Obs_List++{NodeX,NodeY})
   %end,lists:map(fun({_,_,_,{A,B}}) -> {pythagoras:pyth(A+NodeX,B+NodeY,GoalX,GoalY),{NodeX,NodeY},G+1,{A+NodeX,B+NodeY}} end,
   %[{a,b,c,{X,Y}} || X <- lists:seq(-1,1), Y <- lists:seq(-1,1)])),
-  %error_logger:error_report(N),
-  %N;
-
-nodeNeighbours({_F,Parent,NodeG,{NodeX,NodeY}},G,{GoalX,GoalY},Obs_List)->
-  %{NodeX,NodeY} = Node,
-  Node = {_F,Parent,G,{NodeX,NodeY}},
-  N=lists:filter(fun(Z) -> lists:any(fun(W) -> not (W==Z) end, Obs_List++{NodeX,NodeY})
-  end,lists:map(fun({_,_,_,{A,B}}) -> {pythagoras:pyth(A+NodeX,B+NodeY,GoalX,GoalY),{NodeX,NodeY},G+1,{A+NodeX,B+NodeY}} end,
-  [{a,b,c,{X,Y}} || X <- lists:seq(-1,1), Y <- lists:seq(-1,1)])),
-  %error_logger:error_report(N),
-  ordsets:union(N,[]).
+  %%error_logger:error_report(N),
+  %ordsets:union(N,[]).
   
+nodeNeighbours({_F,Parent,NodeG,{NodeX,NodeY}},G,{GoalX,GoalY},Obs_List)->
+  Node = {_F,Parent,G,{NodeX,NodeY}},
+  Cardinals = [{X,Y} || X <- lists:seq(-1,1), Y <- lists:seq(-1,1)],
+  NeighbouringCells = lists:map(fun({CellX,CellY}) ->  {CellX+NodeX,CellY+NodeY} end, Cardinals),
+  UnblockedNeighbours = lists:filter(fun({NX,NY}) -> not lists:member({NX,NY},Obs_List) end,NeighbouringCells),
+  error_logger:error_report(UnblockedNeighbours),
+  HeuristicNeighbours = lists:map(fun({A,B}) -> {pythagoras:pyth(A,B,GoalX,GoalY),{NodeX,NodeY},G+1,{A,B}} end, UnblockedNeighbours),
+
+  ordsets:union(HeuristicNeighbours,[]).
+    
 findpath(Start,End,Obs_List)->
   {StartX,StartY}=Start,
   {GoalX,GoalY}=End,
