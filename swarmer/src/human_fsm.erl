@@ -15,6 +15,8 @@
 % Behaviour Parameters
 -define(INITIAL_HUNGER,100).
 -define(INITIAL_ENERGY,100).
+-define(HUNGRY_LEVEL, 25).
+-define(TIRED_LEVEL, 25).
 
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
@@ -48,8 +50,11 @@
                 y_velocity,
                 z_list,
                 h_list,
+                i_list,
+                hunger_state,
                 hunger,
-                energy}).
+                energy,
+                memory_map = maps:new()}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
@@ -78,7 +83,8 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows,
                        x_velocity = 0, y_velocity = 0,
-                       hunger = ?INITIAL_HUNGER, energy = ?INITIAL_ENERGY}}.
+                       hunger = ?INITIAL_HUNGER, energy = ?INITIAL_ENERGY,
+                       hunger_state = not_hungry}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -92,7 +98,9 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
                     x_velocity = X_Velocity, y_velocity = Y_Velocity,
-                    viewer = Viewer} = State) ->
+                    viewer = Viewer,
+                    hunger = Hunger, energy = Energy, 
+                    hunger_state = HungerState} = State) ->
 
     % Build a list of nearby zombies
     Zlist = build_zombie_list(Viewer, X, Y),
@@ -100,13 +108,45 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     % Build a list of nearby humans
     Hlist = build_human_list(Viewer, X, Y),
 
+    % Build a list of nearby items
+    Ilist = viewer:get_items(Viewer),
+
     Olist = viewer:get_obs(Viewer),
 
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
 
 
-    {BoidsX,BoidsY} = make_choice(Hlist,Zlist,State), 
+    % creates a new value for hunger and food, showing the humans getting
+    % hungry over time
+    {NewHunger, NewEnergy,NewHungerState} = case Hunger of
+        HValue when HValue =< 0 ->
+            case Energy of 
+                EVAlue when EVAlue =< ?TIRED_LEVEL ->
+                    {Hunger,Energy, tired};
+                _ -> 
+                    {Hunger, Energy-1, very_hungry}
+            end;
+        HValue when HValue =< ?HUNGRY_LEVEL ->
+            {Hunger-1, Energy-1, hungry};
+        _ ->
+            {Hunger-1, Energy, not_hungry}
+    end,
+
+    {BoidsX, BoidsY} = case NewHungerState of 
+        tired ->
+            % need to limit speed drastically
+            {BX, BY} = make_choice(Hlist,Zlist,State),
+        very_hungry ->
+            % need to search for food, boids a little, but also limit speed
+            {BX, BY} = make_choice(Hlist,Zlist,State),
+        hungry ->
+            % search for food, but also boids
+            {BX, BY} = make_choice(Hlist,Zlist,State),
+        not_hungry ->
+            % save any food you find to a map, boids as normal
+            {BX, BY} = make_choice(Hlist,Zlist,State),
+    end,
 
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
@@ -131,7 +171,13 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             end,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed, {X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, move),
-            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json,x_velocity = Limited_X_Velocity, y_velocity = Limited_Y_Velocity}}
+            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,
+                                        bearing = Bearing, tile = NewTile, 
+                                        z_list = Zlist_Json, h_list = Hlist_Json,
+                                        x_velocity = Limited_X_Velocity, 
+                                        y_velocity = Limited_Y_Velocity,
+                                        hunger = NewHunger, energy = NewEnergy,
+                                        hunger_state = NewHungerState}}
     end.
 
 aimless_search(move,State) ->
