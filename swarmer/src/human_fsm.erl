@@ -27,9 +27,8 @@
 -export([code_change/4,handle_event/3,handle_sync_event/4,
          handle_info/3,init/1,terminate/3]).
 
--export([start_link/10,aimless/2,initial/2,aimless_search/2,active/2,
-         active_search/2,chasing/2,chasing_search/2,calc_state/1,
-         calc_aimlessbearing/3,start/1,pause/2]).
+-export([start_link/10,aimless/2,initial/2,aimless_search/2,
+        calc_state/1,calc_aimlessbearing/3,start/1,pause/2]).
 
 %API
 -export([get_state/1, pause/1, unpause/1]).
@@ -101,8 +100,8 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     tile = Tile, type = Type,
                     x_velocity = X_Velocity, y_velocity = Y_Velocity,
                     viewer = Viewer,
-                    hunger = Hunger, energy = Energy, 
-                    hunger_state = HungerState} = State) ->
+                    hunger = Hunger, energy = Energy,
+                    memory_map = MemoryMap} = State) ->
 
     % Build a list of nearby zombies
     Zlist = build_zombie_list(Viewer, X, Y),
@@ -110,8 +109,11 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     % Build a list of nearby humans
     Hlist = build_human_list(Viewer, X, Y),
 
-    % Build a list of nearby items
+    % Build a list of nearby items and store them to memory
     Ilist = viewer:get_items(Viewer),
+    % NewMemoryMap = build_memory(Ilist, TileSize, MemoryMap),
+    NewMemoryMap = build_memory(Ilist, MemoryMap),
+    % error_logger:error_report(NewMemoryMap),
 
     Olist = viewer:get_obs(Viewer),
 
@@ -195,28 +197,13 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                         x_velocity = Limited_X_Velocity, 
                                         y_velocity = Limited_Y_Velocity,
                                         hunger = NewHunger, energy = NewEnergy,
-                                        hunger_state = NewHungerState}}
+                                        hunger_state = NewHungerState,
+                                        memory_map = NewMemoryMap}}
     end.
 
 aimless_search(move,State) ->
     gen_fsm:send_event_after(State#state.timeout, move),
     {next_state,calc_state(aimless),State}.
-
-active(move,State) ->
-    gen_fsm:send_event_after(State#state.timeout, move),
-    {next_state,active_search,State}.
-
-active_search(move,State) ->
-    gen_fsm:send_event_after(State#state.timeout, move),
-    {next_state,calc_state(active),State}.
-    
-chasing(move,State) ->
-    gen_fsm:send_event_after(State#state.timeout, move),
-    {next_state,chasing_search,State}.
-
-chasing_search(move,State) ->
-    gen_fsm:send_event_after(State#state.timeout, move),
-    {next_state,calc_state(chasing),State}.
 
 pause(move, State) -> 
     %% If we get a move event start the timer again but don't actually move
@@ -247,8 +234,11 @@ handle_event(pause, StateName, StateData) ->
                            
 handle_sync_event(get_state, _From, StateName, StateData) ->
     PropList = record_to_proplist(StateData),
-    PropListJson = proplists:delete(viewer,PropList),
-    {reply, {ok,PropListJson}, StateName,StateData}.
+    % take the pid out of the report for JSX
+    PropListNoViewer = proplists:delete(viewer,PropList),
+    % take the MemoryMap out of the report for JSX
+    PropListNoMemory = proplists:delete(memory_map,PropListNoViewer),
+    {reply, {ok,PropListNoMemory}, StateName,StateData}.
 
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
@@ -257,7 +247,6 @@ record_to_proplist(#state{} = Record) ->
 %%%%%%==========================================================================
 %%%%%% Boids Functions
 %%%%%%==========================================================================
-
 
 make_choice([],[],_NearestItem, _HungerState, _State) ->
     {0,0};
@@ -291,7 +280,7 @@ make_choice(_,_,{_,{ItemX,ItemY,_,_}}, very_hungry, State) ->
 make_choice(_,_,{_,{ItemX,ItemY,_,_}}, tired, State) ->
     boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
 
-% hungry, but no items found
+% hungry, but no items nothing_found
 %%%%%% This needs to refer to memory, and pathfind towards a nearby food source %%%%%%
 make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],nothing_found, very_hungry, State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
@@ -317,8 +306,8 @@ get_nearest_item([I|Is], {HumanX, HumanY}) ->
 
 get_nearest_item([], _, NearestItem) ->
     NearestItem;
-get_nearest_item([Item|Is], {HumanX, HumanY}, NearestItem) ->
-    get_nearest_item(Is, {HumanX, HumanY}, Item);
+% get_nearest_item([Item|Is], {HumanX, HumanY}, NearestItem) ->
+%     get_nearest_item(Is, {HumanX, HumanY}, Item);
 get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}}) ->
     NextItem = pythagoras:pyth(NearestX, NearestY, HumanX, HumanY),
     case pythagoras:pyth(X, Y, HumanX, HumanY) of
@@ -386,7 +375,22 @@ build_human_list(Viewer, X, Y) ->
     %return
     Hlist.
 
+% Memory by tile
+% build_memory([], _, Map) ->
+%     Map;
+% build_memory([{Pid,{X,Y,Type,Name}}|Rest], TileSize, Map) ->
+%     Tile = list_to_atom("tile" ++  "X" ++ 
+%                 integer_to_list(X div TileSize) ++  "Y" ++ 
+%                 integer_to_list(Y div TileSize)),
+%     NewMap = maps:put(Tile, {Pid,{X,Y,Type,Name}}, Map),
+%     build_memory(Rest, TileSize, NewMap).
 
+% Memory by item
+build_memory([], Map) ->
+    Map;
+build_memory([{Pid,{X,Y,Type,Name}}|Rest], Map) ->
+    NewMap = maps:put(Pid, {X,Y,Type,Name}, Map),
+    build_memory(Rest, NewMap).
 
 % Zombies start with a small population of zombies
 % Zombies spread

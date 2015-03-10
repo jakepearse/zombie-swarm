@@ -358,10 +358,10 @@ get_neighbours(Xo,Yo,ViewersWithGeometry,NeighbourList) ->
   [V|Vs]=ViewersWithGeometry,
   {{X,Y,_,_,Size},Viewer} = V,
   case test_neighbour (Xo,Yo,X,Y,Size) of
-  true ->
-    NewList =NeighbourList ++ [Viewer],
-    get_neighbours(Xo,Yo,Vs,NewList);
-  false -> get_neighbours(Xo,Yo,Vs,NeighbourList)
+    true ->
+      NewList =NeighbourList ++ [Viewer],
+      get_neighbours(Xo,Yo,Vs,NewList);
+    false -> get_neighbours(Xo,Yo,Vs,NeighbourList)
   end.
 
 
