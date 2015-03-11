@@ -26,8 +26,8 @@ function draw_background(arrity,tileSize,gridScale,obArray){
    .attr("class","ob")
    .attr("height",gridScale*5)
    .attr("width",gridScale*5)
-   .attr("y",function(d) { var y=tileSize*arrity; return Math.floor(d/y)*gridScale; })
-   .attr("x",function(d) { var x=tileSize*arrity; return (d%x)*gridScale; })
+   .attr("y",function(d) { var y=tileSize; return (Math.floor(d/y)*gridScale)*5; })
+   .attr("x",function(d) { var x=tileSize; return ((d%x)*gridScale)*5; })
    .style("fill","black")
    
     ;

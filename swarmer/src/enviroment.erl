@@ -206,7 +206,7 @@ handle_call({items,Num},_From,State) ->
 
 %%% map a list of integers to [{Tile,{X,Y}},...] and pushes them into the relevant tile's State#state.obs_list
 handle_call({create_obs_map,Obs_list,GridSize},_From,State) ->
-	Cord_list = lists:map(fun(I)-> {X,Y}={I div GridSize,I rem GridSize},{T,_V} = get_tile(X,Y,State),{T,{X,Y}} end,Obs_list), 
+	Cord_list = lists:map(fun(I)-> {X,Y}={(I rem 50)*5 ,(I div 50)*5},{T,_V} = get_tile(X,Y,State),{T,{X,Y}} end,Obs_list), 
 	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
   {reply,ok,State}.
 	

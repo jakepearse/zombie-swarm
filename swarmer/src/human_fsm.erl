@@ -222,7 +222,7 @@ make_choice(Hlist,_,_Olist,State) ->
 obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
     {NewX,NewY};
 obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
-    Member = lists:member({NewY,NewX}, Olist),
+    Member = lists:member({(NewY div 250)*50,(NewX div 250)*50}, Olist),
     case Member of
         true->
             {X,Y};

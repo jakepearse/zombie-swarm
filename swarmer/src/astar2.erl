@@ -8,6 +8,7 @@
 -export([
 astar/3,
 neighbour_nodes/3
+dist_between/2
 ]).
 
 %% This module is very closely based on Srijan Choudhary's a* module [https://www.srijn.net/programming/astar-erlang-basic.html] acessed 10/3/2015
