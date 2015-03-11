@@ -95,7 +95,7 @@ neighbour_nodes(Node, Parent,Obs_list) ->
   YY =< ?MAXY
   ],
 % added to remove obstructions from neighbours
-lists:filter(fun(N) -> not lists:member(N,Obs_list) end,Nlist).
+lists:filter(fun(NX,NY) -> not lists:any(fun({OX,OY}) -> NX==OX andalso NY==OY end,Obs_list) end,Nlist).
  
 %% @doc Scans the `Neighbours' of `BestStep', and adds/updates the Scores and CameFrom mapss accordingly.
 -spec scan(

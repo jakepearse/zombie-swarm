@@ -186,7 +186,7 @@ handle_call({make_grid,{Rows,Columns,TileSize,Obs_list}},_From,State) ->
   make_neighbourhood(Grid,Viewers),
   %error_logger:error_report(State#state.viewerPropList),
   
-  Cord_list = lists:map(fun(I)-> X=I rem 50, Y=I div 50, T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list), 
+  Cord_list = lists:map(fun(I)-> X=I rem TileSize, Y=I div TileSize, T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list), 
     %error_logger:error_report(Cord_list),
 	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
   
@@ -280,13 +280,14 @@ add_viewers(Grid,Viewers) ->
 
 
 %% Spawns Num randomly positioned zombies
-create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,Num) ->
+create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list = Obs_List} = State,Num) ->
     GridXSize=TileSize*Columns,
     GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
-            Xpos = random:uniform(GridXSize-1),
-            Ypos= random:uniform(GridYSize-1),
+            %Xpos = random:uniform(GridXSize-1),
+            %Ypos= random:uniform(GridYSize-1),
+            {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             % error_logger:error_report({Tile,Viewer}),
             {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,?ZOMBIE_TIMEOUT,0]),
@@ -295,13 +296,14 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State
         end,lists:seq(1,Num)).
 
 %% Spawns Num randomly positioned humans
-create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,Num) ->
+create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list = Obs_List} = State,Num) ->
     GridXSize=TileSize*Columns,
     GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
-            Xpos = random:uniform(GridXSize-1),
-            Ypos= random:uniform(GridYSize-1),
+            %Xpos = random:uniform(GridXSize-1),
+            %Ypos= random:uniform(GridYSize-1),
+            {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,?HUMAN_TIMEOUT]),
             %temporary fix
@@ -445,3 +447,12 @@ get_humans_list() ->
 get_supplies_list() ->
   supervisor:which_children(supplies_sup).
 
+avoidObs(Ob_List,TileSize,Rows) ->
+X =random:uniform(TileSize*Rows-1),
+Y =random:uniform(TileSize*Rows-1),
+  case lists:any(fun({_T,{A,B}}) -> X div 5 == B andalso Y div 5 == A end,Ob_List) of
+    true ->
+      avoidObs(Ob_List,TileSize,Rows);
+    false ->
+    {X,Y}
+    end.
