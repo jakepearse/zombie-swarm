@@ -1,7 +1,7 @@
 -module(human_fsm).
 -author("Joe Mitchard jm710").
 
--define(AIMLESS_STAY_COURSE, 8).
+-define(RUN_STAY_COURSE, 8).
 -define(SIGHT,100).
 -define(PERSONAL_SPACE, 3).
 
@@ -15,7 +15,7 @@
 -define(COHESION_EFFECT,0.2).
 
 % Behaviour Parameters
--define(INITIAL_HUNGER,50).
+-define(INITIAL_HUNGER,5).
 -define(INITIAL_ENERGY,100).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
@@ -27,8 +27,8 @@
 -export([code_change/4,handle_event/3,handle_sync_event/4,
          handle_info/3,init/1,terminate/3]).
 
--export([start_link/10,aimless/2,initial/2,aimless_search/2,
-        calc_state/1,calc_aimlessbearing/3,start/1,pause/2]).
+-export([start_link/10,run/2,initial/2,
+        calc_state/1,calc_runbearing/3,start/1,pause/2]).
 
 %API
 -export([get_state/1, pause/1, unpause/1]).
@@ -52,10 +52,12 @@
                 z_list,
                 h_list,
                 i_list,
+                memory_list,
                 hunger_state,
                 hunger,
                 energy,
-                memory_map = maps:new()}).
+                memory_map = maps:new(),
+                current_path}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
@@ -93,9 +95,9 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
 
 initial(start,State) ->
     gen_fsm:send_event_after(State#state.timeout, move),
-    {next_state,calc_state(aimless),State}.
+    {next_state,calc_state(run),State}.
     
-aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
+run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
                     x_velocity = X_Velocity, y_velocity = Y_Velocity,
@@ -141,13 +143,51 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     % error_logger:error_report(NearestItem),
 
+    %%%% NEEDS REFACTORING
     {BoidsX, BoidsY} = case NewHungerState of 
         tired ->
-            % need to limit speed drastically
-            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State);
+            % need to search for food, boids a little, but also limit speed
+            MemoryList = maps:keys(NewMemoryMap),
+            % error_logger:error_report(MemoryList),
+            case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
+                {BX,BY} ->  
+                    % Local food! Go forth hungry human!
+                    {BX,BY};
+                {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
+                    % No local food, doesn't remember any food...
+                    % Wander around until you starve poor human!
+                    error_logger:error_report("I don't remember and I can see no food"),
+                    {BX,BY};
+                {_BX,_BY,nothing_found} ->
+                    % No local food, does remember food however...
+                    % Pathfind to some food you remember
+                    NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
+                    error_logger:error_report("I gone done pathfound"),
+                    [{PathX,PathY}|_Rest] = NewPath,
+                    {PathX,PathY}
+            end;
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
-            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State);
+            MemoryList = maps:keys(NewMemoryMap),
+            % error_logger:error_report(MemoryList),
+            case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
+                {BX,BY} ->  
+                    % Local food! Go forth hungry human!
+                    % error_logger:error_report("mmmm local food"),
+                    {BX,BY};
+                {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
+                    % No local food, doesn't remember any food...
+                    % Wander around until you starve poor human!
+                    error_logger:error_report("I don't remember and I can see no food"),
+                    {BX,BY};
+                {_BX,_BY,nothing_found} ->
+                    % No local food, does remember food however...
+                    % Pathfind to some food you remember
+                    NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
+                    error_logger:error_report("I gone done pathfound"),
+                    [{PathX,PathY}|_Rest] = NewPath,
+                    {PathX,PathY}
+            end;
         hungry ->
             % search for food, but also boids
             make_choice(Hlist,Zlist, NearestItem, NewHungerState, State);
@@ -191,7 +231,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             end,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed, {X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, move),
-            {next_state,aimless_search,State#state{x=ReturnedX,y=ReturnedY,
+            {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
                                         bearing = Bearing, tile = NewTile, 
                                         z_list = Zlist_Json, h_list = Hlist_Json,
                                         x_velocity = Limited_X_Velocity, 
@@ -201,9 +241,10 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                         memory_map = NewMemoryMap}}
     end.
 
-aimless_search(move,State) ->
-    gen_fsm:send_event_after(State#state.timeout, move),
-    {next_state,calc_state(aimless),State}.
+
+%%%%%%==========================================================================
+%%%%%% Event and Sync Functions
+%%%%%%==========================================================================
 
 pause(move, State) -> 
     %% If we get a move event start the timer again but don't actually move
@@ -211,14 +252,12 @@ pause(move, State) ->
     gen_fsm:send_event_after(State#state.timeout, move),
     {next_state, pause, State};
 pause(unpause, #state{paused_state = PausedState} = State) ->
-    {next_state,PausedState,State}.
-
-%Events for fsm.    
+    {next_state,PausedState,State}.   
 
 calc_state(_Current_state) ->
-    aimless.
+    run.
     
-calc_aimlessbearing(Rand,X,Y) ->
+calc_runbearing(Rand,X,Y) ->
     trigstuff:findcoordinates(Rand,X,Y).
 %stuff for gen_fsm.
 terminate(_,_StateName, #state{tile = Tile, type = Type} = _StateData) ->
@@ -247,22 +286,20 @@ record_to_proplist(#state{} = Record) ->
 %%%%%%==========================================================================
 %%%%%% Boids Functions
 %%%%%%==========================================================================
-
+% Make choice is called with ->
+%   (HumanList, ZombieList, NearestItem, HungerState, State)
 make_choice([],[],_NearestItem, _HungerState, _State) ->
     {0,0};
 
-% Collision Avoidance
+%===========================Collision Avoidance=================================%
 make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_,State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
-% nearest item -> {<0.253.0>,{233,61,food,banana}}
-% repulsor
-make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, not_hungry, State) ->
-    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
-make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, hungry, State) ->
+%=============================Super Repulsor====================================%
+make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
-% Flock
+%===============================Flocking========================================%
 make_choice(Hlist,_,_NearestItem, not_hungry, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
@@ -273,54 +310,74 @@ make_choice(Hlist,_,_NearestItem, hungry, State) ->
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
-% hungry, move towards items
-make_choice(_,_,{_,{ItemX,ItemY,_,_}}, very_hungry, State) ->
+%============================Hungry - Local Item================================%
+% There is no zombie, time to eat!
+make_choice(_,[],{_,{ItemX,ItemY,_,_}}, very_hungry, State) ->
     boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
 
-make_choice(_,_,{_,{ItemX,ItemY,_,_}}, tired, State) ->
+make_choice(_,[],{_,{ItemX,ItemY,_,_}}, tired, State) ->
     boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
 
-% hungry, but no items nothing_found
-%%%%%% This needs to refer to memory, and pathfind towards a nearby food source %%%%%%
-make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],nothing_found, very_hungry, State) ->
-    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
-
-make_choice([],[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],nothing_found, tired, State) ->
-    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
-
+% Got some humans, but no food
 make_choice(Hlist,_,nothing_found, very_hungry, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
-    {(Fx+Vx),(Fy+Vy)};
+    {(Fx+Vx),(Fy+Vy),nothing_found};
 
 make_choice(Hlist,_,nothing_found, tired, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
-    {(Fx+Vx),(Fy+Vy)}.
+    {(Fx+Vx),(Fy+Vy),nothing_found}.
 
 
+%%%%%%==========================================================================
+%%%%%% Functions for Boids Functions
+%%%%%%==========================================================================
+
+% A function to find the closest item to the human
 get_nearest_item([],_) ->
     nothing_found;
 get_nearest_item([I|Is], {HumanX, HumanY}) ->
     get_nearest_item(Is, {HumanX, HumanY}, I).
 
+% Find the nearest item in sight
 get_nearest_item([], _, NearestItem) ->
     NearestItem;
-% get_nearest_item([Item|Is], {HumanX, HumanY}, NearestItem) ->
-%     get_nearest_item(Is, {HumanX, HumanY}, Item);
 get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}}) ->
-    NextItem = pythagoras:pyth(NearestX, NearestY, HumanX, HumanY),
+    BestItem = pythagoras:pyth(NearestX, NearestY, HumanX, HumanY),
     case pythagoras:pyth(X, Y, HumanX, HumanY) of
-        Value when Value < NextItem ->
+        Value when Value < BestItem ->
             get_nearest_item(Is, {HumanX, HumanY}, {ID, {X,Y,Type,Item}});
         _ -> 
             get_nearest_item(Is, {HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}})
     end.
 
+% Ask astar2 for a path to an item, avoiding obstacles
+pathfind_to_item([Head|Rest], CurrentPos, ObsList) ->
+    NearestMemoryItem = nearest_memory_item(Rest, Head, CurrentPos),
+    astar2:astar(NearestMemoryItem,CurrentPos, ObsList).
+
+% Find the nearest item from memory
+nearest_memory_item([], Nearest, _CurrentPos) ->
+    Nearest;
+nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
+    NearestDist = astar2:dist_between(Nearest,CurrentPos),
+
+    case astar2:dist_between(Head,CurrentPos) of
+        Value when Value < NearestDist ->
+            % Head of the list is closer than current best
+            nearest_memory_item(Rest,Head,CurrentPos);
+        _ ->
+            % Current best is still best
+            nearest_memory_item(Rest,Nearest,CurrentPos)
+    end.  
 
 
-%%%%% PRIVATE FUNS
+%%%%%%==========================================================================
+%%%%%% List Organisation and Setup Functions
+%%%%%%==========================================================================
 
+% Turn a list into something JSON can deal with.
 jsonify_list([]) ->
     [];
 jsonify_list(List) ->
@@ -333,7 +390,7 @@ jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], 
     NewList = [[{id, StringPid},{type, Type}, {dist, Dist}, {x, HeadX}, {y, HeadY}, {x_velocity, Head_X_Vel}, {y_velocity, Head_Y_Vel}]| List],
     jsonify_list(Ls, NewList).
 
-
+% Build a list of local zombie entities that are in sight
 build_zombie_list(Viewer, X, Y) ->
     ZombieList = viewer:get_zombies(Viewer),
 
@@ -353,7 +410,7 @@ build_zombie_list(Viewer, X, Y) ->
     %return
     Zlist.
 
-
+% Build a list of local zombie entities that are in sight
 build_human_list(Viewer, X, Y) ->
     HumanList = viewer:get_humans(Viewer),
     
@@ -375,29 +432,9 @@ build_human_list(Viewer, X, Y) ->
     %return
     Hlist.
 
-% Memory by tile
-% build_memory([], _, Map) ->
-%     Map;
-% build_memory([{Pid,{X,Y,Type,Name}}|Rest], TileSize, Map) ->
-%     Tile = list_to_atom("tile" ++  "X" ++ 
-%                 integer_to_list(X div TileSize) ++  "Y" ++ 
-%                 integer_to_list(Y div TileSize)),
-%     NewMap = maps:put(Tile, {Pid,{X,Y,Type,Name}}, Map),
-%     build_memory(Rest, TileSize, NewMap).
-
-% Memory by item
+% Build memory map for items
 build_memory([], Map) ->
     Map;
 build_memory([{Pid,{X,Y,Type,Name}}|Rest], Map) ->
-    NewMap = maps:put(Pid, {X,Y,Type,Name}, Map),
+    NewMap = maps:put({X,Y}, {Pid,Type,Name}, Map),
     build_memory(Rest, NewMap).
-
-% Zombies start with a small population of zombies
-% Zombies spread
-% Humans want to find food
-
-% Humans need a goal, and a local obstacle list 
-%     maybe include zombies in that list
-% Use astar to find a path to your current goal (items, moving)
-% astar takes X,Y,Tx,Ty,obsList ->
-%   returns list of a path

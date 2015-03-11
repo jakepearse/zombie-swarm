@@ -7,7 +7,8 @@
 -define(MAXY, infinity).
 -export([
 astar/3,
-neighbour_nodes/3
+neighbour_nodes/3,
+dist_between/2
 ]).
 
 %% This module is very closely based on Srijan Choudhary's a* module [https://www.srijn.net/programming/astar-erlang-basic.html] acessed 10/3/2015
@@ -55,8 +56,8 @@ h_score(Current, Goal) ->
   dist_between(Current, Goal).
  
 %% @doc Returns the distance from `Current' node to `Goal' node
-  -spec dist_between(cnode(), cnode()) -> Distance :: number().
-    dist_between(Current, Goal) ->
+-spec dist_between(cnode(), cnode()) -> Distance :: number().
+dist_between(Current, Goal) ->
     {X1, Y1} = Current,
     {X2, Y2} = Goal,
     abs((X2-X1)) + abs((Y2-Y1)).

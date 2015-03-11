@@ -18,6 +18,8 @@
 handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
+-define(ZOMBIE_TIMEOUT, 300).
+-define(HUMAN_TIMEOUT, 600).
 
 % Record to Props List, for reporting
 -define(R2P(Record), record_to_propslist(#state{} = Record) ->
@@ -276,7 +278,7 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State
             Ypos= random:uniform(GridYSize-1),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             % error_logger:error_report({Tile,Viewer}),
-            {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,300,0]),
+            {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,?ZOMBIE_TIMEOUT,0]),
             %temporary fix
             zombie_fsm:start(Zombie)
         end,lists:seq(1,Num)).
@@ -290,7 +292,7 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,N
             Xpos = random:uniform(GridXSize-1),
             Ypos= random:uniform(GridYSize-1),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
-            {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
+            {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,?HUMAN_TIMEOUT]),
             %temporary fix
             human_fsm:start(Human)
         end,lists:seq(1,Num)).
