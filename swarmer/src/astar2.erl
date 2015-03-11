@@ -7,7 +7,7 @@
 -define(MAXY, infinity).
 -export([
 astar/3,
-neighbour_nodes/3
+neighbour_nodes/3,
 dist_between/2
 ]).
 
