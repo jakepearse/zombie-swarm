@@ -56,8 +56,8 @@ h_score(Current, Goal) ->
   dist_between(Current, Goal).
  
 %% @doc Returns the distance from `Current' node to `Goal' node
-  -spec dist_between(cnode(), cnode()) -> Distance :: number().
-    dist_between(Current, Goal) ->
+-spec dist_between(cnode(), cnode()) -> Distance :: number().
+dist_between(Current, Goal) ->
     {X1, Y1} = Current,
     {X2, Y2} = Goal,
     abs((X2-X1)) + abs((Y2-Y1)).
