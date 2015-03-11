@@ -178,7 +178,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                 {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
                     % No local food, doesn't remember any food...
                     % Wander around until you starve poor human!
-                    error_logger:error_report("I don't remember and I can see no food"),
+                    % error_logger:error_report("I don't remember and I can see no food"),
                     {BX,BY};
                 {_BX,_BY,nothing_found} ->
                     % No local food, does remember food however...
