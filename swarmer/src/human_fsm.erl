@@ -100,20 +100,22 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     % Build a list of nearby humans
     Hlist = build_human_list(Viewer, X, Y),
 
+    % Build a list of obstacles
     Olist = viewer:get_obs(Viewer),
+
 
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
 
 
-    {BoidsX,BoidsY} = make_choice(Hlist,Zlist,State), 
+    {BoidsX,BoidsY} = make_choice(Hlist,Zlist,Olist,State), 
 
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
     {Limited_X_Velocity,Limited_Y_Velocity} = boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity),
-    NewX = X + Limited_X_Velocity,
-    NewY = Y + Limited_Y_Velocity,  
-
+    TargetX = round(X + Limited_X_Velocity),
+    TargetY = round(Y + Limited_Y_Velocity),  
+    {NewX,NewY} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity),
     Bearing = 0,
 
     case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
@@ -191,26 +193,42 @@ record_to_proplist(#state{} = Record) ->
  
 
 % BOIDS
-make_choice([],[],_State) ->
+make_choice([],[],[],_State) ->
     {0,0};
 
-% Collision Avoidance
-make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Hlist],_,State) when Dist < ?PERSONAL_SPACE ->
-    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
+%Obstruction Avoidance
+%make_choice(_Hlist,_Zlist,[{D,{_,{_,{{OX,OY},{_,_}}}}}|_Olist_Tail],State) when D < ?PERSONAL_SPACE div 2 ->
+%boids_functions:collision_avoidance(State#state.x, State#state.y, OX, OY,?COHESION_EFFECT);
 
 % Repulsor
-make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],State) ->
+make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],_OList,State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
 % Flock
-make_choice(Hlist,_, State) ->
+make_choice(Hlist,_,_Olist,State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)}.
 
-
-
-
+%obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
+%    {NewX,NewY};
+%obstructed(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY ->
+%    {NewX,NewY};
+%obstructed([{_D,{_,{_,{{OX,OY},{_,_}}}}}|OlistTail],X,Y,NewX,NewY,VelX,VelY) when OX =:= NewX, OY =:= NewY->
+%    error_logger:error_report("gflkf"),
+%    {X,Y};
+%obstructed([{_D,{_,{_,{{OX,OY},{_,_}}}}}|OlistTail],X,Y,NewX,NewY,VelX,VelY) ->
+%    obstructed(OlistTail,X,Y,NewX,NewY,VelX,VelY).
+obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
+    {NewX,NewY};
+obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
+    Member = lists:member({NewY,NewX}, Olist),
+    case Member of
+        true->
+            {X,Y};
+        false->
+            {NewX,NewY}
+    end.
 
 
 jsonify_list([]) ->
@@ -266,3 +284,9 @@ build_human_list(Viewer, X, Y) ->
     Hlist = lists:keysort(1,H_FilteredList),
     %return
     Hlist.
+
+build_obs_list(Olist, X,Y) ->
+    O_DistanceList = lists:map(fun({ObX,ObY}) -> {pythagoras:pyth(X,Y,ObX,ObY),{noPid,{obstruction,{{ObX,ObY},{0,0}}}}} end, Olist),
+    %sort the list by distance
+    lists:keysort(1,O_DistanceList).
+
