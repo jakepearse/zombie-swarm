@@ -6,7 +6,7 @@
 -include_lib("include/swarmer.hrl").
 
 %%% API
--export([start_link/0,make_grid/3,get_grid_info/0,report/0, 
+-export([start_link/0,make_grid/4,get_grid_info/0,report/0, 
          pause_entities/0, unpause_entities/0, start_entities/0,
          type_pause_unpause/2,create_obs/2]).
 
@@ -31,7 +31,9 @@ handle_info/2,init/1,terminate/2]).
 % number of tile columns
   columns,
 % size of each tile  
-  tileSize
+  tileSize,
+% list of obstructions
+  obs_list = []
   }).
 
 %%%%%%=============================================================================
@@ -67,8 +69,8 @@ get_state() ->
 %%%% Make a new tile grid, stored in #state
 %%%% @end
 %%%%------------------------------------------------------------------------------
-make_grid(Rows,Columns,TileSize) ->
-  gen_server:call(?MODULE,{make_grid,{Rows,Columns,TileSize}}).
+make_grid(Rows,Columns,TileSize,Obs_list) ->
+  gen_server:call(?MODULE,{make_grid,{Rows,Columns,TileSize,Obs_list}}).
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
@@ -154,12 +156,13 @@ handle_call(grid_info,_From,State) ->
   Rows = State#state.rows,
   Columns = State#state.columns,
   Size = State#state.tileSize,
-  {reply,[{<<"rows">>,Rows},{<<"columns">>,Columns},{<<"tileSize">>,Size}],State};
+  Obs = lists:map(fun({T,{X,Y}}) -> [T,X,Y] end,State#state.obs_list),
+  {reply,[{<<"rows">>,Rows},{<<"columns">>,Columns},{<<"tileSize">>,Size},{<<"obs">>,Obs}],State};
 
 handle_call(get_state,_From,State) ->
     {reply,State,State};
 
-handle_call({make_grid,{Rows,Columns,TileSize}},_From,State) ->
+handle_call({make_grid,{Rows,Columns,TileSize,Obs_list}},_From,State) ->
   %%kinda hacky but works....kill supervisors, start supervisors, why not....
   %kill entities
   supervisor:terminate_child(swarm_sup, zombie_sup),
@@ -179,7 +182,13 @@ handle_call({make_grid,{Rows,Columns,TileSize}},_From,State) ->
 
   make_neighbourhood(Grid,Viewers),
   %error_logger:error_report(State#state.viewerPropList),
-  {reply,ok,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers}};
+  
+  Cord_list = lists:map(fun(I)-> X=I rem 50, Y=I div 50, T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list), 
+    %error_logger:error_report(Cord_list),
+	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
+  
+  
+  {reply,ok,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers,obs_list=Cord_list}};
 
 handle_call({swarm,Num},_From,State) ->
   %kill entities
@@ -202,13 +211,15 @@ handle_call({items,Num},_From,State) ->
   supervisor:terminate_child(swarm_sup, supplies_sup),
   supervisor:restart_child(swarm_sup, supplies_sup),
   place_items(State,Num),
-  {reply,ok,State};
+  {reply,ok,State}.
 
 %%% map a list of integers to [{Tile,{X,Y}},...] and pushes them into the relevant tile's State#state.obs_list
-handle_call({create_obs_map,Obs_list,GridSize},_From,State) ->
-	Cord_list = lists:map(fun(I)-> {X,Y}={(I rem 50)*5 ,(I div 50)*5},{T,_V} = get_tile(X,Y,State),{T,{X,Y}} end,Obs_list), 
-	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
-  {reply,ok,State}.
+%handle_call({create_obs_map,Obs_list,GridSize},_From,State) ->
+	%Cord_list = lists:map(fun(I)-> X=I rem 50, Y=I div 50, T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list), 
+    %error_logger:error_report(Cord_list),
+	%lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
+
+  %{reply,ok,State#state{obs_list = Cord_list}}.
 	
 handle_call(terminate,State) ->
   {stop,normal,State}.

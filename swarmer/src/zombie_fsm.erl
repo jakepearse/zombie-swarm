@@ -258,7 +258,7 @@ make_choice(Zlist,_, State) ->
 obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
     {NewX,NewY};
 obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
-    Member = lists:member({(NewY div 250)*50,(NewX div 250)*50},Olist),
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
             {X,Y};
