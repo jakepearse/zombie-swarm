@@ -80,7 +80,6 @@
 			socket.send(dummy_json);
 			socket.onmessage = function(evt) {
 				var report_json = JSON.parse(evt.data);
-        // console.log(report_json);
 				update_circles(report_json,$scope.gridScale,$scope.swarmSize);
         $scope.realInspectList =[];
         for (var i =0;i<$scope.inspectList.length;i++){
