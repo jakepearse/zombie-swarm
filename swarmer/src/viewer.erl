@@ -4,7 +4,7 @@
 -behaviour(gen_server).
 
 %%%% API
--export([start_link/0,get_zombies/1, get_humans/1, get_obs/1,
+-export([start_link/0,get_zombies/1, get_humans/1, get_obs/1, get_items/1,
          update_zombies/2, update_humans/2, update_items/2, update_obs/2]).
 
 %%%% gen_server callbacks

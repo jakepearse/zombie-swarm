@@ -18,6 +18,8 @@
 handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
+-define(ZOMBIE_TIMEOUT, 300).
+-define(HUMAN_TIMEOUT, 600).
 
 % Record to Props List, for reporting
 -define(R2P(Record), record_to_propslist(#state{} = Record) ->
@@ -149,6 +151,7 @@ init([]) ->
 %%% calls   
 handle_call(report,_From,State) ->
     Report = make_report(), 
+    % error_logger:error_report(Report),
     {reply,Report,State};
 
 
@@ -286,7 +289,7 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State
             Ypos= random:uniform(GridYSize-1),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             % error_logger:error_report({Tile,Viewer}),
-            {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,300,0]),
+            {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,?ZOMBIE_TIMEOUT,0]),
             %temporary fix
             zombie_fsm:start(Zombie)
         end,lists:seq(1,Num)).
@@ -300,7 +303,7 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,N
             Xpos = random:uniform(GridXSize-1),
             Ypos= random:uniform(GridYSize-1),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
-            {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,300]),
+            {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,?HUMAN_TIMEOUT]),
             %temporary fix
             human_fsm:start(Human)
         end,lists:seq(1,Num)).
@@ -342,7 +345,7 @@ make_report() ->
                 _ ->
                     false
             end 
-        end, get_entities_list()).
+        end, get_report_list()).
 
 make_neighbourhood(TileList,ViewerPropList) ->
   ViewerGeomList = setup_neighbours(ViewerPropList),
@@ -368,10 +371,10 @@ get_neighbours(Xo,Yo,ViewersWithGeometry,NeighbourList) ->
   [V|Vs]=ViewersWithGeometry,
   {{X,Y,_,_,Size},Viewer} = V,
   case test_neighbour (Xo,Yo,X,Y,Size) of
-  true ->
-    NewList =NeighbourList ++ [Viewer],
-    get_neighbours(Xo,Yo,Vs,NewList);
-  false -> get_neighbours(Xo,Yo,Vs,NeighbourList)
+    true ->
+      NewList =NeighbourList ++ [Viewer],
+      get_neighbours(Xo,Yo,Vs,NewList);
+    false -> get_neighbours(Xo,Yo,Vs,NeighbourList)
   end.
 
 
@@ -428,9 +431,17 @@ apply_to_all__humans(Fun) ->
 get_entities_list() ->
   supervisor:which_children(zombie_sup) ++ supervisor:which_children(human_sup).
 
+get_report_list() ->
+  supervisor:which_children(zombie_sup) ++ 
+    supervisor:which_children(human_sup) ++ 
+    supervisor:which_children(supplies_sup).
+    
 get_zombies_list() ->
   supervisor:which_children(zombie_sup).
 
 get_humans_list() ->
   supervisor:which_children(human_sup).
+
+get_supplies_list() ->
+  supervisor:which_children(supplies_sup).
 
