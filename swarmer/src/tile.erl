@@ -205,10 +205,10 @@ handle_call(get_geometry,_From,State) ->
     {reply,State#state.coords, State};
 
 handle_call(get_viewer,_From,State) ->
-    {reply,State#state.viewer};
+    {reply,State#state.viewer,State};
 
 handle_call(get_neighbours,_From,State) ->
-    {reply,State#state.neighbours};
+    {reply,State#state.neighbours,State};
 
 handle_call(get_state,_From,State) ->
     {reply,State,State};
@@ -328,7 +328,7 @@ update_viewers([V|Vs], obs_list, ObsList) ->
 %%% =============
 -spec do_check_obs(pos(),list()) -> boolean().
 do_check_obs({X,Y},Obs_list) ->
-	lists:any(fun(C) -> C=={X,Y} end,Obs_list).
+	lists:any(fun(C) -> C=={X div 5,Y div 5} end,Obs_list).
 	
 %%%%-Notes----------------------------------------------------------------------
 
