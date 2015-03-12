@@ -399,7 +399,7 @@ obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5  == A end,Olist),
     case Member of
         true->
-            {X,Y};
+            {X+1,Y};
         false->
             {NewX,NewY}
     end.
