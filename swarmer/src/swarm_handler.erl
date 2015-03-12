@@ -39,11 +39,11 @@ websocket_handle({text, Json}, Req, State) ->
         Obs= proplists:get_value(<<"obArray">>,Parsed),
         % Now TileSize must be a hardcoded value.
         TileSize=50,
-        enviroment:make_grid(Arrity,Arrity,TileSize),
+        enviroment:make_grid(Arrity,Arrity,TileSize,Obs),
         GridInfo = [enviroment:get_grid_info()],
         % create_obs pushes all the obstructed coordinates into enviroment
         % it returns ok, which I dont need any more.
-        _ = enviroment:create_obs(Obs,TileSize*Arrity),
+        %_ = enviroment:create_obs(Obs,TileSize*Arrity),
         enviroment:set_swarm(Size),
         enviroment:set_mob(Pop),
         enviroment:set_items(10),

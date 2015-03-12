@@ -11,7 +11,7 @@ super_attractor(X,Y,Attx,Atty,Attprcnt) ->
 	{trigstuff:round(Changex,2),trigstuff:round(Changey,2)}.
 
 %Changes the velocity of the entity to move away from a super repulsor.
-super_repulsor(X,Y,Repx,Repy,_Repulseprcnt) when X =:= Repx , Y =:= Repy ->
+super_repulsor(X,Y,Repx,Repy,_Repulseprcnt) when X =:= Repx ; Y =:= Repy ->
 	{0,0};
 super_repulsor(X,Y,Repx,Repy,Repulseprcnt) ->
 	Changex = - 1/(Repulseprcnt*(Repx-X)),
@@ -41,10 +41,6 @@ flocking([H|Ts],Count,Totalx,Totaly,X,Y,Flockprcnt)->
 	Newtotalx = Totalx + EX,
 	Newtotaly = Totaly + EY,
 	flocking(Ts,Newcount,Newtotalx,Newtotaly,X,Y,Flockprcnt).
-
-
-% 33.13608305156178: {<0.239.0>,{human,{{152,97},{0,0}}}}
-
 
 %Makes an entity match velocity with other entities in it's flock.
 velocity([],X,Y,_Velprcnt) ->

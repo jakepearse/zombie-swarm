@@ -31,7 +31,7 @@
         calc_state/1,calc_runbearing/3,start/1,pause/2]).
 
 %API
--export([get_state/1, pause/1, unpause/1]).
+-export([get_state/1, pause/1, unpause/1,zombify/1]).
 
 -record(state, {id,
                 tile,
@@ -71,6 +71,9 @@ pause(Pid) ->
 
 unpause(Pid) -> 
     gen_fsm:send_event(Pid,unpause).
+
+zombify(Pid) ->
+    gen_fsm:send_all_state_event(Pid, zombify).
 
 get_state(Pid) ->
     catch gen_fsm:sync_send_all_state_event(Pid, get_state).
@@ -270,7 +273,16 @@ handle_info(_,StateName,StateData)->
     {ok,StateName,StateData}.
 
 handle_event(pause, StateName, StateData) ->
-    {next_state,pause,StateData#state{paused_state = StateName}}.
+    {next_state,pause,StateData#state{paused_state = StateName}};
+
+handle_event(zombify, StateName, #state{speed = Speed, x = X, y = Y, tile_size = TileSize,
+                    num_columns = NumColumns, num_rows = NumRows,
+                    tile = Tile, type = Type,
+                    x_velocity = X_Velocity, y_velocity = Y_Velocity,
+                    viewer = Viewer} = StateData) ->
+    {ok,Zombie}=supervisor:start_child(zombie_sup,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,300,0]),
+    zombie_fsm:start(Zombie),
+    supervisor:terminate_child(human_sup, self()).
                            
 handle_sync_event(get_state, _From, StateName, StateData) ->
     PropList = record_to_proplist(StateData),
@@ -384,10 +396,10 @@ nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
 obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
     {NewX,NewY};
 obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
-    Member = lists:member({(NewY div 250)*50,(NewX div 250)*50}, Olist),
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5  == A end,Olist),
     case Member of
         true->
-            {X,Y};
+            {X+1,Y};
         false->
             {NewX,NewY}
     end.
