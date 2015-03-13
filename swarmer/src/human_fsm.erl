@@ -15,7 +15,7 @@
 -define(COHESION_EFFECT,0.2).
 
 % Behaviour Parameters
--define(INITIAL_HUNGER,5).
+-define(INITIAL_HUNGER,50).
 -define(INITIAL_ENERGY,100).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
@@ -154,18 +154,18 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
                 {BX,BY} ->  
                     % Local food! Go forth hungry human!
-                    error_logger:error_report("mmmm local food"),
+                    %error_logger:error_report("mmmm local food"),
                     {BX,BY};
                 {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
                     % No local food, doesn't remember any food...
                     % Wander around until you starve poor human!
-                    error_logger:error_report("I don't remember any food and I can see no food"),
+                    %error_logger:error_report("I don't remember any food and I can see no food"),
                     {BX,BY};
                 {_BX,_BY,nothing_found} ->
                     % No local food, does remember food however...
                     % Pathfind to some food you remember
                     NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
-                    error_logger:error_report("I gone done pathfound"),
+                   % error_logger:error_report("I gone done pathfound"),
                     [{PathX,PathY}|_Rest] = NewPath,
                     {PathX,PathY}
             end;
@@ -187,7 +187,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     % No local food, does remember food however...
                     % Pathfind to some food you remember
                     NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
-                    error_logger:error_report("I gone done pathfound"),
+                    %error_logger:error_report("I gone done pathfound"),
                     [{PathX,PathY}|_Rest] = NewPath,
                     {PathX,PathY}
             end;

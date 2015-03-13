@@ -18,7 +18,7 @@ function setup_grid(arrity,tileSize,gridScale,obArray) {
 }
 
 function draw_background(arrity,tileSize,gridScale,obArray){
-  console.log(obArray);
+  //console.log(obArray);
    var svg = d3.select("svg")
    .selectAll("rect")
    .data(obArray)
@@ -77,7 +77,9 @@ function draw_vlines(arrity,tileSize,gridScale,list) {
 function setColour(ob) {
   if (ob.type==="human"){
     return "img/hume.png";
-  }
+  }else if (ob.type==="food"){
+    return "img/food.png";
+  };
   return "img/zomb.png";
 }
   
@@ -99,30 +101,32 @@ function changeColour(object,d,$scope) {
   
 }
 
-function update_circles(data,gridScale,swarmSize) {
+function update_circles(data,gridScale,swarmSize,$scope) {
+    
     var svg = d3.select("svg");
-    svg.selectAll("image")
-    .data(data, function(d) { return d.id; })
-    .transition()
+    var circles = svg.selectAll("image").data(data, function(d) {return d.id});
+    
+    // change the xy of the selection
+    circles.transition()
     .attr("x", function(d) { return d.x*gridScale; })
-    .attr("y", function(d) { return d.y*gridScale; })
-    .attr("id", function(d) { return d.id; })
-    .duration(300);
+    .attr("y", function(d) { return d.y*gridScale; });
+    //.duration(300);
+    
+    // add any new elements in .enter
+    circles.enter().append("image")
+        .on("click", function(d) {changeColour(this,d,$scope);})
+        .attr("class", function(d) {return d.type; })
+                .attr("id", function(d) { return d.id; })
+                .attr("x",function(d) { return d.x*gridScale; })
+        .attr("y", function(d) { return d.y*gridScale; })
+        .attr("width",gridScale)
+        .attr("height",gridScale)
+        .attr("xlink:href", function(d) {return setColour(d);});
+      
+      // remove any leftover elements
+      circles.exit().remove();
+};
 
-   svg.selectAll("image")
-      .each(function(d,i) {
-        //Find corresponding pid in data list
-        for (var j=0;j<data.length;j++) {
-          if (data[j].id === d.id){
-            break;
-          } else {
-            if(j == (data.length -1)) {
-              d3.select(this).remove()
-            }
-          }
-        }
-      })
-}
 
 function draw_circles(data,gridScale,$scope) {
   var svg = d3.select("svg");
@@ -131,24 +135,12 @@ function draw_circles(data,gridScale,$scope) {
         .enter().append("image")
         .on("click", function(d) {changeColour(this,d,$scope);})
         .attr("class", function(d) {return d.type; })
-        //.attr("r", gridScale)
-         //.attr("height", "16")
-        // .attr("width","16")
-        // .attr("x", function(d) { return d.x*gridScale; })
-       // .attr("y", function(d) { return d.y*gridScale; })
-        //.attr("cx", function(d) { return d.x*gridScale; })
-        //.attr("cy", function(d) { return d.y*gridScale; })
         .attr("id", function(d) { return d.id; })
-        //.style("fill",function(d) { return setColour(d);})
-        //.attr("fill","url(#zomb)")
-        .style("stroke", function(d) { return strokeColour(d);})
-        //.style("stroke-width",0.5*gridScale)
-        //.attr("viewBox", "0 0 16 16")
-        //.append("image")
-        .attr("x",function(d) { return (d.x-gridScale/2)*gridScale; })
-        .attr("y", function(d) { return (d.y-gridScale/2)*gridScale; })
+        //.style("stroke", function(d) { return strokeColour(d);})
+        .attr("x",function(d) { return d.x*gridScale; })
+        .attr("y", function(d) { return d.y*gridScale; })
         .attr("width",gridScale)
         .attr("height",gridScale)
-          .attr("xlink:href", function(d) {return setColour(d);})
+        .attr("xlink:href", function(d) {return setColour(d);})
         ;
 	};
