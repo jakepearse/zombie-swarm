@@ -18,7 +18,7 @@
 handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
--define(ZOMBIE_TIMEOUT, 300).
+-define(ZOMBIE_TIMEOUT, 600).
 -define(HUMAN_TIMEOUT, 600).
 
 % Record to Props List, for reporting
