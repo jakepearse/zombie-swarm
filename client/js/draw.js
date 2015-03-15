@@ -144,3 +144,27 @@ function draw_circles(data,gridScale,$scope) {
         .attr("xlink:href", function(d) {return setColour(d);})
         ;
 	};
+
+function update_web(data,gridScale,$scope) {
+
+    var weblines = d3.select("svg").selectAll(".webline"); 
+ 
+    weblines = d3.select("svg").selectAll(".webline").data(data, function(d) {return d.id});
+
+    weblines.transition()
+    .attr("x1",function(d) {return (d.x*gridScale)+gridScale/2;})
+    .attr("x2",function(d,i) {return (d.z_list[i].x*gridScale)+gridScale/2;})
+    .attr("y1",function(d) {return d.y*gridScale;})
+    .attr("y2",function(d,i) { return d.z_list[i].y*gridScale; });
+    
+    weblines.enter().append("line")
+    .attr("class","webline")
+    .attr("x1",function(d) {return d.x*gridScale+gridScale/2})
+    .attr("x2",function(d,i) { return d.z_list[i].x*gridScale+gridScale/2})
+    .attr("y1",function(d) {return d.y*gridScale})
+    .attr("y2",function(d,i) { return d.z_list[i].y*gridScale; })
+    .attr("stroke","red")
+    .style("stroke-dasharray","10 5");
+          weblines.exit().remove();
+    
+};
