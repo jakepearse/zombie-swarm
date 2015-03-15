@@ -15,6 +15,7 @@
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_call/2,handle_call/3,
+  handle_cast/2,
 handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
@@ -141,6 +142,7 @@ type_pause_unpause(Action,Type) ->
 create_obs(Obs_list,TileSize) ->
 	gen_server:call(?MODULE,{create_obs_map,Obs_list,TileSize}).
 
+
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
@@ -229,6 +231,10 @@ handle_call(terminate,State) ->
 
 % other gen_server stuff
 
+%%%% Handle cast to end the system normally
+handle_cast(terminate, State) ->
+    {stop,normal,State}.
+
 handle_info(Msg,State) ->
   io:format("Unexpected message: ~p~n",[Msg]),
     {noreply,State}.
@@ -281,8 +287,8 @@ add_viewers(Grid,Viewers) ->
 
 %% Spawns Num randomly positioned zombies
 create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list = Obs_List} = State,Num) ->
-    GridXSize=TileSize*Columns,
-    GridYSize=TileSize*Rows,
+    % GridXSize=TileSize*Columns,
+    % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
             %Xpos = random:uniform(GridXSize-1),
@@ -297,8 +303,8 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_lis
 
 %% Spawns Num randomly positioned humans
 create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list = Obs_List} = State,Num) ->
-    GridXSize=TileSize*Columns,
-    GridYSize=TileSize*Rows,
+    % GridXSize=TileSize*Columns,
+    % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
             %Xpos = random:uniform(GridXSize-1),
@@ -311,9 +317,9 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list 
         end,lists:seq(1,Num)).
 
 % creates and places a number of randomly positioned supplies.
-place_items(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list = Obs_List} = State,Num) ->
-    GridXSize=TileSize*Columns,
-    GridYSize=TileSize*Rows,
+place_items(#state{tileSize = TileSize, rows = Rows, obs_list = Obs_List} = State,Num) ->
+    % GridXSize=TileSize*Columns,
+    % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
             %Xpos = random:uniform(GridXSize-1),
@@ -363,7 +369,6 @@ do_make_neighbourhood(TileList,ViewerGeomList) ->
 setup_neighbours(ViewerPropList) -> 
   %reformat the viewer propslist inot one with geometry
   lists:map(fun({T,V})-> {tile:get_geometry(T),V} end, ViewerPropList).
-
 
 
 get_neighbours(Xo,Yo,ViewersWithGeometry) ->
@@ -435,9 +440,9 @@ get_entities_list() ->
   supervisor:which_children(zombie_sup) ++ supervisor:which_children(human_sup).
 
 get_report_list() ->
-  supervisor:which_children(zombie_sup) ++ 
-    supervisor:which_children(human_sup) ++ 
-    supervisor:which_children(supplies_sup).
+  get_zombies_list() ++ 
+    get_humans_list() ++ 
+    get_supplies_list().
     
 get_zombies_list() ->
   supervisor:which_children(zombie_sup).
@@ -449,8 +454,8 @@ get_supplies_list() ->
   supervisor:which_children(supplies_sup).
 
 avoidObs(Ob_List,TileSize,Rows) ->
-X =random:uniform(TileSize*Rows-1),
-Y =random:uniform(TileSize*Rows-1),
+  X =random:uniform(TileSize*Rows-1),
+  Y =random:uniform(TileSize*Rows-1),
   case lists:any(fun({_T,{A,B}}) -> X div 5 == B andalso Y div 5 == A end,Ob_List) of
     true ->
       avoidObs(Ob_List,TileSize,Rows);

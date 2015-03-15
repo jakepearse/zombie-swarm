@@ -275,11 +275,9 @@ handle_info(_,StateName,StateData)->
 handle_event(pause, StateName, StateData) ->
     {next_state,pause,StateData#state{paused_state = StateName}};
 
-handle_event(zombify, StateName, #state{speed = Speed, x = X, y = Y, tile_size = TileSize,
+handle_event(zombify, _StateName, #state{x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
-                    tile = Tile, type = Type,
-                    x_velocity = X_Velocity, y_velocity = Y_Velocity,
-                    viewer = Viewer} = StateData) ->
+                    tile = Tile, viewer = Viewer} = _StateData) ->
     {ok,Zombie}=supervisor:start_child(zombie_sup,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,300,0]),
     zombie_fsm:start(Zombie),
     supervisor:terminate_child(human_sup, self()).
@@ -462,11 +460,6 @@ build_human_list(Viewer, X, Y) ->
     Hlist = lists:keysort(1,H_FilteredList),
     %return
     Hlist.
-
-build_obs_list(Olist, X,Y) ->
-    O_DistanceList = lists:map(fun({ObX,ObY}) -> {pythagoras:pyth(X,Y,ObX,ObY),{noPid,{obstruction,{{ObX,ObY},{0,0}}}}} end, Olist),
-    %sort the list by distance
-    lists:keysort(1,O_DistanceList).
 
 % Build memory map for items
 build_memory([], Map) ->
