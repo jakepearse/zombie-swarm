@@ -142,8 +142,6 @@ remove_item(Pid, Item) ->
 summon_entity(Pid, Entity) ->
     gen_server:cast(Pid, {summon_entity, Entity}).
 
-
-
 %%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Remove an entity from the tile.
@@ -296,14 +294,14 @@ code_change(_OldVsn, State, _Extra) ->
 
 %% a function to add a new entity to the entity_map
 %% eventually will need to become more inteligent than just X+1,Y+1
-add_unique(ID, {X,Y}, Map) ->
-    Values = maps:values(Map),
-    case lists:member({X,Y}, Values) of
-        false ->
-            maps:put(ID, {X,Y}, Map);
-        true ->
-            add_unique(ID, {X+1,Y+1}, Map)
-    end.
+% add_unique(ID, {X,Y}, Map) ->
+%     Values = maps:values(Map),
+%     case lists:member({X,Y}, Values) of
+%         false ->
+%             maps:put(ID, {X,Y}, Map);
+%         true ->
+%             add_unique(ID, {X+1,Y+1}, Map)
+%     end.
 
 update_viewers([], _Type, _EntityMap) ->
     [];
@@ -314,7 +312,6 @@ update_viewers([V|Vs], human, EntityMap) ->
     viewer:update_humans(V, {self(), maps:to_list(EntityMap)}),
     update_viewers(Vs, human, EntityMap);
 update_viewers([V|Vs], items, ItemMap) ->
-    error_logger:error_report(ItemMap),
     viewer:update_items(V, {self(), maps:to_list(ItemMap)}),
     update_viewers(Vs, items, ItemMap);
 update_viewers([V|Vs], obs_list, ObsList) ->
