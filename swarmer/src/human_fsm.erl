@@ -382,15 +382,6 @@ nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
             nearest_memory_item(Rest,Nearest,CurrentPos)
     end.  
 
-%obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
-%    {NewX,NewY};
-%obstructed(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY ->
-%    {NewX,NewY};
-%obstructed([{_D,{_,{_,{{OX,OY},{_,_}}}}}|OlistTail],X,Y,NewX,NewY,VelX,VelY) when OX =:= NewX, OY =:= NewY->
-%    error_logger:error_report("gflkf"),
-%    {X,Y};
-%obstructed([{_D,{_,{_,{{OX,OY},{_,_}}}}}|OlistTail],X,Y,NewX,NewY,VelX,VelY) ->
-%    obstructed(OlistTail,X,Y,NewX,NewY,VelX,VelY).
 obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
     {NewX,NewY};
 obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
