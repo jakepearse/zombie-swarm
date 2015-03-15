@@ -146,25 +146,70 @@ function draw_circles(data,gridScale,$scope) {
 	};
 
 function update_web(data,gridScale,$scope) {
+  
+    var zmodData=[];
+    for (var i=0;i<data.length;i++){
+      if (data.length >0 && data[i].z_list.length>0) {
+        for (j=0;j<data[i].z_list.length;j++){
+          zmodData.push([data[i].x,data[i].y,data[i].z_list[j].x,data[i].z_list[j].y]);
+          }
+      }
+    }
+    var hmodData = [];
+      for (var i=0;i<data.length;i++){
+        if (data.length >0 && data[i].h_list.length>0) {
+          for (j=0;j<data[i].h_list.length;j++){
+            hmodData.push([data[i].x,data[i].y,data[i].h_list[j].x,data[i].h_list[j].y]);
+          }
+        }
+    }
+  draw_zlines(zmodData,gridScale);
+  draw_humlines(hmodData,gridScale);
+  }
+    
 
-    var weblines = d3.select("svg").selectAll(".webline"); 
+function draw_zlines(data,gridScale){
+
+    var weblines = d3.select("svg").selectAll(".zline"); 
  
-    weblines = d3.select("svg").selectAll(".webline").data(data, function(d) {return d.id});
+    weblines = d3.select("svg").selectAll(".zline").data(data);
 
     weblines.transition()
-    .attr("x1",function(d) {return (d.x*gridScale)+gridScale/2;})
-    .attr("x2",function(d,i) {return (d.z_list[i].x*gridScale)+gridScale/2;})
-    .attr("y1",function(d) {return d.y*gridScale;})
-    .attr("y2",function(d,i) { return d.z_list[i].y*gridScale; });
+    .attr("x1",function(d) {return (d[0]*gridScale)+gridScale/2;})
+    .attr("x2",function(d,i) {return (d[2]*gridScale)+gridScale/2;})
+    .attr("y1",function(d) {return d[1]*gridScale;})
+    .attr("y2",function(d,i) { return d[3]*gridScale; });
     
     weblines.enter().append("line")
-    .attr("class","webline")
-    .attr("x1",function(d) {return d.x*gridScale+gridScale/2})
-    .attr("x2",function(d,i) { return d.z_list[i].x*gridScale+gridScale/2})
-    .attr("y1",function(d) {return d.y*gridScale})
-    .attr("y2",function(d,i) { return d.z_list[i].y*gridScale; })
+    .attr("class","zline")
+    .attr("x1",function(d) {return d[0]*gridScale+gridScale/2})
+    .attr("x2",function(d) { return d[2]*gridScale+gridScale/2})
+    .attr("y1",function(d) {return d[1]*gridScale})
+    .attr("y2",function(d) { return d[3]*gridScale; })
+    .attr("stroke","green")
+          weblines.exit().remove();
+    
+};
+
+function draw_humlines(data,gridScale){
+
+    var weblines = d3.select("svg").selectAll(".humline"); 
+ 
+    weblines = d3.select("svg").selectAll(".humline").data(data);
+
+    weblines.transition()
+    .attr("x1",function(d) {return (d[0]*gridScale)+gridScale/2;})
+    .attr("x2",function(d,i) {return (d[2]*gridScale)+gridScale/2;})
+    .attr("y1",function(d) {return d[1]*gridScale;})
+    .attr("y2",function(d,i) { return d[3]*gridScale; });
+    
+    weblines.enter().append("line")
+    .attr("class","humline")
+    .attr("x1",function(d) {return d[0]*gridScale+gridScale/2})
+    .attr("x2",function(d) { return d[2]*gridScale+gridScale/2})
+    .attr("y1",function(d) {return d[1]*gridScale})
+    .attr("y2",function(d) { return d[3]*gridScale; })
     .attr("stroke","red")
-    .style("stroke-dasharray","10 5");
           weblines.exit().remove();
     
 };
