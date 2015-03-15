@@ -291,8 +291,6 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_lis
     % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
-            %Xpos = random:uniform(GridXSize-1),
-            %Ypos= random:uniform(GridYSize-1),
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             % error_logger:error_report({Tile,Viewer}),
@@ -307,8 +305,6 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list 
     % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
-            %Xpos = random:uniform(GridXSize-1),
-            %Ypos= random:uniform(GridYSize-1),
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,?HUMAN_TIMEOUT]),
@@ -322,8 +318,6 @@ place_items(#state{tileSize = TileSize, rows = Rows, obs_list = Obs_List} = Stat
     % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
-            %Xpos = random:uniform(GridXSize-1),
-            %Ypos= random:uniform(GridYSize-1),
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             % draw to pick type of item for randomisation
