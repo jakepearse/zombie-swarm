@@ -287,8 +287,6 @@ add_viewers(Grid,Viewers) ->
 
 %% Spawns Num randomly positioned zombies
 create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list = Obs_List} = State,Num) ->
-    % GridXSize=TileSize*Columns,
-    % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
@@ -301,8 +299,6 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_lis
 
 %% Spawns Num randomly positioned humans
 create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list = Obs_List} = State,Num) ->
-    % GridXSize=TileSize*Columns,
-    % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
@@ -314,8 +310,6 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list 
 
 % creates and places a number of randomly positioned supplies.
 place_items(#state{tileSize = TileSize, rows = Rows, obs_list = Obs_List} = State,Num) ->
-    % GridXSize=TileSize*Columns,
-    % GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
