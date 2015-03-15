@@ -282,8 +282,8 @@ handle_event(zombify, StateName, #state{speed = Speed, x = X, y = Y, tile_size =
                     viewer = Viewer} = StateData) ->
     {ok,Zombie}=supervisor:start_child(zombie_sup,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,300,0]),
     zombie_fsm:start(Zombie),
-    supervisor:terminate_child(human_sup, self()).
-                           
+    {stop, shutdown, StateData}.
+
 handle_sync_event(get_state, _From, StateName, StateData) ->
     PropList = record_to_proplist(StateData),
     % take the pid out of the report for JSX
