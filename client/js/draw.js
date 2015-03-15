@@ -108,6 +108,8 @@ function update_circles(data,gridScale,swarmSize,$scope) {
     
     // change the xy of the selection
     circles.transition()
+    .attr("x_vel",function(d) { return d.x_velocity;})
+    .attr("y_vel",function(d) {return d.y_velocity;})
     .attr("x", function(d) { return d.x*gridScale; })
     .attr("y", function(d) { return d.y*gridScale; });
     //.duration(300);
@@ -121,6 +123,8 @@ function update_circles(data,gridScale,swarmSize,$scope) {
         .attr("y", function(d) { return d.y*gridScale; })
         .attr("width",gridScale)
         .attr("height",gridScale)
+        .attr("x_vel",function(d) {return d.x_velocity;})
+        .attr("y_vel",function(d) {return d.y_velocity;})
         .attr("xlink:href", function(d) {return setColour(d);});
       
       // remove any leftover elements
@@ -141,6 +145,8 @@ function draw_circles(data,gridScale,$scope) {
         .attr("y", function(d) { return d.y*gridScale; })
         .attr("width",gridScale)
         .attr("height",gridScale)
+        .attr("x_vel",function(d) { return d.x_velocity;})
+        .attr("y_vel",function(d) {return d.y_velocity;})
         .attr("xlink:href", function(d) {return setColour(d);})
         ;
 	};
@@ -194,8 +200,8 @@ function draw_zlines(data,gridScale){
     .attr("x2",function(d) { return d[3]*gridScale+gridScale/2})
     .attr("y1",function(d) {return d[2]*gridScale})
     .attr("y2",function(d) { return d[4]*gridScale; })
-    .attr("stroke","green")
-    .attr("opacity",0.3);
+    .attr("stroke","lightgreen")
+    .attr("opacity",0.5);
           weblines.exit().remove();
     
 };
@@ -219,8 +225,8 @@ function draw_humlines(data,gridScale){
     .attr("x2",function(d) { return d[3]*gridScale+gridScale/2})
     .attr("y1",function(d) {return d[2]*gridScale})
     .attr("y2",function(d) { return d[4]*gridScale; })
-    .attr("stroke","red")
-        .attr("opacity",0.3);
+    .attr("stroke","lightblue")
+        .attr("opacity",0.5);
           weblines.exit().remove();
     
 };
