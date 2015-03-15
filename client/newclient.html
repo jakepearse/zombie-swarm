@@ -30,20 +30,20 @@
         <label for="popSize" class="control-label">Population Size</label>
         <select name="popSize" class="form-control" data-ng-model="popSize" data-ng-options="item for item in popSizeOpts" ng-change="update()"></select>
 
-        <button id="start-btn" type="submit" class="btn btn-primary" ng-disabled="{{runningFlag}}" >Start</button>
-        <button type="button" class="btn">Pause</button>
-        <button type="button" class="btn">Reset</button>
+        <button id="start-btn" type="submit" class="btn btn-primary" ng-disabled="runningFlag" >Start</button>
+        <button type="button" class="btn" ng-click="pause()">Pause</button>
       </fieldset>
-     <h2>Inspector</h2>
-	<div class="container-fluid">
-		<div class="row-fluid">
-			<div class="span8 bg" ng-repeat="item in realInspectList">
-				<h4>{{item.type}} #{{item.id}}</h4>
-				<p>x:{{item.x}},y:{{item.y}}</p>
-				<p>hlist:{{item.h_list}}</p>
-				<p>zlist:{{item.z_list}}</p>
-			</div>
-		</div>
+      <button type="button" class="btn" data-toggle="collapse" data-target="#inspector"><i class="glyphicon glyphicon-chevron-down"></i> <i class="glyphicon glyphicon-eye-open"></i></button>
+	<div id="inspector" class="collapse out">
+	  <div class="container-fluid">
+	    <div class="row-fluid" ng-repeat="item in realInspectList">
+	      <p class="col-md-1">{{item.type}} #{{item.id}}</p>
+	      <p class="col-md-1">x:{{item.x}},y:{{item.y}}</p>
+	      <p class="col-md-5">hlist:{{item.h_list}}</p>
+	      <p class="col-md-5">zlist:{{item.z_list}}</p>
+	    </div>
+	  </div>
+	  </div>
 	</div>
   </form>
 </div>

@@ -146,20 +146,27 @@ function draw_circles(data,gridScale,$scope) {
 	};
 
 function update_web(data,gridScale,$scope) {
+  //the incoming data contains too many nested structures to easily deal with
+  // first flatten it out
   
+  //lines to zombies
     var zmodData=[];
     for (var i=0;i<data.length;i++){
-      if (data.length >0 && data[i].z_list.length>0) {
+      if (data[i].z_list.length>0) {
         for (j=0;j<data[i].z_list.length;j++){
-          zmodData.push([data[i].x,data[i].y,data[i].z_list[j].x,data[i].z_list[j].y]);
+          zmodData.push([data[i].id+data[i].z_list[j].id,
+          data[i].x,data[i].y,data[i].z_list[j].x,data[i].z_list[j].y]);
           }
       }
     }
+    
+    //lines to humans
     var hmodData = [];
       for (var i=0;i<data.length;i++){
         if (data.length >0 && data[i].h_list.length>0) {
           for (j=0;j<data[i].h_list.length;j++){
-            hmodData.push([data[i].x,data[i].y,data[i].h_list[j].x,data[i].h_list[j].y]);
+            hmodData.push([data[i].id+data[i].h_list[j].id,
+            data[i].x,data[i].y,data[i].h_list[j].x,data[i].h_list[j].y]);
           }
         }
     }
@@ -172,21 +179,23 @@ function draw_zlines(data,gridScale){
 
     var weblines = d3.select("svg").selectAll(".zline"); 
  
-    weblines = d3.select("svg").selectAll(".zline").data(data);
+    weblines = d3.select("svg").selectAll(".zline").data(data, function(d){return d[0];});
 
     weblines.transition()
-    .attr("x1",function(d) {return (d[0]*gridScale)+gridScale/2;})
-    .attr("x2",function(d,i) {return (d[2]*gridScale)+gridScale/2;})
-    .attr("y1",function(d) {return d[1]*gridScale;})
-    .attr("y2",function(d,i) { return d[3]*gridScale; });
+    .attr("x1",function(d) {return (d[1]*gridScale)+gridScale/2;})
+    .attr("x2",function(d,i) {return (d[3]*gridScale)+gridScale/2;})
+    .attr("y1",function(d) {return d[2]*gridScale;})
+    .attr("y2",function(d,i) { return d[4]*gridScale; });
     
     weblines.enter().append("line")
     .attr("class","zline")
-    .attr("x1",function(d) {return d[0]*gridScale+gridScale/2})
-    .attr("x2",function(d) { return d[2]*gridScale+gridScale/2})
-    .attr("y1",function(d) {return d[1]*gridScale})
-    .attr("y2",function(d) { return d[3]*gridScale; })
+    .attr("id",function(d){return d[0];})
+    .attr("x1",function(d) {return d[1]*gridScale+gridScale/2})
+    .attr("x2",function(d) { return d[3]*gridScale+gridScale/2})
+    .attr("y1",function(d) {return d[2]*gridScale})
+    .attr("y2",function(d) { return d[4]*gridScale; })
     .attr("stroke","green")
+    .attr("opacity",0.3);
           weblines.exit().remove();
     
 };
@@ -195,21 +204,23 @@ function draw_humlines(data,gridScale){
 
     var weblines = d3.select("svg").selectAll(".humline"); 
  
-    weblines = d3.select("svg").selectAll(".humline").data(data);
+    weblines = d3.select("svg").selectAll(".humline").data(data, function(d){return d[0];});
 
     weblines.transition()
-    .attr("x1",function(d) {return (d[0]*gridScale)+gridScale/2;})
-    .attr("x2",function(d,i) {return (d[2]*gridScale)+gridScale/2;})
-    .attr("y1",function(d) {return d[1]*gridScale;})
-    .attr("y2",function(d,i) { return d[3]*gridScale; });
+    .attr("x1",function(d) {return (d[1]*gridScale)+gridScale/2;})
+    .attr("x2",function(d,i) {return (d[3]*gridScale)+gridScale/2;})
+    .attr("y1",function(d) {return d[2]*gridScale;})
+    .attr("y2",function(d,i) { return d[4]*gridScale; });
     
     weblines.enter().append("line")
     .attr("class","humline")
-    .attr("x1",function(d) {return d[0]*gridScale+gridScale/2})
-    .attr("x2",function(d) { return d[2]*gridScale+gridScale/2})
-    .attr("y1",function(d) {return d[1]*gridScale})
-    .attr("y2",function(d) { return d[3]*gridScale; })
+    .attr("id",function(d){return d[0];})
+    .attr("x1",function(d) {return d[1]*gridScale+gridScale/2})
+    .attr("x2",function(d) { return d[3]*gridScale+gridScale/2})
+    .attr("y1",function(d) {return d[2]*gridScale})
+    .attr("y2",function(d) { return d[4]*gridScale; })
     .attr("stroke","red")
+        .attr("opacity",0.3);
           weblines.exit().remove();
     
 };

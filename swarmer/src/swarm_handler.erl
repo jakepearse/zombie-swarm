@@ -73,7 +73,11 @@ websocket_handle({text, Json}, Req, State) ->
 		%error_logger:error_report("hit start"),
 		enviroment:unpause_entities(),
 		{reply,[{text,"ok"}], Req, State};
-		
+
+    <<"pause">> ->
+      enviroment:pause_entities(),
+      {reply,[{text,"ok"}], Req, State};
+      
       _ ->
     error_logger:error_report({"Unknown message type", Type}),
               {noreply, Req, State}
