@@ -54,7 +54,7 @@
     
     // Yes it's a bit repetitive
     $scope.update = function() {
-    d3.select("svg").html("");
+    d3.select("svg").html('<defs><pattern id="grass" x="0" y="0" height="64" width="64" patternUnits="userSpaceOnUse" ><image height="64" width="64" xlink:href="img/grasstile.jpg"></image></pattern><pattern id="brick" x="0" y="0" height="50" width="50" patternUnits="userSpaceOnUse" ><image height="50" width="50" xlink:href="img/bricktile.jpg"></image></pattern></defs>');
     var new_json = JSON.stringify({"type":"setup","arrity":$scope.arrity,"swarmSize":$scope.swarmSize,"popSize":$scope.popSize,"obArray":$scope.simpleObArray});
     if (socket.readyState != 0) {
     socket.send(new_json);
