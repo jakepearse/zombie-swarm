@@ -427,7 +427,7 @@ build_zombie_list(Viewer, X, Y) ->
 
     Z_DistanceList = lists:map(fun(
                                 {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-                                    {pythagoras:pyth(X,Y,ZX,ZY),
+                                    {abs(pythagoras:pyth(X,Y,ZX,ZY)),
                                     {ZomPid,{ZType,{{ZX,ZY},
                                     {ZX_Velocity,ZY_Velocity}}}}} 
                                 end,ZombieList),
@@ -444,12 +444,11 @@ build_zombie_list(Viewer, X, Y) ->
 % Build a list of local zombie entities that are in sight
 build_human_list(Viewer, X, Y) ->
     HumanList = viewer:get_humans(Viewer),
-    
     NoSelfList = lists:keydelete(self(),1,HumanList),
 
     H_DistanceList = lists:map(fun(
                                 {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-                                    {pythagoras:pyth(X,Y,HX,HY),
+                                    {abs(pythagoras:pyth(X,Y,HX,HY)),
                                     {Hpid,{human,{{HX,HY},
                                     {HXV,HYV}}}}} 
                             end,NoSelfList),
@@ -464,7 +463,7 @@ build_human_list(Viewer, X, Y) ->
     Hlist.
 
 build_obs_list(Olist, X,Y) ->
-    O_DistanceList = lists:map(fun({ObX,ObY}) -> {pythagoras:pyth(X,Y,ObX,ObY),{noPid,{obstruction,{{ObX,ObY},{0,0}}}}} end, Olist),
+    O_DistanceList = lists:map(fun({ObX,ObY}) -> {abs(pythagoras:pyth(X,Y,ObX,ObY)),{noPid,{obstruction,{{ObX,ObY},{0,0}}}}} end, Olist),
     %sort the list by distance
     lists:keysort(1,O_DistanceList).
 

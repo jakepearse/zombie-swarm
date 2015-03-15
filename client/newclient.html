@@ -18,32 +18,32 @@
 <div id="controlPanel" class="collapse in">
   <form name="panelForm" ng-controller="PanelController as panelCtrl" ng-submit="start()"  class="form-inline">
     <fieldset>
-        <label for="arrity" class="control-label">Grid Arrity</label>
-        <select name="gridArrity" class="form-control" data-ng-model="arrity" data-ng-options="item for item in arrityOpts" ng-change="update()"></select>
+        <label for="arrity" class="control-label" >Grid Arrity</label>
+        <select name="gridArrity" class="form-control" ng-disabled="runningFlag" data-ng-model="arrity" data-ng-options="item for item in arrityOpts" ng-change="update()"></select>
         
         <label for="gridScale" class="control-label">Grid Scale</label>
-        <select name="gridScale" class="form-control" data-ng-model="gridScale" data-ng-options="item for item in gridScaleOpts" ng-change="update()"></select>
+        <select name="gridScale" class="form-control" ng-disabled="runningFlag" data-ng-model="gridScale" data-ng-options="item for item in gridScaleOpts" ng-change="update()"></select>
 
         <label for="swarmSize" class="control-label">Swarm Size</label>
-        <select name="swarmSize" class="form-control" data-ng-model="swarmSize" data-ng-options="item for item in swarmSizeOpts" ng-change="update()"></select>
+        <select name="swarmSize" class="form-control" ng-disabled="runningFlag" data-ng-model="swarmSize" data-ng-options="item for item in swarmSizeOpts" ng-change="update()"></select>
 
         <label for="popSize" class="control-label">Population Size</label>
-        <select name="popSize" class="form-control" data-ng-model="popSize" data-ng-options="item for item in popSizeOpts" ng-change="update()"></select>
+        <select name="popSize" class="form-control" ng-disabled="runningFlag" data-ng-model="popSize" data-ng-options="item for item in popSizeOpts" ng-change="update()"></select>
 
-        <button id="start-btn" type="submit" class="btn btn-primary" ng-disabled="{{runningFlag}}" >Start</button>
-        <button type="button" class="btn">Pause</button>
-        <button type="button" class="btn">Reset</button>
+        <button id="start-btn" type="submit" class="btn btn-primary" ng-disabled="runningFlag" >Start</button>
+        <button type="button" class="btn" ng-disabled="!runningFlag"ng-click="pause()"> Pause</button>
       </fieldset>
-     <h2>Inspector</h2>
-	<div class="container-fluid">
-		<div class="row-fluid">
-			<div class="span8 bg" ng-repeat="item in realInspectList">
-				<h4>{{item.type}} #{{item.id}}</h4>
-				<p>x:{{item.x}},y:{{item.y}}</p>
-				<p>hlist:{{item.h_list}}</p>
-				<p>zlist:{{item.z_list}}</p>
-			</div>
-		</div>
+      <button type="button" class="btn" data-toggle="collapse" data-target="#inspector"><i class="glyphicon glyphicon-chevron-down"></i> <i class="glyphicon glyphicon-eye-open"></i></button>
+	<div id="inspector" class="collapse out">
+	  <div class="container-fluid">
+	    <div class="row-fluid" ng-repeat="item in realInspectList">
+	      <p class="col-md-1">{{item.type}} #{{item.id}}</p>
+	      <p class="col-md-1">x:{{item.x}},y:{{item.y}} x velocity:{{item.x_velocity}},y velocity:{{item.y_velocity}}</p>
+	      <p class="col-md-5">hlist:{{item.h_list}}</p>
+	      <p class="col-md-5">zlist:{{item.z_list}}</p>
+	    </div>
+	  </div>
+	  </div>
 	</div>
   </form>
 </div>
@@ -51,9 +51,13 @@
 <!-- main display -->
 
 			<hr>
-			<svg xmlns="http://www.w3.org/2000/svg"
-    xmlns:xlink="http://www.w3.org/1999/xlink">
-</defs>
+			<svg>
+			<defs>
+
+			  <pattern id="grass" x="0" y="0" height="64" width="64" patternUnits="userSpaceOnUse" ><image height="64" width="64" xlink:href="img/grasstile.jpg"></image></pattern>
+			   <pattern id="brick" x="0" y="0" height="50" width="50" patternUnits="userSpaceOnUse" ><image height="50" width="50" xlink:href="img/bricktile.jpg"></image></pattern>
+
+			</defs>
 			</svg>
 			<!-- end of display -->
 		</div> <!-- end span10 -->
