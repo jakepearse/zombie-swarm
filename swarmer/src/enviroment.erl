@@ -311,13 +311,14 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list 
         end,lists:seq(1,Num)).
 
 % creates and places a number of randomly positioned supplies.
-place_items(#state{tileSize = TileSize, columns = Columns, rows = Rows} = State,Num) ->
+place_items(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list = Obs_List} = State,Num) ->
     GridXSize=TileSize*Columns,
     GridYSize=TileSize*Rows,
     lists:foreach(
         fun(_) ->
-            Xpos = random:uniform(GridXSize-1),
-            Ypos= random:uniform(GridYSize-1),
+            %Xpos = random:uniform(GridXSize-1),
+            %Ypos= random:uniform(GridYSize-1),
+            {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             % draw to pick type of item for randomisation
             case random:uniform(3) of

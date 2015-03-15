@@ -88,13 +88,13 @@
 		var dummy_json = JSON.stringify({"type":"report"});
 		//This sends the "update" message to the socket every X ms
 		// and updates the circles with the recived data
-		setInterval(function() {doUpdate()},300);
+		setInterval(function() {doUpdate()},290);
 		function doUpdate() {
 			socket.send(dummy_json);
 			socket.onmessage = function(evt) {
 				var report_json = JSON.parse(evt.data);
          //console.log(report_json);
-				update_circles(report_json,$scope.gridScale,$scope.swarmSize);
+				update_circles(report_json,$scope.gridScale,$scope.swarmSize,$scope);
         $scope.realInspectList =[];
         for (var i =0;i<$scope.inspectList.length;i++){
 			$scope.realInspectList.push(report_json[(report_json.map(function(e) { return e.id; }).indexOf($scope.inspectList[i].id))]);

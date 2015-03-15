@@ -314,6 +314,7 @@ update_viewers([V|Vs], human, EntityMap) ->
     viewer:update_humans(V, {self(), maps:to_list(EntityMap)}),
     update_viewers(Vs, human, EntityMap);
 update_viewers([V|Vs], items, ItemMap) ->
+    error_logger:error_report(ItemMap),
     viewer:update_items(V, {self(), maps:to_list(ItemMap)}),
     update_viewers(Vs, items, ItemMap);
 update_viewers([V|Vs], obs_list, ObsList) ->

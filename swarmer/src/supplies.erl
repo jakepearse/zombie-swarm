@@ -61,7 +61,7 @@ init([Type, Item, X, Y, Tile, Viewer]) ->
 handle_call(get_type, _From, #state{type = Type, item = Item} = State) ->
 	{reply, {Type, Item},State};
 handle_call(get_state, _From, State) ->
-	{reply, State,State};
+	{reply,{ok,[{id,list_to_binary(pid_to_list(self()))},{type,food},{x,State#state.x},{y,State#state.y}]},State};
 handle_call(picked_up, _From, State) ->
 	{reply, ok, State};
 handle_call(Request, _From, State) ->
