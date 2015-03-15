@@ -186,7 +186,7 @@ handle_call({make_grid,{Rows,Columns,TileSize,Obs_list}},_From,State) ->
   make_neighbourhood(Grid,Viewers),
   %error_logger:error_report(State#state.viewerPropList),
   
-  Cord_list = lists:map(fun(I)-> X=I rem TileSize, Y=I div TileSize, T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list), 
+  Cord_list = lists:map(fun(I)-> X=I rem (10*Rows), Y=I div (10*Columns), T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list), 
     %error_logger:error_report(Cord_list),
 	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
   
