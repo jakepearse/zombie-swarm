@@ -15,7 +15,7 @@
 -define(COHESION_EFFECT,0.2).
 
 % Behaviour Parameters
--define(INITIAL_HUNGER,50).
+-define(INITIAL_HUNGER,26).
 -define(INITIAL_ENERGY,100).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
@@ -56,7 +56,8 @@
                 hunger_state,
                 hunger,
                 energy,
-                memory_map = maps:new()}).
+                memory_map = maps:new(),
+                path}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
@@ -105,7 +106,8 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     x_velocity = X_Velocity, y_velocity = Y_Velocity,
                     viewer = Viewer,
                     hunger = Hunger, energy = Energy,
-                    memory_map = MemoryMap} = State) ->
+                    memory_map = MemoryMap,
+                    path = Path} = State) ->
 
     % Build a list of nearby zombies
     Zlist = build_zombie_list(Viewer, X, Y),
@@ -127,76 +129,37 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     % creates a new value for hunger and food, showing the humans getting
     % hungry over time
-    {NewHunger, NewEnergy, NewHungerState} = case Hunger of
-        HValue when HValue =< 0 ->
-            case Energy of 
-                EVAlue when EVAlue =< ?TIRED_LEVEL ->
-                    {Hunger,Energy, tired};
-                _ -> 
-                    {Hunger, Energy-1, very_hungry}
-            end;
-        HValue when HValue =< ?HUNGRY_LEVEL ->
-            {Hunger-1, Energy-1, hungry};
-        _ ->
-            {Hunger-1, Energy, not_hungry}
-    end,
+    {NewHunger, NewEnergy, NewHungerState} = calc_new_hunger_levels(Hunger,Energy),
 
     NearestItem = get_nearest_item(Ilist,{X,Y}),
 
     % error_logger:error_report(NearestItem),
 
     %%%% NEEDS REFACTORING
-    {BoidsX, BoidsY} = case NewHungerState of 
+    {{BoidsX, BoidsY}, NewPath} = case NewHungerState of 
         tired ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
             % error_logger:error_report(MemoryList),
-            case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
-                {BX,BY} ->  
-                    % Local food! Go forth hungry human!
-                    %error_logger:error_report("mmmm local food"),
-                    {BX,BY};
-                {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
-                    % No local food, doesn't remember any food...
-                    % Wander around until you starve poor human!
-                    %error_logger:error_report("I don't remember any food and I can see no food"),
-                    {BX,BY};
-                {_BX,_BY,nothing_found} ->
-                    % No local food, does remember food however...
-                    % Pathfind to some food you remember
-                    NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
-                   % error_logger:error_report("I gone done pathfound"),
-                    [{PathX,PathY}|_Rest] = NewPath,
-                    {PathX,PathY}
-            end;
+
+            {BX,BY,NewP} = calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
+                                X,Y,Olist,MemoryList, State),
+            {BX,BY,NewP};
+
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
             % error_logger:error_report(MemoryList),
-            case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
-                {BX,BY} ->  
-                    % Local food! Go forth hungry human!
-                    % error_logger:error_report("mmmm local food"),
-                    {BX,BY};
-                {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
-                    % No local food, doesn't remember any food...
-                    % Wander around until you starve poor human!
-                    % error_logger:error_report("I don't remember and I can see no food"),
-                    {BX,BY};
-                {_BX,_BY,nothing_found} ->
-                    % No local food, does remember food however...
-                    % Pathfind to some food you remember
-                    NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
-                    %error_logger:error_report("I gone done pathfound"),
-                    [{PathX,PathY}|_Rest] = NewPath,
-                    {PathX,PathY}
-            end;
+
+            {BX,BY,NewP} = calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
+                                X,Y,Olist,MemoryList, State),
+            {BX,BY,NewP};
         hungry ->
             % search for food, but also boids
-            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State);
+            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, State),[]};
         not_hungry ->
             % save any food you find to a map, boids as normal
-            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State)
+            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, State),[]}
     end,
 
 
@@ -242,7 +205,8 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                         y_velocity = Limited_Y_Velocity,
                                         hunger = NewHunger, energy = NewEnergy,
                                         hunger_state = NewHungerState,
-                                        memory_map = NewMemoryMap}}
+                                        memory_map = NewMemoryMap,
+                                        path = NewPath}}
     end.
 
 
@@ -323,11 +287,21 @@ make_choice(Hlist,_,_NearestItem, hungry, State) ->
 
 %============================Hungry - Local Item================================%
 % There is no zombie, time to eat!
-make_choice(_,[],{_,{ItemX,ItemY,_,_}}, very_hungry, State) ->
+make_choice(_,[],{_,{ItemX,ItemY,food,_}}, very_hungry, State) ->
     boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
 
-make_choice(_,[],{_,{ItemX,ItemY,_,_}}, tired, State) ->
+make_choice(_,[],{_,{ItemX,ItemY,food,_}}, tired, State) ->
     boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
+
+% make_choice(_,[],{ID,{ItemX,ItemY,food,Name}},very_hungry,#state{x=X,y=Y} = State) when pythagoras:pyth(X,Y,ItemX,ItemY) =< 2 ->
+%     supplies:picked_up(ID),
+%     % set new hunger and enerygy levels!
+%     {X,Y};
+
+% make_choice(_,[],{ID,{ItemX,ItemY,food,Name}},tired,#state{x=X,y=Y} = State) when pythagoras:pyth(X,Y,ItemX,ItemY) =< 2 ->
+%     supplies:picked_up(ID),
+%     % set new hunger and enerygy levels!
+%     {X,Y};
 
 % Got some humans, but no food
 make_choice(Hlist,_,nothing_found, very_hungry, State) ->
@@ -458,3 +432,38 @@ build_memory([], Map) ->
 build_memory([{Pid,{X,Y,Type,Name}}|Rest], Map) ->
     NewMap = maps:put({X,Y}, {Pid,Type,Name}, Map),
     build_memory(Rest, NewMap).
+
+calc_new_hunger_levels(Hunger,Energy) ->
+    case Hunger of
+        HValue when HValue =< 0 ->
+            case Energy of 
+                EVAlue when EVAlue =< ?TIRED_LEVEL ->
+                    {Hunger,Energy, tired};
+                _ -> 
+                    {Hunger, Energy-1, very_hungry}
+            end;
+        HValue when HValue =< ?HUNGRY_LEVEL ->
+            {Hunger-1, Energy-1, hungry};
+        _ ->
+            {Hunger-1, Energy, not_hungry}
+    end.
+
+calc_new_hungry_xy(Hlist, Zlist, NearestItem, NewHungerState, X, Y, MemoryList, Olist, State) ->
+    case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
+        {BX,BY} ->  
+            % Local food! Go forth hungry human!
+            %error_logger:error_report("mmmm local food"),
+            {BX,BY,[]};
+        {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
+            % No local food, doesn't remember any food...
+            % Wander around until you starve poor human!
+            %error_logger:error_report("I don't remember any food and I can see no food"),
+            {BX,BY,[]};
+        {_BX,_BY,nothing_found} ->
+            % No local food, does remember food however...
+            % Pathfind to some food you remember
+            NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
+           % error_logger:error_report("I gone done pathfound"),
+            [{PathX,PathY}|Rest] = NewPath,
+            {PathX,PathY,Rest}
+    end.
