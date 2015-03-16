@@ -100,7 +100,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     NoSelfList = lists:keydelete(self(),1,ZombieList),
     Z_DistanceList = lists:map(fun(
                                 {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-                                    {pythagoras:pyth(X,Y,ZX,ZY),
+                                    {abs(pythagoras:pyth(X,Y,ZX,ZY)),
                                     {ZomPid,{ZType,{{ZX,ZY},
                                     {ZX_Velocity,ZY_Velocity}}}}} 
                             end,NoSelfList),
@@ -118,7 +118,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     H_DistanceList = lists:map(fun(
                                 {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-                                    {pythagoras:pyth(X,Y,HX,HY),
+                                    {abs(pythagoras:pyth(X,Y,HX,HY)),
                                     {Hpid,{human,{{HX,HY},
                                     {HXV,HYV}}}}} 
                             end,HumanList),

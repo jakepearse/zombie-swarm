@@ -14,12 +14,11 @@
 -export([get_state/0,set_swarm/1,set_mob/1,set_items/1]).
 
 %%%% gen_server callbacks
--export([code_change/3,handle_call/2,handle_call/3,
-  handle_cast/2,
-handle_info/2,init/1,terminate/2]).
+-export([code_change/3,handle_call/2,handle_call/3,handle_cast/2,
+  handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
--define(ZOMBIE_TIMEOUT, 300).
+-define(ZOMBIE_TIMEOUT, 600).
 -define(HUMAN_TIMEOUT, 600).
 
 % Record to Props List, for reporting
@@ -168,12 +167,15 @@ handle_call(get_state,_From,State) ->
     {reply,State,State};
 
 handle_call({make_grid,{Rows,Columns,TileSize,Obs_list}},_From,State) ->
-  %%kinda hacky but works....kill supervisors, start supervisors, why not....
+  % End current environment setup, respawn after killing them
+  % This prevents old processes being left around
   %kill entities
   supervisor:terminate_child(swarm_sup, zombie_sup),
   supervisor:terminate_child(swarm_sup, human_sup),
+  supervisor:terminate_child(swarm_sup, supplies_sup),
   supervisor:restart_child(swarm_sup, zombie_sup),
   supervisor:restart_child(swarm_sup, human_sup),
+  supervisor:restart_child(swarm_sup, supplies_sup),
   %Kill tiles
   supervisor:terminate_child(swarm_sup, tile_sup),
   supervisor:restart_child(swarm_sup, tile_sup),
@@ -245,7 +247,6 @@ terminate(normal,_State) ->
 code_change(_OldVsn, State,_Extra) ->
     {ok,State}.
 
-
 %%%%%%=============================================================================
 %%%%%% Internal Functions
 %%%%%%=============================================================================
@@ -291,9 +292,7 @@ create_swarm(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_lis
         fun(_) ->
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
-            % error_logger:error_report({Tile,Viewer}),
             {ok,Zombie}=supervisor:start_child(zombie_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,?ZOMBIE_TIMEOUT,0]),
-            %temporary fix
             zombie_fsm:start(Zombie)
         end,lists:seq(1,Num)).
 
@@ -304,7 +303,6 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list 
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
             {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,?HUMAN_TIMEOUT]),
-            %temporary fix
             human_fsm:start(Human)
         end,lists:seq(1,Num)).
 
@@ -425,12 +423,10 @@ apply_to_all__humans(Fun) ->
         end, get_humans_list()).
 
 get_entities_list() ->
-  supervisor:which_children(zombie_sup) ++ supervisor:which_children(human_sup).
+  get_zombies_list() ++ get_humans_list().
 
 get_report_list() ->
-  get_zombies_list() ++ 
-    get_humans_list() ++ 
-    get_supplies_list().
+  get_zombies_list() ++ get_humans_list() ++ get_supplies_list().
     
 get_zombies_list() ->
   supervisor:which_children(zombie_sup).

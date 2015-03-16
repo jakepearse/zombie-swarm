@@ -1,7 +1,6 @@
 -module(human_fsm).
 -author("Joe Mitchard jm710").
 
--define(RUN_STAY_COURSE, 8).
 -define(SIGHT,100).
 -define(PERSONAL_SPACE, 3).
 
@@ -15,7 +14,7 @@
 -define(COHESION_EFFECT,0.2).
 
 % Behaviour Parameters
--define(INITIAL_HUNGER,26).
+-define(INITIAL_HUNGER,100).
 -define(INITIAL_ENERGY,100).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
@@ -135,31 +134,39 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     % error_logger:error_report(NearestItem),
 
-    %%%% NEEDS REFACTORING
+    % For this, I need to pass the path to make choice, and add a new condition to 
+    % continue on the path if there is one, but no other cases.
     {{BoidsX, BoidsY}, NewPath} = case NewHungerState of 
         tired ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
             % error_logger:error_report(MemoryList),
-
-            {BX,BY,NewP} = calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
-                                X,Y,Olist,MemoryList, State),
-            {BX,BY,NewP};
-
+            case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
+                                X,Y,Olist,MemoryList, Path, State) of
+                {BX,BY,NewP,eaten} ->
+                    error_logger:error_report("I've eaten!"),
+                    {{BX,BY},NewP};
+                {BX,BY,NewP} ->
+                    {{BX,BY},NewP}
+            end;
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
             % error_logger:error_report(MemoryList),
-
-            {BX,BY,NewP} = calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
-                                X,Y,Olist,MemoryList, State),
-            {BX,BY,NewP};
+            case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
+                                X,Y,Olist,MemoryList, Path, State) of
+                {BX,BY,NewP,eaten} ->
+                    error_logger:error_report("I've eaten!"),
+                    {{BX,BY},NewP};
+                {BX,BY,NewP} ->
+                    {{BX,BY},NewP}
+            end;
         hungry ->
             % search for food, but also boids
-            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, State),[]};
+            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[]};
         not_hungry ->
             % save any food you find to a map, boids as normal
-            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, State),[]}
+            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[]}
     end,
 
 
@@ -241,11 +248,12 @@ handle_event(pause, StateName, StateData) ->
 
 handle_event(zombify, _StateName, #state{x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
-                    tile = Tile, viewer = Viewer} = _StateData) ->
-    {ok,Zombie}=supervisor:start_child(zombie_sup,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,300,0]),
+                    tile = Tile,
+                    viewer = Viewer, timeout = Timeout} = StateData) ->
+    {ok,Zombie}=supervisor:start_child(zombie_sup,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Timeout,0]),
     zombie_fsm:start(Zombie),
-    supervisor:terminate_child(human_sup, self()).
-                           
+    {stop, shutdown, StateData}.
+
 handle_sync_event(get_state, _From, StateName, StateData) ->
     PropList = record_to_proplist(StateData),
     % take the pid out of the report for JSX
@@ -263,53 +271,79 @@ record_to_proplist(#state{} = Record) ->
 %%%%%%==========================================================================
 % Make choice is called with ->
 %   (HumanList, ZombieList, NearestItem, HungerState, State)
-make_choice([],[],_NearestItem, _HungerState, _State) ->
+make_choice([],[],_NearestItem, _HungerState, _Path, _State) ->
     {0,0};
 
 %===========================Collision Avoidance=================================%
-make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_,State) when Dist < ?PERSONAL_SPACE ->
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
 %=============================Super Repulsor====================================%
-make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, State) ->
+make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, _Path, State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
 %===============================Flocking========================================%
-make_choice(Hlist,_,_NearestItem, not_hungry, State) ->
+make_choice(Hlist,_,_NearestItem, not_hungry, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
-make_choice(Hlist,_,_NearestItem, hungry, State) ->
+make_choice(Hlist,_,_NearestItem, hungry, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
 %============================Hungry - Local Item================================%
-% There is no zombie, time to eat!
-make_choice(_,[],{_,{ItemX,ItemY,food,_}}, very_hungry, State) ->
-    boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
+% There is no zombie, I do have a path!
+make_choice(_,[],_, very_hungry, Path, _State) when length(Path) >= 1 -> 
+    [Next|Rest] = Path,
+    {Next,Rest};
 
-make_choice(_,[],{_,{ItemX,ItemY,food,_}}, tired, State) ->
-    boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
+make_choice(_,[],_, tired, Path, _State) when length(Path) >= 1 -> 
+    [Next|Rest] = Path,
+    {Next,Rest};
 
-% make_choice(_,[],{ID,{ItemX,ItemY,food,Name}},very_hungry,#state{x=X,y=Y} = State) when pythagoras:pyth(X,Y,ItemX,ItemY) =< 2 ->
-%     supplies:picked_up(ID),
-%     % set new hunger and enerygy levels!
-%     {X,Y};
+% There is no zombie, I have no path, move towards food blindly!
+make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, y=Y} = State) ->
+    case pythagoras:pyth(X,Y,ItemX,ItemY) of
+        Value when Value =< 2 ->
+            Item = supplies:picked_up(ItemId),
+            case Item of
+                ok ->
+                    {X,Y,eaten};
+                _ ->
+                    {X,Y}
+            end;
+        _ ->
+            boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
+    end;
 
-% make_choice(_,[],{ID,{ItemX,ItemY,food,Name}},tired,#state{x=X,y=Y} = State) when pythagoras:pyth(X,Y,ItemX,ItemY) =< 2 ->
-%     supplies:picked_up(ID),
-%     % set new hunger and enerygy levels!
-%     {X,Y};
+make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=Y} = State) ->
+    case pythagoras:pyth(X,Y,ItemX,ItemY) of
+        Value when Value =< 2 ->
+            Item = supplies:picked_up(ItemId),
+            case Item of
+                ok ->
+                    {X,Y,eaten};
+                _ ->
+                    {X,Y}
+            end;
+        _ ->
+            boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
+    end;
+
+% For having eaten food, return {X,Y,eaten}
+% Need to case match that receive -> ok, after N, carry on.
+% Can pattern patch into this with a new atom of near_food on the end! :D
+
 
 % Got some humans, but no food
-make_choice(Hlist,_,nothing_found, very_hungry, State) ->
+make_choice(Hlist,_,nothing_found, very_hungry, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found};
 
-make_choice(Hlist,_,nothing_found, tired, State) ->
+make_choice(Hlist,_,nothing_found, tired, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found}.
@@ -390,7 +424,7 @@ build_zombie_list(Viewer, X, Y) ->
 
     Z_DistanceList = lists:map(fun(
                                 {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-                                    {pythagoras:pyth(X,Y,ZX,ZY),
+                                    {abs(pythagoras:pyth(X,Y,ZX,ZY)),
                                     {ZomPid,{ZType,{{ZX,ZY},
                                     {ZX_Velocity,ZY_Velocity}}}}} 
                                 end,ZombieList),
@@ -407,12 +441,11 @@ build_zombie_list(Viewer, X, Y) ->
 % Build a list of local zombie entities that are in sight
 build_human_list(Viewer, X, Y) ->
     HumanList = viewer:get_humans(Viewer),
-    
     NoSelfList = lists:keydelete(self(),1,HumanList),
 
     H_DistanceList = lists:map(fun(
                                 {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-                                    {pythagoras:pyth(X,Y,HX,HY),
+                                    {abs(pythagoras:pyth(X,Y,HX,HY)),
                                     {Hpid,{human,{{HX,HY},
                                     {HXV,HYV}}}}} 
                             end,NoSelfList),
@@ -448,22 +481,26 @@ calc_new_hunger_levels(Hunger,Energy) ->
             {Hunger-1, Energy, not_hungry}
     end.
 
-calc_new_hungry_xy(Hlist, Zlist, NearestItem, NewHungerState, X, Y, MemoryList, Olist, State) ->
-    case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
+% A function to calculate the new X,Y and path for the Human.
+calc_new_hungry_xy(Hlist, Zlist, NearestItem, NewHungerState, X, Y, MemoryList, Olist, Path, State) ->
+    case make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State) of
         {BX,BY} ->  
             % Local food! Go forth hungry human!
-            %error_logger:error_report("mmmm local food"),
-            {BX,BY,[]};
+            {BX,BY,Path};
+        {BX,BY,[P|Ps]} ->
+            % Pathfinding towards food...
+            Rest = [P|Ps],
+            {BX,BY,Rest};
         {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
             % No local food, doesn't remember any food...
             % Wander around until you starve poor human!
-            %error_logger:error_report("I don't remember any food and I can see no food"),
-            {BX,BY,[]};
+            {BX,BY,Path};
         {_BX,_BY,nothing_found} ->
             % No local food, does remember food however...
             % Pathfind to some food you remember
             NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
-           % error_logger:error_report("I gone done pathfound"),
             [{PathX,PathY}|Rest] = NewPath,
-            {PathX,PathY,Rest}
+            {PathX,PathY,Rest};
+        {BX,BY,eaten} ->
+            {BX,BY,Path,eaten}
     end.
