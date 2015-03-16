@@ -374,13 +374,31 @@ nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
 %%% Check if my next position is obstructed
 obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
     {NewX,NewY};
-obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
-    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5  == A end,Olist),
+obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
-            {X+1,Y};
+            obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY);
         false->
             {NewX,NewY}
+    end.
+obstructedmove(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY->
+    {X,Y};
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelX*VelX) >= (VelY*VelY)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+        false->
+            {NewX,Y}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelY*VelY) > (VelX*VelX)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+        false->
+            {X,NewY}
     end.
 
 %%% Calculate the new levels for hunger,energy

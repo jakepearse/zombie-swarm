@@ -15,7 +15,7 @@
     $scope.arrity = $scope.arrityOpts[2];
     $scope.gridScaleOpts = [1,2,3,4,5,6,7,8,9,10];
     $scope.gridScale = $scope.gridScaleOpts[5];
-    $scope.swarmSizeOpts = [1,2,5,10,20,30,40,50,100];
+    $scope.swarmSizeOpts = [0,1,2,5,10,20,30,40,50,100];
     $scope.swarmSize = $scope.swarmSizeOpts[2];
     $scope.popSizeOpts = [1,2,5,10,20,30,40,50,100];
     $scope.popSize = $scope.popSizeOpts[4];

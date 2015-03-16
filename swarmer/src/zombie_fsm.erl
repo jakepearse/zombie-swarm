@@ -4,7 +4,7 @@
 -define(AIMLESS_STAY_COURSE, 8).
 -define(SIGHT,75).
 -define(PERSONAL_SPACE, 3).
-
+-define(HUNGER_FULL,50).
 %Variables for boids.
 -define(LIMIT,5).
 -define(SUPER_EFFECT, 0.3).
@@ -43,7 +43,8 @@
                 x_velocity,
                 y_velocity,
                 z_list,
-                h_list}).
+                h_list
+                }).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing) -> 
 	gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing],[]).
@@ -255,17 +256,34 @@ make_choice(Zlist,_, State) ->
     {Vx,Vy} = boids_functions:velocity(Zlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)}.
 
-obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
+obstructed([],_X,_Y,NewX,NewY,VelX,VelY) ->
     {NewX,NewY};
-obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
+obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
-            {X+1,Y};
+            obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY);
         false->
             {NewX,NewY}
     end.
-
+obstructedmove(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY->
+    {X,Y};
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelX*VelX) >= (VelY*VelY)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+        false->
+            {NewX,Y}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelY*VelY) > (VelX*VelX)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+        false->
+            {X,NewY}
+    end.
 jsonify_list([]) ->
     [];
 jsonify_list(List) ->
