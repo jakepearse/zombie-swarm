@@ -22,47 +22,39 @@
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
 
-%gen_fsm implementation
+%%% gen_fsm functions
 -export([code_change/4,handle_event/3,handle_sync_event/4,
          handle_info/3,init/1,terminate/3]).
 
--export([start_link/10,run/2,initial/2,
-        calc_state/1,calc_runbearing/3,start/1,pause/2]).
+%%% system functions
+-export([start_link/10,run/2,initial/2,start/1,pause/2]).
 
-%API
+%%% API exports
 -export([get_state/1, pause/1, unpause/1,zombify/1]).
 
 -record(state, {id,
-                tile,
-                tile_size,
-                num_columns,
-                num_rows,
-                viewer,
-                viewerStr,
-                speed,
-                bearing,
-                x,
-                y,
-                timeout,
-                type,
-                paused_state,
-                x_velocity,
-                y_velocity,
-                z_list,
-                h_list,
-                i_list,
-                memory_list,
-                hunger_state,
-                hunger,
-                energy,
-                memory_map = maps:new(),
-                path}).
+                % localisation
+                tile, viewer, viewerStr,
+                tile_size, num_columns, num_rows,
+                % movement control
+                speed, bearing, x_velocity, y_velocity,
+                x,y,
+                % timing and state
+                timeout, type, paused_state,
+                % lists to maintain local awareness
+                z_list, h_list, i_list, memory_list,
+                % elements for behavioural control
+                hunger_state, hunger, energy,
+                memory_map = maps:new(), path}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
-    gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
+    gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,
+                                Speed,Bearing,Timeout],[]).
 
+%%%%%%==========================================================================
+%%%%%% State Machine
+%%%%%%==========================================================================
 
-%%% API!
 start(Pid) ->
     gen_fsm:send_event(Pid,start).
 
@@ -97,7 +89,7 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
 
 initial(start,State) ->
     gen_fsm:send_event_after(State#state.timeout, move),
-    {next_state,calc_state(run),State}.
+    {next_state,run,State}.
     
 run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
@@ -216,7 +208,6 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                         path = NewPath}}
     end.
 
-
 %%%%%%==========================================================================
 %%%%%% Event and Sync Functions
 %%%%%%==========================================================================
@@ -229,17 +220,13 @@ pause(move, State) ->
 pause(unpause, #state{paused_state = PausedState} = State) ->
     {next_state,PausedState,State}.   
 
-calc_state(_Current_state) ->
-    run.
-    
-calc_runbearing(Rand,X,Y) ->
-    trigstuff:findcoordinates(Rand,X,Y).
-%stuff for gen_fsm.
 terminate(_,_StateName, #state{tile = Tile, type = Type} = _StateData) ->
     tile:remove_entity(Tile, self(), Type),
     ok.
+
 code_change(_,StateName,StateData,_) ->
     {ok,StateName,StateData}.
+
 handle_info(_,StateName,StateData)->
     {ok,StateName,StateData}.
 
@@ -332,11 +319,6 @@ make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=
             boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
     end;
 
-% For having eaten food, return {X,Y,eaten}
-% Need to case match that receive -> ok, after N, carry on.
-% Can pattern patch into this with a new atom of near_food on the end! :D
-
-
 % Got some humans, but no food
 make_choice(Hlist,_,nothing_found, very_hungry, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
@@ -348,18 +330,17 @@ make_choice(Hlist,_,nothing_found, tired, _Path, State) ->
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found}.
 
-
 %%%%%%==========================================================================
 %%%%%% Functions for Boids Functions
 %%%%%%==========================================================================
 
-% A function to find the closest item to the human
+%%% A function to find the closest item to the human
 get_nearest_item([],_) ->
     nothing_found;
 get_nearest_item([I|Is], {HumanX, HumanY}) ->
     get_nearest_item(Is, {HumanX, HumanY}, I).
 
-% Find the nearest item in sight
+%%% Find the nearest item in sight
 get_nearest_item([], _, NearestItem) ->
     NearestItem;
 get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}}) ->
@@ -371,12 +352,12 @@ get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,Near
             get_nearest_item(Is, {HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}})
     end.
 
-% Ask astar2 for a path to an item, avoiding obstacles
+%%% Ask astar2 for a path to an item, avoiding obstacles
 pathfind_to_item([Head|Rest], CurrentPos, ObsList) ->
     NearestMemoryItem = nearest_memory_item(Rest, Head, CurrentPos),
     astar2:astar(NearestMemoryItem,CurrentPos, ObsList).
 
-% Find the nearest item from memory
+%%% Find the nearest item from memory
 nearest_memory_item([], Nearest, _CurrentPos) ->
     Nearest;
 nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
@@ -390,6 +371,7 @@ nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
             nearest_memory_item(Rest,Nearest,CurrentPos)
     end.  
 
+%%% Check if my next position is obstructed
 obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
     {NewX,NewY};
 obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
@@ -401,71 +383,8 @@ obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
             {NewX,NewY}
     end.
 
-%%%%%%==========================================================================
-%%%%%% List Organisation and Setup Functions
-%%%%%%==========================================================================
-
-% Turn a list into something JSON can deal with.
-jsonify_list([]) ->
-    [];
-jsonify_list(List) ->
-    jsonify_list(List,[]).
-
-jsonify_list([], List) ->
-    List;
-jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], List) ->
-    StringPid = list_to_binary(pid_to_list(Pid)),
-    NewList = [[{id, StringPid},{type, Type}, {dist, Dist}, {x, HeadX}, {y, HeadY}, {x_velocity, Head_X_Vel}, {y_velocity, Head_Y_Vel}]| List],
-    jsonify_list(Ls, NewList).
-
-% Build a list of local zombie entities that are in sight
-build_zombie_list(Viewer, X, Y) ->
-    ZombieList = viewer:get_zombies(Viewer),
-
-    Z_DistanceList = lists:map(fun(
-                                {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-                                    {abs(pythagoras:pyth(X,Y,ZX,ZY)),
-                                    {ZomPid,{ZType,{{ZX,ZY},
-                                    {ZX_Velocity,ZY_Velocity}}}}} 
-                                end,ZombieList),
-
-    Z_FilteredList = lists:filter(
-                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
-                                    Dist =< ?SIGHT
-                                end,Z_DistanceList),
-
-    Zlist = lists:keysort(1,Z_FilteredList),
-    %return
-    Zlist.
-
-% Build a list of local zombie entities that are in sight
-build_human_list(Viewer, X, Y) ->
-    HumanList = viewer:get_humans(Viewer),
-    NoSelfList = lists:keydelete(self(),1,HumanList),
-
-    H_DistanceList = lists:map(fun(
-                                {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-                                    {abs(pythagoras:pyth(X,Y,HX,HY)),
-                                    {Hpid,{human,{{HX,HY},
-                                    {HXV,HYV}}}}} 
-                            end,NoSelfList),
-
-    H_FilteredList = lists:filter(
-                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
-                                    Dist =< ?SIGHT
-                                end,H_DistanceList),
-
-    Hlist = lists:keysort(1,H_FilteredList),
-    %return
-    Hlist.
-
-% Build memory map for items
-build_memory([], Map) ->
-    Map;
-build_memory([{Pid,{X,Y,Type,Name}}|Rest], Map) ->
-    NewMap = maps:put({X,Y}, {Pid,Type,Name}, Map),
-    build_memory(Rest, NewMap).
-
+%%% Calculate the new levels for hunger,energy
+%%% Also work out if the hunger state has changed
 calc_new_hunger_levels(Hunger,Energy) ->
     case Hunger of
         HValue when HValue =< 0 ->
@@ -481,7 +400,7 @@ calc_new_hunger_levels(Hunger,Energy) ->
             {Hunger-1, Energy, not_hungry}
     end.
 
-% A function to calculate the new X,Y and path for the Human.
+%%% A function to calculate the new X,Y and path for the Human.
 calc_new_hungry_xy(Hlist, Zlist, NearestItem, NewHungerState, X, Y, MemoryList, Olist, Path, State) ->
     case make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State) of
         {BX,BY} ->  
@@ -504,3 +423,68 @@ calc_new_hungry_xy(Hlist, Zlist, NearestItem, NewHungerState, X, Y, MemoryList, 
         {BX,BY,eaten} ->
             {BX,BY,Path,eaten}
     end.
+
+%%%%%%==========================================================================
+%%%%%% List Organisation and Setup Functions
+%%%%%%==========================================================================
+
+%%% Turn a list into something JSON can deal with.
+jsonify_list([]) ->
+    [];
+jsonify_list(List) ->
+    jsonify_list(List,[]).
+
+jsonify_list([], List) ->
+    List;
+jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], List) ->
+    StringPid = list_to_binary(pid_to_list(Pid)),
+    NewList = [[{id, StringPid},{type, Type}, {dist, Dist}, {x, HeadX}, {y, HeadY}, {x_velocity, Head_X_Vel}, {y_velocity, Head_Y_Vel}]| List],
+    jsonify_list(Ls, NewList).
+
+%%% Build a list of local zombie entities that are in sight
+build_zombie_list(Viewer, X, Y) ->
+    ZombieList = viewer:get_zombies(Viewer),
+
+    Z_DistanceList = lists:map(fun(
+                                {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
+                                    {abs(pythagoras:pyth(X,Y,ZX,ZY)),
+                                    {ZomPid,{ZType,{{ZX,ZY},
+                                    {ZX_Velocity,ZY_Velocity}}}}} 
+                                end,ZombieList),
+
+    Z_FilteredList = lists:filter(
+                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
+                                    Dist =< ?SIGHT
+                                end,Z_DistanceList),
+
+    Zlist = lists:keysort(1,Z_FilteredList),
+    %return
+    Zlist.
+
+%%% Build a list of local zombie entities that are in sight
+build_human_list(Viewer, X, Y) ->
+    HumanList = viewer:get_humans(Viewer),
+    NoSelfList = lists:keydelete(self(),1,HumanList),
+
+    H_DistanceList = lists:map(fun(
+                                {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
+                                    {abs(pythagoras:pyth(X,Y,HX,HY)),
+                                    {Hpid,{human,{{HX,HY},
+                                    {HXV,HYV}}}}} 
+                            end,NoSelfList),
+
+    H_FilteredList = lists:filter(
+                                fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
+                                    Dist =< ?SIGHT
+                                end,H_DistanceList),
+
+    Hlist = lists:keysort(1,H_FilteredList),
+    %return
+    Hlist.
+
+%%% Build memory map for items
+build_memory([], Map) ->
+    Map;
+build_memory([{Pid,{X,Y,Type,Name}}|Rest], Map) ->
+    NewMap = maps:put({X,Y}, {Pid,Type,Name}, Map),
+    build_memory(Rest, NewMap).
