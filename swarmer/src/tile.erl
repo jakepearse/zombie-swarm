@@ -216,7 +216,7 @@ handle_call({place_item, {ID,X,Y,Type,Item}}, _From, #state{item_map = ItemMap} 
     update_viewers(State#state.neighbours, items, NewMap),
     {reply, ok, State#state{item_map = NewMap}};
 
-handle_call({remove_item, {ID,_,_,_,_}}, _From, #state{item_map = ItemMap} = State) ->
+handle_call({remove_item, ID}, _From, #state{item_map = ItemMap} = State) ->
     NewMap = maps:remove(ID, ItemMap),
     update_viewers(State#state.neighbours, items, NewMap),
     {reply, ok, State#state{item_map = NewMap}};
@@ -256,13 +256,13 @@ handle_cast({summon_entity,{ID,{X,Y}, Type}},#state{human_map =Human_Map} =State
     {noreply,State#state{human_map = Human_Map}};
 
 %%%% Handle delete entity calls
-handle_cast({remove_entity,ID, Type},#state{zombie_map =Zombie_Map} =State) when Type == zombie ->
+handle_cast({remove_entity,ID, zombie},#state{zombie_map =Zombie_Map} =State) ->
     NewMap = maps:remove(ID,Zombie_Map),
-    update_viewers(State#state.neighbours, Type, NewMap),
+    update_viewers(State#state.neighbours, zombie, NewMap),
     {noreply,State#state{zombie_map = NewMap}};
-handle_cast({remove_entity,ID, Type},#state{human_map =Human_Map} =State) when Type == human ->
+handle_cast({remove_entity,ID, human},#state{human_map =Human_Map} =State) ->
     NewMap = maps:remove(ID,Human_Map),
-    update_viewers(State#state.neighbours, Type, NewMap),
+    update_viewers(State#state.neighbours, human, NewMap),
     {noreply,State#state{human_map = NewMap}};
 
 %%%% Handles setting of tiles viewer

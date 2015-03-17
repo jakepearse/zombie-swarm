@@ -14,7 +14,7 @@
 -define(COHESION_EFFECT,0.2).
 
 % Behaviour Parameters
--define(INITIAL_HUNGER,100).
+-define(INITIAL_HUNGER,26).
 -define(INITIAL_ENERGY,100).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
