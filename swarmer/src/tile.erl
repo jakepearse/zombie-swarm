@@ -330,9 +330,16 @@ validmove(X,Y,NewX,NewY,State) ->
         true -> 
             
             reflect(X,Y,NewX,NewY);
+
         _-> 
+            case lists:any(fun({Ox,Oy}) -> NewX div 5 == Ox andalso NewY div 5 == Oy end,State#state.obs_list) of
+            
+            true ->
+                reflect_obs(X,Y,NewX,NewY,State#state.obs_list);
+            _ ->
+                {NewX,NewY}
             %error_logger:error_report(maps:values(State#state.zombie_map) ++ maps:values(State#state.human_map)),
-            {NewX,NewY}
+            end
     end.
 reflect(X,Y,TargetX,TargetY)  when (TargetX - X) == 0, (TargetY - Y) == 0 ->
 {X,Y};
@@ -383,8 +390,103 @@ end.
 
 
 
+ reflect_obs(X,Y,_NewX,_NewY,Obs_list) ->
+   Ways_i_cant_go = 
+    [do_check_obs({(X)+5,Y},Obs_list),
+     do_check_obs({(X)-5,Y},Obs_list),
+     do_check_obs({X,(Y)+5},Obs_list),
+     do_check_obs({(X),(Y)-5},Obs_list)],
+  reflect_obs(X,Y,Ways_i_cant_go).
 
-
+reflect_obs(X,Y,[true,true,true,true]) -> 
+    {X,Y};
+reflect_obs(X,Y,[true,true,true,false]) -> 
+    {X,Y-1};
+reflect_obs(X,Y,[true,true,false,true]) -> 
+    {X,Y+1};
+reflect_obs(X,Y,[true,false,true,true]) -> 
+    {X-1,Y};
+reflect_obs(X,Y,[false,true,true,true]) ->
+    {X+1,Y};
+reflect_obs(X,Y,[true,true,false,false]) -> 
+    case random:uniform(2) of
+        1 ->
+            {X,Y-1};
+        2 -> 
+            {X,Y+1}
+    end;
+reflect_obs(X,Y,[true,false,true,false]) -> 
+    {X-1,Y-1};
+reflect_obs(X,Y,[true,false,false,true]) -> 
+    {X-1,Y+1};
+reflect_obs(X,Y,[false,true,true,false]) -> 
+    {X+1,Y-1};
+reflect_obs(X,Y,[false,true,false,true]) -> 
+    {X+1,Y+1};
+reflect_obs(X,Y,[false,false,true,true]) ->
+    case random:uniform(2) of
+        1 ->
+            {X+1,Y};
+        2 -> 
+            {X-1,Y}
+    end;
+reflect_obs(X,Y,[true,false,false,false]) ->
+    case random:uniform(3) of
+        1 ->
+            {X-1,Y};
+        2 -> 
+            {X-1,Y+1};
+        3 ->
+            {X-1,Y-1}
+    end;
+reflect_obs(X,Y,[false,true,false,false]) ->
+    case random:uniform(3) of
+        1 ->
+            {X+1,Y};
+        2 -> 
+            {X+1,Y-1};
+        3 ->
+            {X+1,Y+1}
+    end;
+reflect_obs(X,Y,[false,false,true,false]) ->
+    case random:uniform(3) of
+        1 ->
+            {X,Y-1};
+        2 -> 
+            {X-1,Y-1};
+        3 ->
+            {X+1,Y-1}
+    end;
+reflect_obs(X,Y,[false,false,false,true]) ->
+    case random:uniform(3) of
+        1 ->
+            {X,Y+1};
+        2 ->   
+            {X-1,Y+1};
+        3 ->
+            {X+1,Y+1}
+        end;
+reflect_obs(X,Y,[false,false,false,false]) ->
+    case random:uniform(9) of
+        1 ->
+            {X,Y};
+        2 ->   
+            {X,Y-1};
+        3 ->
+            {X,Y+1};
+        4 ->
+            {X+1,Y};
+        5 ->   
+            {X+1,Y-1};
+        6 ->
+            {X+1,Y+1};
+        7 ->
+            {X-1,Y};
+        8 ->   
+            {X-1,Y-1};
+        9 ->
+            {X-1,Y+1}
+        end.
 
 %%%==============
 %%% This is called to check if a coordinate pair is obstructed
