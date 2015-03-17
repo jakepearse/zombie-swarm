@@ -17,7 +17,7 @@
 %%%% tile functions
 -export([summon_entity/2,
         remove_entity/3,
-        update_entity/6,
+        update_entity/4,
         get_geometry/1,
         set_viewer/2,
         get_viewer/1,
@@ -28,7 +28,8 @@
         place_item/2,
         remove_item/2,
         check_obs/2,
-        set_obs_list/2]).
+        set_obs_list/2,
+        validmove/1]).
 
 
 -define(SERVER, ?MODULE).
@@ -110,9 +111,9 @@ check_obs(Pid,Pos) ->
 %%%% Update the entities position on the tile.
 %%%% @end
 %%%%----------------------------------------------------------------------------
--spec update_entity(pid(),entity(),pos(),_,_,_) -> ok.
-update_entity(Pid, Entity, Pos, Bearing, _Speed, Velocity) ->
-    gen_server:call(Pid, {update_entity, Entity, Pos, Bearing, _Speed,Velocity}).
+%-spec update_entity(pid(),entity(),pos(),_,_,_) -> ok.
+update_entity(Pid, Entity, NewPos, Velocity) ->
+    gen_server:call(Pid, {update_entity, Entity, NewPos,Velocity}).
 
 %%%%----------------------------------------------------------------------------
 %%%% @doc
@@ -223,14 +224,15 @@ handle_call({remove_item, ID}, _From, #state{item_map = ItemMap} = State) ->
 
 %%%% Updates the entities position on the tile.
 %%%% Will also deal with a new entitiy being moved onto the tile
-handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_From, State) when Type == zombie ->
-    NewMap = maps:put(ID,{Type,{Pos,Velocity}},State#state.zombie_map),
+handle_call({update_entity, {ID,{OldX,OldY},Type},{NewX,NewY},Velocity},_From, State) when Type == zombie ->
+
+    NewMap = maps:put(ID,{Type,{{NewX,NewY},Velocity}},State#state.zombie_map),
     update_viewers(State#state.neighbours, Type, NewMap),
-    {reply,Pos,State#state{zombie_map = NewMap}};
-handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_From, State) when Type == human ->
-    NewMap = maps:put(ID,{Type,{Pos, Velocity}},State#state.human_map),
+    {reply,{NewX,NewY},State#state{zombie_map = NewMap}};
+handle_call({update_entity, {ID,{OldX,OldY},Type},{NewX,NewY},Velocity},_From, State) when Type == human ->
+    NewMap = maps:put(ID,{Type,{{NewX,NewY}, Velocity}},State#state.human_map),
     update_viewers(State#state.neighbours, Type, NewMap),
-    {reply,Pos,State#state{human_map = NewMap}};
+    {reply,{NewX,NewY},State#state{human_map = NewMap}};
     
 %%%% pushes a list of obstructed coordinates into the state
 handle_call({set_obs_list,New_obs_list},_From,State) ->
@@ -318,7 +320,9 @@ update_viewers([V|Vs], obs_list, ObsList) ->
     viewer:update_obs(V, {self(), ObsList}),
     update_viewers(Vs, obs_list, ObsList).
 
-
+validmove(Position) ->
+    {X,Y} = Position,
+    {X,Y}.
 
 %%%==============
 %%% This is called to check if a coordinate pair is obstructed
