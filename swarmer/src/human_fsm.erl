@@ -137,7 +137,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
                                 X,Y,Olist,MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
-                    error_logger:error_report("I've eaten!"),
+                    % error_logger:error_report("I've eaten!"),
                     {{BX,BY},NewP};
                 {BX,BY,NewP} ->
                     {{BX,BY},NewP}
@@ -359,7 +359,7 @@ get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,Near
 pathfind_to_item([Head|Rest], CurrentPos, ObsList) ->
     NearestMemoryItem = nearest_memory_item(Rest, Head, CurrentPos),
     Distance = astar2:dist_between(CurrentPos,NearestMemoryItem),
-    error_logger:error_report(Distance),
+    % error_logger:error_report(Distance),
     pathfind_to_item(NearestMemoryItem,CurrentPos,Distance,ObsList).
 
 pathfind_to_item(NearestItem,CurrentPos,Distance,ObsList) when Distance =< ?LONGEST_SEARCH_DISTANCE ->
