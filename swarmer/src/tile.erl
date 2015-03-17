@@ -29,7 +29,7 @@
         remove_item/2,
         check_obs/2,
         set_obs_list/2,
-        validmove/1]).
+        validmove/5]).
 
 
 -define(SERVER, ?MODULE).
@@ -225,14 +225,15 @@ handle_call({remove_item, ID}, _From, #state{item_map = ItemMap} = State) ->
 %%%% Updates the entities position on the tile.
 %%%% Will also deal with a new entitiy being moved onto the tile
 handle_call({update_entity, {ID,{OldX,OldY},Type},{NewX,NewY},Velocity},_From, State) when Type == zombie ->
-
-    NewMap = maps:put(ID,{Type,{{NewX,NewY},Velocity}},State#state.zombie_map),
+    {TrueX,TrueY} = validmove(OldX,OldY,NewX,NewY,State),
+    NewMap = maps:put(ID,{Type,{{TrueX,TrueY},Velocity}},State#state.zombie_map),
     update_viewers(State#state.neighbours, Type, NewMap),
-    {reply,{NewX,NewY},State#state{zombie_map = NewMap}};
+    {reply,{TrueX,TrueY},State#state{zombie_map = NewMap}};
 handle_call({update_entity, {ID,{OldX,OldY},Type},{NewX,NewY},Velocity},_From, State) when Type == human ->
-    NewMap = maps:put(ID,{Type,{{NewX,NewY}, Velocity}},State#state.human_map),
+    {TrueX,TrueY} = validmove(OldX,OldY,NewX,NewY,State),
+    NewMap = maps:put(ID,{Type,{{TrueX,TrueY}, Velocity}},State#state.human_map),
     update_viewers(State#state.neighbours, Type, NewMap),
-    {reply,{NewX,NewY},State#state{human_map = NewMap}};
+    {reply,{TrueX,TrueY},State#state{human_map = NewMap}};
     
 %%%% pushes a list of obstructed coordinates into the state
 handle_call({set_obs_list,New_obs_list},_From,State) ->
@@ -320,9 +321,70 @@ update_viewers([V|Vs], obs_list, ObsList) ->
     viewer:update_obs(V, {self(), ObsList}),
     update_viewers(Vs, obs_list, ObsList).
 
-validmove(Position) ->
-    {X,Y} = Position,
-    {X,Y}.
+validmove(X,Y,NewX,NewY,State) when (abs(NewX - X)) > 5  ->
+    validmove(X,Y,(X + 5),NewY,State);
+validmove(X,Y,NewX,NewY,State) when (abs(NewY - Y)) > 5  ->
+    validmove(X,Y,NewX,(Y + 5),State);
+validmove(X,Y,NewX,NewY,State) ->
+    case lists:any(fun({_,{{Tx,Ty},_}}) -> NewX==Tx andalso NewY==Ty end, maps:values(State#state.zombie_map) ++ maps:values(State#state.human_map)) of
+        true -> 
+            
+            reflect(X,Y,NewX,NewY);
+        _-> 
+            %error_logger:error_report(maps:values(State#state.zombie_map) ++ maps:values(State#state.human_map)),
+            {NewX,NewY}
+    end.
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) == 0, (TargetY - Y) == 0 ->
+{X,Y};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) > 0, (TargetY - Y) == 0 ->
+{TargetX-1,Y+random:uniform(3)-2};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) < 0, (TargetY - Y) == 0 ->
+{TargetX+1,Y+random:uniform(3)-2};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) == 0, (TargetY - Y) > 0 ->
+{TargetX +random:uniform(3)-2,Y -1};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) == 0, (TargetY - Y) < 0 ->
+{TargetX +random:uniform(3)-2,Y +1};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) > 0, (TargetY - Y) > 0 ->
+case random:uniform(3) of
+    1 ->
+        {TargetX -1, TargetY};
+    2 -> 
+        {TargetX -1, TargetY -1};
+    3 ->
+        {TargetX ,TargetY -1}
+end;
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) < 0, (TargetY - Y) < 0 ->
+case random:uniform(3) of
+    1 ->
+        {TargetX +1, TargetY};
+    2 -> 
+        {TargetX +1, TargetY +1};
+    3 ->
+        {TargetX ,TargetY +1}
+end;
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) < 0, (TargetY - Y) > 0 ->
+case random:uniform(3) of
+    1 ->
+        {TargetX +1, TargetY};
+    2 -> 
+        {TargetX +1, TargetY -1};
+    3 ->
+        {TargetX ,TargetY -1}
+end;
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) > 0, (TargetY - Y) < 0 ->
+case random:uniform(3) of
+    1 ->
+        {TargetX -1, TargetY};
+    2 -> 
+        {TargetX -1, TargetY +1};
+    3 ->
+        {TargetX ,TargetY +1}
+end.
+
+
+
+
+
 
 %%%==============
 %%% This is called to check if a coordinate pair is obstructed
