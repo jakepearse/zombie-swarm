@@ -26,7 +26,7 @@ collision_avoidance(X,Y,Otherx,Othery,Cohesionprcnt) ->
 
 %Makes an entity move towards the average locations of the entities in its flock.
 flocking([],X,Y,_Flockprcnt) ->
-	{X,Y};
+	{trigstuff:round(X,2),trigstuff:round(Y,2)};
 flocking(Next,X,Y,Flockprcnt) ->
 	flocking(Next,0,0,0,X,Y,Flockprcnt).
 flocking([],Count,Totalx,Totaly,X,Y,Flockprcnt)->
@@ -44,7 +44,7 @@ flocking([H|Ts],Count,Totalx,Totaly,X,Y,Flockprcnt)->
 
 %Makes an entity match velocity with other entities in it's flock.
 velocity([],X,Y,_Velprcnt) ->
-	{X,Y};
+	{trigstuff:round(X,2),trigstuff:round(Y,2)};
 velocity(Next,X,Y,Velprcnt) ->
 	velocity(Next,0,0,0,X,Y,Velprcnt).
 velocity([],Count,Totalx,Totaly,X,Y,Velprcnt)->

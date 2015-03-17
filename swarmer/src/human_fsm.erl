@@ -12,6 +12,7 @@
 -define(FLOCKING_EFFECT,0.5).
 -define(VELOCITY_EFFECT,0.5).
 -define(COHESION_EFFECT,0.2).
+-define(LONGEST_SEARCH_DISTANCE,10).
 
 % Behaviour Parameters
 -define(INITIAL_HUNGER,26).
@@ -148,7 +149,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
                                 X,Y,Olist,MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
-                    error_logger:error_report("I've eaten!"),
+                    % error_logger:error_report("I've eaten!"),
                     {{BX,BY},NewP};
                 {BX,BY,NewP} ->
                     {{BX,BY},NewP}
@@ -160,7 +161,6 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             % save any food you find to a map, boids as normal
             {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[]}
     end,
-
 
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
@@ -247,6 +247,7 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
     PropListNoViewer = proplists:delete(viewer,PropList),
     % take the MemoryMap out of the report for JSX
     PropListNoMemory = proplists:delete(memory_map,PropListNoViewer),
+    % error_logger:error_report(PropListNoMemory),
     {reply, {ok,PropListNoMemory}, StateName,StateData}.
 
 record_to_proplist(#state{} = Record) ->
@@ -261,7 +262,7 @@ record_to_proplist(#state{} = Record) ->
 make_choice([],[],_NearestItem, _HungerState, _Path, _State) ->
     {0,0};
 
-%===========================Collision Avoidance=================================%
+%===========================Collision Avoidance================================%
 make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
@@ -284,11 +285,13 @@ make_choice(Hlist,_,_NearestItem, hungry, _Path, State) ->
 % There is no zombie, I do have a path!
 make_choice(_,[],_, very_hungry, Path, _State) when length(Path) >= 1 -> 
     [Next|Rest] = Path,
-    {Next,Rest};
+    {BX,BY} = Next,
+    {BX,BY,Rest};
 
 make_choice(_,[],_, tired, Path, _State) when length(Path) >= 1 -> 
     [Next|Rest] = Path,
-    {Next,Rest};
+    {BX,BY} = Next,
+    {BX,BY,Rest};
 
 % There is no zombie, I have no path, move towards food blindly!
 make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, y=Y} = State) ->
@@ -355,7 +358,14 @@ get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,Near
 %%% Ask astar2 for a path to an item, avoiding obstacles
 pathfind_to_item([Head|Rest], CurrentPos, ObsList) ->
     NearestMemoryItem = nearest_memory_item(Rest, Head, CurrentPos),
-    astar2:astar(NearestMemoryItem,CurrentPos, ObsList).
+    Distance = astar2:dist_between(CurrentPos,NearestMemoryItem),
+    error_logger:error_report(Distance),
+    pathfind_to_item(NearestMemoryItem,CurrentPos,Distance,ObsList).
+
+pathfind_to_item(NearestItem,CurrentPos,Distance,ObsList) when Distance =< ?LONGEST_SEARCH_DISTANCE ->
+    astar2:astar(CurrentPos,NearestItem, ObsList);
+pathfind_to_item(_NearestItem,_CurrentPos,_Distance,_ObsList) ->
+    too_far_away.
 
 %%% Find the nearest item from memory
 nearest_memory_item([], Nearest, _CurrentPos) ->
@@ -391,7 +401,7 @@ obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelX*VelX) >= (VelY*VelY)->
             obstructedmove(Olist,X,Y,X,NewY,0,VelY);
         false->
             {NewX,Y}
-    end;
+    end;    
 obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelY*VelY) > (VelX*VelX)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
@@ -424,22 +434,26 @@ calc_new_hungry_xy(Hlist, Zlist, NearestItem, NewHungerState, X, Y, MemoryList, 
         {BX,BY} ->  
             % Local food! Go forth hungry human!
             {BX,BY,Path};
-        {BX,BY,[P|Ps]} ->
-            % Pathfinding towards food...
-            Rest = [P|Ps],
-            {BX,BY,Rest};
         {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
             % No local food, doesn't remember any food...
             % Wander around until you starve poor human!
             {BX,BY,Path};
-        {_BX,_BY,nothing_found} ->
+        {BX,BY,nothing_found} ->
             % No local food, does remember food however...
             % Pathfind to some food you remember
             NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
-            [{PathX,PathY}|Rest] = NewPath,
-            {PathX,PathY,Rest};
+            case NewPath of
+                too_far_away ->
+                    {BX,BY,Path};
+                _ ->
+                    [{PathX,PathY}|Rest] = NewPath,
+                    {PathX,PathY,Rest}
+            end;
         {BX,BY,eaten} ->
-            {BX,BY,Path,eaten}
+            {BX,BY,Path,eaten};
+        {BX,BY,RestOfPath} ->
+            % Pathfinding towards food...
+            {BX,BY,RestOfPath}
     end.
 
 %%%%%%==========================================================================

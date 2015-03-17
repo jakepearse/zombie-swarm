@@ -3,8 +3,8 @@
  
 -define(MINX, 0).
 -define(MINY, 0).
--define(MAXX, infinity).%not wise
--define(MAXY, infinity).
+-define(MAXX, 50).%not wise
+-define(MAXY, 50).
 -export([
 astar/3,
 neighbour_nodes/3,
@@ -95,7 +95,7 @@ neighbour_nodes(Node, Parent,Obs_list) ->
   YY =< ?MAXY
   ],
 % added to remove obstructions from neighbours
-lists:filter(fun(NX,NY) -> not lists:any(fun({OX,OY}) -> NX==OX andalso NY==OY end,Obs_list) end,Nlist).
+lists:filter(fun({NX,NY}) -> not lists:any(fun({OX,OY}) -> NX==OX andalso NY==OY end,Obs_list) end,Nlist).
  
 %% @doc Scans the `Neighbours' of `BestStep', and adds/updates the Scores and CameFrom mapss accordingly.
 -spec scan(
