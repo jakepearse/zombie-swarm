@@ -20,6 +20,7 @@
 -define(SERVER, ?MODULE).
 
 -record(state,{	id,
+				taken_bool,
 				type,
 				item,
 				viewer,
@@ -55,17 +56,24 @@ picked_up(Pid) ->
 
 init([Type, Item, X, Y, Tile, Viewer]) ->
 	tile:place_item(Tile, {self(),X,Y,Type,Item}),
-    {ok, #state{id = self(), type = Type, x = X, y = Y, 
+    {ok, #state{id = self(), taken_bool = false, type = Type, x = X, y = Y, 
     			tile = Tile, viewer = Viewer}}.
 
 handle_call(get_type, _From, #state{type = Type, item = Item} = State) ->
 	{reply, {Type, Item},State};
-handle_call(get_state, _From, State) ->
-	{reply,{ok,[{id,list_to_binary(pid_to_list(self()))},{type,food},{x,State#state.x},{y,State#state.y}]},State};
-handle_call(picked_up, _From, #state{tile = Tile} = State) ->
+	
+handle_call(get_state, _From, #state{taken_bool = TakenBool, x = X, y = Y} = State) ->
+	{reply,{ok,[{id,list_to_binary(pid_to_list(self()))},{taken_bool,TakenBool},{type,food},{x,X},{y,Y}]},State};
+
+handle_call(picked_up, _From, #state{tile = Tile, taken_bool = TakenBool} = State) ->
 	% error_logger:error_report("I've been eaten!"),
-	tile:remove_item(Tile, self()),
-	{reply, ok, State};
+	case TakenBool of
+		false ->
+			tile:remove_item(Tile, self()),
+			{reply, ok, State#state{taken_bool = true}};
+		true ->
+			{reply, no, State}
+	end;
 handle_call(Request, _From, State) ->
     {stop, unexpected_call, {undefined, Request}, State}.
 

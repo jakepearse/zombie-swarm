@@ -15,7 +15,7 @@
 -define(LONGEST_SEARCH_DISTANCE,10).
 
 % Behaviour Parameters
--define(INITIAL_HUNGER,26).
+-define(INITIAL_HUNGER,100).
 -define(INITIAL_ENERGY,100).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
@@ -129,7 +129,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     % For this, I need to pass the path to make choice, and add a new condition to 
     % continue on the path if there is one, but no other cases.
-    {{BoidsX, BoidsY}, NewPath} = case NewHungerState of 
+    {{BoidsX, BoidsY}, NewPath, EatenHunger, EatenEnergy} = case NewHungerState of 
         tired ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
@@ -137,10 +137,10 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
                                 X,Y,Olist,MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
-                    error_logger:error_report("I've eaten!"),
-                    {{BX,BY},NewP};
+                    % error_logger:error_report("I've eaten!"),
+                    {{BX,BY},NewP,?INITIAL_HUNGER,?INITIAL_ENERGY};
                 {BX,BY,NewP} ->
-                    {{BX,BY},NewP}
+                    {{BX,BY},NewP,NewHunger,NewEnergy}
             end;
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
@@ -150,16 +150,16 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                 X,Y,Olist,MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
                     % error_logger:error_report("I've eaten!"),
-                    {{BX,BY},NewP};
+                    {{BX,BY},NewP,?INITIAL_HUNGER,?INITIAL_ENERGY};
                 {BX,BY,NewP} ->
-                    {{BX,BY},NewP}
+                    {{BX,BY},NewP,NewHunger,NewEnergy}
             end;
         hungry ->
             % search for food, but also boids
-            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[]};
+            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[],NewHunger,NewEnergy};
         not_hungry ->
             % save any food you find to a map, boids as normal
-            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[]}
+            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[],NewHunger,NewEnergy}
     end,
 
     New_X_Velocity = X_Velocity + BoidsX,
@@ -202,7 +202,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                         z_list = Zlist_Json, h_list = Hlist_Json,
                                         x_velocity = Limited_X_Velocity, 
                                         y_velocity = Limited_Y_Velocity,
-                                        hunger = NewHunger, energy = NewEnergy,
+                                        hunger = EatenHunger, energy = EatenEnergy,
                                         hunger_state = NewHungerState,
                                         memory_map = NewMemoryMap,
                                         path = NewPath}}
@@ -359,7 +359,7 @@ get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,Near
 pathfind_to_item([Head|Rest], CurrentPos, ObsList) ->
     NearestMemoryItem = nearest_memory_item(Rest, Head, CurrentPos),
     Distance = astar2:dist_between(CurrentPos,NearestMemoryItem),
-    error_logger:error_report(Distance),
+    % error_logger:error_report(Distance),
     pathfind_to_item(NearestMemoryItem,CurrentPos,Distance,ObsList).
 
 pathfind_to_item(NearestItem,CurrentPos,Distance,ObsList) when Distance =< ?LONGEST_SEARCH_DISTANCE ->
