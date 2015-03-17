@@ -15,7 +15,7 @@
 
 %%%% gen_server callbacks
 -export([code_change/3,handle_call/2,handle_call/3,handle_cast/2,
-handle_info/2,init/1,terminate/2]).
+  handle_info/2,init/1,terminate/2]).
 
 -define(SERVER, ?MODULE).
 -define(ZOMBIE_TIMEOUT, 600).
@@ -141,6 +141,7 @@ type_pause_unpause(Action,Type) ->
 create_obs(Obs_list,TileSize) ->
 	gen_server:call(?MODULE,{create_obs_map,Obs_list,TileSize}).
 
+
 %%%%%%=============================================================================
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
@@ -232,20 +233,19 @@ handle_call(terminate,State) ->
 
 % other gen_server stuff
 
-handle_info(Msg,State) ->
-  io:format("Unexpected message: ~p~n",[Msg]),
-    {noreply,State}.
-
 %%%% Handle cast to end the system normally
 handle_cast(terminate, State) ->
     {stop,normal,State}.
+
+handle_info(Msg,State) ->
+  io:format("Unexpected message: ~p~n",[Msg]),
+    {noreply,State}.
 
 terminate(normal,_State) ->
     ok.
 
 code_change(_OldVsn, State,_Extra) ->
     {ok,State}.
-
 
 %%%%%%=============================================================================
 %%%%%% Internal Functions
@@ -357,7 +357,6 @@ setup_neighbours(ViewerPropList) ->
   lists:map(fun({T,V})-> {tile:get_geometry(T),V} end, ViewerPropList).
 
 
-
 get_neighbours(Xo,Yo,ViewersWithGeometry) ->
   get_neighbours(Xo,Yo,ViewersWithGeometry,[]).
   
@@ -439,8 +438,8 @@ get_supplies_list() ->
   supervisor:which_children(supplies_sup).
 
 avoidObs(Ob_List,TileSize,Rows) ->
-X =random:uniform(TileSize*Rows-1),
-Y =random:uniform(TileSize*Rows-1),
+  X =random:uniform(TileSize*Rows-1),
+  Y =random:uniform(TileSize*Rows-1),
   case lists:any(fun({_T,{A,B}}) -> X div 5 == B andalso Y div 5 == A end,Ob_List) of
     true ->
       avoidObs(Ob_List,TileSize,Rows);

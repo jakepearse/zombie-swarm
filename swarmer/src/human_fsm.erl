@@ -1,7 +1,6 @@
 -module(human_fsm).
 -author("Joe Mitchard jm710").
 
--define(RUN_STAY_COURSE, 8).
 -define(SIGHT,100).
 -define(PERSONAL_SPACE, 3).
 
@@ -13,9 +12,10 @@
 -define(FLOCKING_EFFECT,0.5).
 -define(VELOCITY_EFFECT,0.5).
 -define(COHESION_EFFECT,0.2).
+-define(LONGEST_SEARCH_DISTANCE,10).
 
 % Behaviour Parameters
--define(INITIAL_HUNGER,50).
+-define(INITIAL_HUNGER,26).
 -define(INITIAL_ENERGY,100).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
@@ -23,46 +23,39 @@
 -include_lib("include/swarmer.hrl").
 -behaviour(gen_fsm).
 
-%gen_fsm implementation
+%%% gen_fsm functions
 -export([code_change/4,handle_event/3,handle_sync_event/4,
          handle_info/3,init/1,terminate/3]).
 
--export([start_link/10,run/2,initial/2,
-        calc_state/1,calc_runbearing/3,start/1,pause/2]).
+%%% system functions
+-export([start_link/10,run/2,initial/2,start/1,pause/2]).
 
-%API
+%%% API exports
 -export([get_state/1, pause/1, unpause/1,zombify/1]).
 
 -record(state, {id,
-                tile,
-                tile_size,
-                num_columns,
-                num_rows,
-                viewer,
-                viewerStr,
-                speed,
-                bearing,
-                x,
-                y,
-                timeout,
-                type,
-                paused_state,
-                x_velocity,
-                y_velocity,
-                z_list,
-                h_list,
-                i_list,
-                memory_list,
-                hunger_state,
-                hunger,
-                energy,
-                memory_map = maps:new()}).
+                % localisation
+                tile, viewer, viewerStr,
+                tile_size, num_columns, num_rows,
+                % movement control
+                speed, bearing, x_velocity, y_velocity,
+                x,y,
+                % timing and state
+                timeout, type, paused_state,
+                % lists to maintain local awareness
+                z_list, h_list, i_list, memory_list,
+                % elements for behavioural control
+                hunger_state, hunger, energy,
+                memory_map = maps:new(), path}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
-    gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout],[]).
+    gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,
+                                Speed,Bearing,Timeout],[]).
 
+%%%%%%==========================================================================
+%%%%%% State Machine
+%%%%%%==========================================================================
 
-%%% API!
 start(Pid) ->
     gen_fsm:send_event(Pid,start).
 
@@ -97,7 +90,7 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
 
 initial(start,State) ->
     gen_fsm:send_event_after(State#state.timeout, move),
-    {next_state,calc_state(run),State}.
+    {next_state,run,State}.
     
 run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
@@ -105,7 +98,8 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     x_velocity = X_Velocity, y_velocity = Y_Velocity,
                     viewer = Viewer,
                     hunger = Hunger, energy = Energy,
-                    memory_map = MemoryMap} = State) ->
+                    memory_map = MemoryMap,
+                    path = Path} = State) ->
 
     % Build a list of nearby zombies
     Zlist = build_zombie_list(Viewer, X, Y),
@@ -127,78 +121,46 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     % creates a new value for hunger and food, showing the humans getting
     % hungry over time
-    {NewHunger, NewEnergy, NewHungerState} = case Hunger of
-        HValue when HValue =< 0 ->
-            case Energy of 
-                EVAlue when EVAlue =< ?TIRED_LEVEL ->
-                    {Hunger,Energy, tired};
-                _ -> 
-                    {Hunger, Energy-1, very_hungry}
-            end;
-        HValue when HValue =< ?HUNGRY_LEVEL ->
-            {Hunger-1, Energy-1, hungry};
-        _ ->
-            {Hunger-1, Energy, not_hungry}
-    end,
+    {NewHunger, NewEnergy, NewHungerState} = calc_new_hunger_levels(Hunger,Energy),
 
     NearestItem = get_nearest_item(Ilist,{X,Y}),
 
     % error_logger:error_report(NearestItem),
 
-    %%%% NEEDS REFACTORING
-    {BoidsX, BoidsY} = case NewHungerState of 
+    % For this, I need to pass the path to make choice, and add a new condition to 
+    % continue on the path if there is one, but no other cases.
+    {{BoidsX, BoidsY}, NewPath} = case NewHungerState of 
         tired ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
             % error_logger:error_report(MemoryList),
-            case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
-                {BX,BY} ->  
-                    % Local food! Go forth hungry human!
-                    %error_logger:error_report("mmmm local food"),
-                    {BX,BY};
-                {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
-                    % No local food, doesn't remember any food...
-                    % Wander around until you starve poor human!
-                    %error_logger:error_report("I don't remember any food and I can see no food"),
-                    {BX,BY};
-                {_BX,_BY,nothing_found} ->
-                    % No local food, does remember food however...
-                    % Pathfind to some food you remember
-                    NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
-                   % error_logger:error_report("I gone done pathfound"),
-                    [{PathX,PathY}|_Rest] = NewPath,
-                    {PathX,PathY}
+            case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
+                                X,Y,Olist,MemoryList, Path, State) of
+                {BX,BY,NewP,eaten} ->
+                    error_logger:error_report("I've eaten!"),
+                    {{BX,BY},NewP};
+                {BX,BY,NewP} ->
+                    {{BX,BY},NewP}
             end;
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
             % error_logger:error_report(MemoryList),
-            case make_choice(Hlist,Zlist, NearestItem, NewHungerState, State) of
-                {BX,BY} ->  
-                    % Local food! Go forth hungry human!
-                    % error_logger:error_report("mmmm local food"),
-                    {BX,BY};
-                {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
-                    % No local food, doesn't remember any food...
-                    % Wander around until you starve poor human!
-                    % error_logger:error_report("I don't remember and I can see no food"),
-                    {BX,BY};
-                {_BX,_BY,nothing_found} ->
-                    % No local food, does remember food however...
-                    % Pathfind to some food you remember
-                    NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
-                    %error_logger:error_report("I gone done pathfound"),
-                    [{PathX,PathY}|_Rest] = NewPath,
-                    {PathX,PathY}
+            case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
+                                X,Y,Olist,MemoryList, Path, State) of
+                {BX,BY,NewP,eaten} ->
+                    % error_logger:error_report("I've eaten!"),
+                    {{BX,BY},NewP};
+                {BX,BY,NewP} ->
+                    {{BX,BY},NewP}
             end;
         hungry ->
             % search for food, but also boids
-            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State);
+            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[]};
         not_hungry ->
             % save any food you find to a map, boids as normal
-            make_choice(Hlist,Zlist, NearestItem, NewHungerState, State)
+            {make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State),[]}
     end,
-
 
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
@@ -242,9 +204,9 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                         y_velocity = Limited_Y_Velocity,
                                         hunger = NewHunger, energy = NewEnergy,
                                         hunger_state = NewHungerState,
-                                        memory_map = NewMemoryMap}}
+                                        memory_map = NewMemoryMap,
+                                        path = NewPath}}
     end.
-
 
 %%%%%%==========================================================================
 %%%%%% Event and Sync Functions
@@ -258,17 +220,13 @@ pause(move, State) ->
 pause(unpause, #state{paused_state = PausedState} = State) ->
     {next_state,PausedState,State}.   
 
-calc_state(_Current_state) ->
-    run.
-    
-calc_runbearing(Rand,X,Y) ->
-    trigstuff:findcoordinates(Rand,X,Y).
-%stuff for gen_fsm.
 terminate(_,_StateName, #state{tile = Tile, type = Type} = _StateData) ->
     tile:remove_entity(Tile, self(), Type),
     ok.
+
 code_change(_,StateName,StateData,_) ->
     {ok,StateName,StateData}.
+
 handle_info(_,StateName,StateData)->
     {ok,StateName,StateData}.
 
@@ -289,6 +247,7 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
     PropListNoViewer = proplists:delete(viewer,PropList),
     % take the MemoryMap out of the report for JSX
     PropListNoMemory = proplists:delete(memory_map,PropListNoViewer),
+    % error_logger:error_report(PropListNoMemory),
     {reply, {ok,PropListNoMemory}, StateName,StateData}.
 
 record_to_proplist(#state{} = Record) ->
@@ -300,59 +259,91 @@ record_to_proplist(#state{} = Record) ->
 %%%%%%==========================================================================
 % Make choice is called with ->
 %   (HumanList, ZombieList, NearestItem, HungerState, State)
-make_choice([],[],_NearestItem, _HungerState, _State) ->
+make_choice([],[],_NearestItem, _HungerState, _Path, _State) ->
     {0,0};
 
-%===========================Collision Avoidance=================================%
-make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_,State) when Dist < ?PERSONAL_SPACE ->
+%===========================Collision Avoidance================================%
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
 %=============================Super Repulsor====================================%
-make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, State) ->
+make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, _Path, State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
 %===============================Flocking========================================%
-make_choice(Hlist,_,_NearestItem, not_hungry, State) ->
+make_choice(Hlist,_,_NearestItem, not_hungry, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
-make_choice(Hlist,_,_NearestItem, hungry, State) ->
+make_choice(Hlist,_,_NearestItem, hungry, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
 %============================Hungry - Local Item================================%
-% There is no zombie, time to eat!
-make_choice(_,[],{_,{ItemX,ItemY,_,_}}, very_hungry, State) ->
-    boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
+% There is no zombie, I do have a path!
+make_choice(_,[],_, very_hungry, Path, _State) when length(Path) >= 1 -> 
+    [Next|Rest] = Path,
+    {BX,BY} = Next,
+    {BX,BY,Rest};
 
-make_choice(_,[],{_,{ItemX,ItemY,_,_}}, tired, State) ->
-    boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT);
+make_choice(_,[],_, tired, Path, _State) when length(Path) >= 1 -> 
+    [Next|Rest] = Path,
+    {BX,BY} = Next,
+    {BX,BY,Rest};
+
+% There is no zombie, I have no path, move towards food blindly!
+make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, y=Y} = State) ->
+    case pythagoras:pyth(X,Y,ItemX,ItemY) of
+        Value when Value =< 2 ->
+            Item = supplies:picked_up(ItemId),
+            case Item of
+                ok ->
+                    {X,Y,eaten};
+                _ ->
+                    {X,Y}
+            end;
+        _ ->
+            boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
+    end;
+
+make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=Y} = State) ->
+    case pythagoras:pyth(X,Y,ItemX,ItemY) of
+        Value when Value =< 2 ->
+            Item = supplies:picked_up(ItemId),
+            case Item of
+                ok ->
+                    {X,Y,eaten};
+                _ ->
+                    {X,Y}
+            end;
+        _ ->
+            boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
+    end;
 
 % Got some humans, but no food
-make_choice(Hlist,_,nothing_found, very_hungry, State) ->
+make_choice(Hlist,_,nothing_found, very_hungry, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found};
 
-make_choice(Hlist,_,nothing_found, tired, State) ->
+make_choice(Hlist,_,nothing_found, tired, _Path, State) ->
     {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
     {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found}.
-
 
 %%%%%%==========================================================================
 %%%%%% Functions for Boids Functions
 %%%%%%==========================================================================
 
-% A function to find the closest item to the human
+%%% A function to find the closest item to the human
 get_nearest_item([],_) ->
     nothing_found;
 get_nearest_item([I|Is], {HumanX, HumanY}) ->
     get_nearest_item(Is, {HumanX, HumanY}, I).
 
-% Find the nearest item in sight
+%%% Find the nearest item in sight
 get_nearest_item([], _, NearestItem) ->
     NearestItem;
 get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}}) ->
@@ -364,12 +355,19 @@ get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,Near
             get_nearest_item(Is, {HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}})
     end.
 
-% Ask astar2 for a path to an item, avoiding obstacles
+%%% Ask astar2 for a path to an item, avoiding obstacles
 pathfind_to_item([Head|Rest], CurrentPos, ObsList) ->
     NearestMemoryItem = nearest_memory_item(Rest, Head, CurrentPos),
-    astar2:astar(NearestMemoryItem,CurrentPos, ObsList).
+    Distance = astar2:dist_between(CurrentPos,NearestMemoryItem),
+    error_logger:error_report(Distance),
+    pathfind_to_item(NearestMemoryItem,CurrentPos,Distance,ObsList).
 
-% Find the nearest item from memory
+pathfind_to_item(NearestItem,CurrentPos,Distance,ObsList) when Distance =< ?LONGEST_SEARCH_DISTANCE ->
+    astar2:astar(CurrentPos,NearestItem, ObsList);
+pathfind_to_item(_NearestItem,_CurrentPos,_Distance,_ObsList) ->
+    too_far_away.
+
+%%% Find the nearest item from memory
 nearest_memory_item([], Nearest, _CurrentPos) ->
     Nearest;
 nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
@@ -383,31 +381,86 @@ nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
             nearest_memory_item(Rest,Nearest,CurrentPos)
     end.  
 
-%obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
-%    {NewX,NewY};
-%obstructed(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY ->
-%    {NewX,NewY};
-%obstructed([{_D,{_,{_,{{OX,OY},{_,_}}}}}|OlistTail],X,Y,NewX,NewY,VelX,VelY) when OX =:= NewX, OY =:= NewY->
-%    error_logger:error_report("gflkf"),
-%    {X,Y};
-%obstructed([{_D,{_,{_,{{OX,OY},{_,_}}}}}|OlistTail],X,Y,NewX,NewY,VelX,VelY) ->
-%    obstructed(OlistTail,X,Y,NewX,NewY,VelX,VelY).
+%%% Check if my next position is obstructed
 obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
     {NewX,NewY};
-obstructed(Olist,X,Y,NewX,NewY,_VelX,_VelY) ->
-    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5  == A end,Olist),
+obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
-            {X+1,Y};
+            obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY);
         false->
             {NewX,NewY}
+    end.
+obstructedmove(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY->
+    {X,Y};
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelX*VelX) >= (VelY*VelY)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+        false->
+            {NewX,Y}
+    end;    
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelY*VelY) > (VelX*VelX)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+        false->
+            {X,NewY}
+    end.
+
+%%% Calculate the new levels for hunger,energy
+%%% Also work out if the hunger state has changed
+calc_new_hunger_levels(Hunger,Energy) ->
+    case Hunger of
+        HValue when HValue =< 0 ->
+            case Energy of 
+                EVAlue when EVAlue =< ?TIRED_LEVEL ->
+                    {Hunger,Energy, tired};
+                _ -> 
+                    {Hunger, Energy-1, very_hungry}
+            end;
+        HValue when HValue =< ?HUNGRY_LEVEL ->
+            {Hunger-1, Energy-1, hungry};
+        _ ->
+            {Hunger-1, Energy, not_hungry}
+    end.
+
+%%% A function to calculate the new X,Y and path for the Human.
+calc_new_hungry_xy(Hlist, Zlist, NearestItem, NewHungerState, X, Y, MemoryList, Olist, Path, State) ->
+    case make_choice(Hlist,Zlist, NearestItem, NewHungerState, Path, State) of
+        {BX,BY} ->  
+            % Local food! Go forth hungry human!
+            {BX,BY,Path};
+        {BX,BY,nothing_found} when length(MemoryList) =:= 0 -> 
+            % No local food, doesn't remember any food...
+            % Wander around until you starve poor human!
+            {BX,BY,Path};
+        {BX,BY,nothing_found} ->
+            % No local food, does remember food however...
+            % Pathfind to some food you remember
+            NewPath = pathfind_to_item(MemoryList, {X,Y}, Olist),
+            case NewPath of
+                too_far_away ->
+                    {BX,BY,Path};
+                _ ->
+                    [{PathX,PathY}|Rest] = NewPath,
+                    {PathX,PathY,Rest}
+            end;
+        {BX,BY,eaten} ->
+            {BX,BY,Path,eaten};
+        {BX,BY,RestOfPath} ->
+            % Pathfinding towards food...
+            {BX,BY,RestOfPath}
     end.
 
 %%%%%%==========================================================================
 %%%%%% List Organisation and Setup Functions
 %%%%%%==========================================================================
 
-% Turn a list into something JSON can deal with.
+%%% Turn a list into something JSON can deal with.
 jsonify_list([]) ->
     [];
 jsonify_list(List) ->
@@ -420,7 +473,7 @@ jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], 
     NewList = [[{id, StringPid},{type, Type}, {dist, Dist}, {x, HeadX}, {y, HeadY}, {x_velocity, Head_X_Vel}, {y_velocity, Head_Y_Vel}]| List],
     jsonify_list(Ls, NewList).
 
-% Build a list of local zombie entities that are in sight
+%%% Build a list of local zombie entities that are in sight
 build_zombie_list(Viewer, X, Y) ->
     ZombieList = viewer:get_zombies(Viewer),
 
@@ -440,7 +493,7 @@ build_zombie_list(Viewer, X, Y) ->
     %return
     Zlist.
 
-% Build a list of local zombie entities that are in sight
+%%% Build a list of local zombie entities that are in sight
 build_human_list(Viewer, X, Y) ->
     HumanList = viewer:get_humans(Viewer),
     NoSelfList = lists:keydelete(self(),1,HumanList),
@@ -461,12 +514,7 @@ build_human_list(Viewer, X, Y) ->
     %return
     Hlist.
 
-% build_obs_list(Olist, X,Y) ->
-%     O_DistanceList = lists:map(fun({ObX,ObY}) -> {abs(pythagoras:pyth(X,Y,ObX,ObY)),{noPid,{obstruction,{{ObX,ObY},{0,0}}}}} end, Olist),
-%     %sort the list by distance
-%     lists:keysort(1,O_DistanceList).
-
-% Build memory map for items
+%%% Build memory map for items
 build_memory([], Map) ->
     Map;
 build_memory([{Pid,{X,Y,Type,Name}}|Rest], Map) ->
