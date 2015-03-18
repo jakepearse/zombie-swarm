@@ -443,7 +443,6 @@ avoidObs(Ob_List,TileSize,Rows) ->
   Y =random:uniform(TileSize*Rows-1),
   case lists:any(fun({_T,{A,B}}) -> {X div 5,Y div 5}=={A,B} end,Ob_List) of
     true ->
-      error_logger:error_report("obstructions"),
       avoidObs(Ob_List,TileSize,Rows);
     false ->
       {X,Y}
