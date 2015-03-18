@@ -8,7 +8,7 @@
 %Variables for boids.
 -define(LIMIT,5).
 -define(SUPER_EFFECT, 0.3).
--define(FLOCKING_EFFECT,0.5).
+-define(FLOCKING_EFFECT,0.05).
 -define(VELOCITY_EFFECT,0.5).
 -define(COHESION_EFFECT,0.2).
 
@@ -143,7 +143,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     {Limited_X_Velocity,Limited_Y_Velocity} = boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity),
     TargetX = round(X + Limited_X_Velocity),
     TargetY = round(Y + Limited_Y_Velocity), 
-    {NewX,NewY} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity), 
+    {NewX,NewY,ObsXVel,ObsYVel} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity), 
 
     Bearing = 0,
 
@@ -163,7 +163,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY}, {New_X_Velocity, New_Y_Velocity}),
             gen_fsm:send_event_after(State#state.speed, move),
-            {next_state,aimless,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json, x_velocity = Limited_X_Velocity,y_velocity = Limited_Y_Velocity, viewer = NewViewer}}
+            {next_state,aimless,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json, x_velocity = ObsXVel,y_velocity = ObsYVel, viewer = NewViewer}}
     end.
 
 aimless_search(move,State) ->
@@ -259,7 +259,7 @@ make_choice([],[],State) ->
             {1,1}
     end;
 
-    
+
 
 make_choice(_,[{Dist, {Pid,{_,{{_,_},{_,_}}}}}|_Hlist],_State) when Dist < ?PERSONAL_SPACE ->
 %    KILL HUMAN;
@@ -278,32 +278,84 @@ make_choice(Zlist,_, State) ->
     {(Fx+Vx),(Fy+Vy)}.
 
 obstructed([],_X,_Y,NewX,NewY,VelX,VelY) ->
-    {NewX,NewY};
+    {NewX,NewY,VelX,VelY};
 obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
             obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY);
         false->
-            {NewX,NewY}
+            {NewX,NewY,VelX,VelY}
     end.
-obstructedmove(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY->
-    {X,Y};
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelX*VelX) >= (VelY*VelY)->
+%Obstructions on corners.
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY > 0)->
+    {X-1,Y-1,-1,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY < 0)->
+    {X-1,Y+1,-1,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY > 0)->
+    {X+1,Y-1,1,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY < 0)->
+    {X+1,Y+1,1,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY == 0)->
+    {X-1,Y,-1,0};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY == 0)->
+    {X+1,Y,1,0};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY > 0)->
+    {X,Y-1,0,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY < 0)->
+    {X,Y+1,0,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY == 0)->
+    {X,Y,0,0};
+%Obstructions on Y axis.
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelX*VelX) >= (VelY*VelY)) and (VelY > 0)->
     Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
             obstructedmove(Olist,X,Y,X,NewY,0,VelY);
         false->
-            {NewX,Y}
+            {NewX,Y-1,VelX,-1}
     end;
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelY*VelY) > (VelX*VelX)->
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelX*VelX) >= (VelY*VelY)) and (VelY < 0)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+        false->
+            {NewX,Y+1,VelX,1}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelX*VelX) >= (VelY*VelY)) and (VelY == 0)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+        false->
+            {NewX,Y,VelX,0}
+    end;
+
+%Obstructions on X axis.
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelY*VelY) > (VelX*VelX)) and (VelX > 0)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
         true->
             obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
         false->
-            {X,NewY}
+            {X-1,NewY,-1,VelY}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelY*VelY) > (VelX*VelX)) and (VelX < 0)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+        false->
+            {X+1,NewY,1,VelY}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelY*VelY) > (VelX*VelX)) and (VelX== 0)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+        false->
+            {X,NewY,0,VelY}
     end.
 jsonify_list([]) ->
     [];
