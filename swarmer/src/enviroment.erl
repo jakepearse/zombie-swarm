@@ -332,7 +332,8 @@ get_tile(Xpos,Ypos,#state{viewerPropList = ViewerPropList, tileSize = TileSize})
 %% Makes a report for the client.
 %% This report contains a props list of all the states for each supervisors children.
 make_report() ->
-    lists:filtermap(
+    % Build a list of entities from the supervisors
+    Entities = lists:filtermap(
         fun({_Id, Pid, _Type, [Module]}) ->
             case Module:get_state(Pid) of
                 {ok,StateData} ->
@@ -340,7 +341,27 @@ make_report() ->
                 _ ->
                     false
             end 
-        end, get_report_list()).
+        end, get_entities_list()),
+
+    % Build a list of items from the supervisor
+    Items = lists:filtermap(
+        fun({_Id, Pid, _Type, [Module]}) ->
+            case Module:get_state(Pid) of
+                {ok,StateData} ->
+                    {true, StateData};
+                _ ->
+                    false
+            end 
+        end, get_supplies_list()),
+
+    % Remove all items that have been eaten
+    NonTakenItems = lists:filter(
+        fun([_,{_,Bool},_,_,_]) ->
+            Bool == false
+        end,Items),
+
+    Entities ++ NonTakenItems.
+
 
 make_neighbourhood(TileList,ViewerPropList) ->
   ViewerGeomList = setup_neighbours(ViewerPropList),
@@ -424,9 +445,6 @@ apply_to_all__humans(Fun) ->
 
 get_entities_list() ->
   get_zombies_list() ++ get_humans_list().
-
-get_report_list() ->
-  get_zombies_list() ++ get_humans_list() ++ get_supplies_list().
     
 get_zombies_list() ->
   supervisor:which_children(zombie_sup).
