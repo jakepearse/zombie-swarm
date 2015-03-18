@@ -192,7 +192,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     TargetX = round(X + Limited_X_Velocity),
     TargetY = round(Y + Limited_Y_Velocity),  
-    {NewX,NewY} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity),
+    {NewX,NewY,ObsVelX,ObsVelY} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity),
     Bearing = 0,
 
     case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
@@ -213,8 +213,8 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
                                         bearing = Bearing, tile = NewTile, 
                                         z_list = Zlist_Json, h_list = Hlist_Json,
-                                        x_velocity = Limited_X_Velocity, 
-                                        y_velocity = Limited_Y_Velocity,
+                                        x_velocity = ObsVelX, 
+                                        y_velocity = ObsVelY,
                                         hunger = EatenHunger, energy = EatenEnergy,
                                         hunger_state = NewHungerState,
                                         memory_map = NewMemoryMap,
@@ -401,35 +401,86 @@ nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
     end.  
 
 %%% Check if my next position is obstructed
-obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
-    {NewX,NewY};
+obstructed([],_X,_Y,NewX,NewY,VelX,VelY) ->
+    {NewX,NewY,VelX,VelY};
 obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
             obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY);
         false->
-            {NewX,NewY}
+            {NewX,NewY,VelX,VelY}
     end.
-obstructedmove(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY->
-    {X,Y};
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelX*VelX) >= (VelY*VelY)->
+%Obstructions on corners.
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY > 0)->
+    {X-1,Y-1,-1,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY < 0)->
+    {X-1,Y+1,-1,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY > 0)->
+    {X+1,Y-1,1,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY < 0)->
+    {X+1,Y+1,1,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY == 0)->
+    {X-1,Y,-1,0};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY == 0)->
+    {X+1,Y,1,0};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY > 0)->
+    {X,Y-1,0,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY < 0)->
+    {X,Y+1,0,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY == 0)->
+    {X,Y,0,0};
+%Obstructions on Y axis.
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY > 0)->
     Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
         false->
-            {NewX,Y}
-    end;    
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelY*VelY) > (VelX*VelX)->
+            {NewX,Y-1,VelX,-1}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY < 0)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
+        false->
+            {NewX,Y+1,VelX,1}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY == 0)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
+        false->
+            {NewX,Y,VelX,0}
+    end;
+
+%Obstructions on X axis.
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX > 0)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
         false->
-            {X,NewY}
+            {X-1,NewY,-1,VelY}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX < 0)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
+        false->
+            {X+1,NewY,1,VelY}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX== 0)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
+        false->
+            {X,NewY,0,VelY}
     end.
-
 %%% Calculate the new levels for hunger,energy
 %%% Also work out if the hunger state has changed
 calc_new_hunger_levels(Hunger,Energy) ->
