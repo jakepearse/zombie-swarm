@@ -6,7 +6,7 @@
 -define(PERSONAL_SPACE, 3).
 -define(HUNGER_FULL,50).
 %Variables for boids.
--define(LIMIT,5).
+-define(LIMIT,3).
 -define(SUPER_EFFECT, 0.3).
 -define(FLOCKING_EFFECT,0.05).
 -define(VELOCITY_EFFECT,0.5).
