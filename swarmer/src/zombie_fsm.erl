@@ -237,8 +237,29 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
 
-make_choice([],[],_State) ->
-    {0,0};
+make_choice([],[],State) ->
+    case random:uniform(9) of
+        1->
+            {0,0};
+        2->
+            {0,-1};
+        3->
+            {0,1};
+        4-> 
+            {-1,0};
+        5->
+            {-1,-1};
+        6->
+            {-1,1};
+        7-> 
+            {1,0};
+        8-> 
+            {1,-1};
+        9->
+            {1,1}
+    end;
+
+    
 
 make_choice(_,[{Dist, {Pid,{_,{{_,_},{_,_}}}}}|_Hlist],_State) when Dist < ?PERSONAL_SPACE ->
 %    KILL HUMAN;
