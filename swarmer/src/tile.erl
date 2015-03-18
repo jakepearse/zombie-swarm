@@ -164,7 +164,6 @@ remove_entity(Pid, Entity, Type) ->
 get_state(Pid) ->
   gen_server:call(Pid,get_state).
  
-  
 %%%%----------------------------------------------------------------------------
 %%%% @doc
 %%%% Assign a viewer to the tile.
@@ -298,17 +297,6 @@ code_change(_OldVsn, State, _Extra) ->
 %%%%%% Internal Functions
 %%%%%%==========================================================================
 
-%% a function to add a new entity to the entity_map
-%% eventually will need to become more inteligent than just X+1,Y+1
-% add_unique(ID, {X,Y}, Map) ->
-%     Values = maps:values(Map),
-%     case lists:member({X,Y}, Values) of
-%         false ->
-%             maps:put(ID, {X,Y}, Map);
-%         true ->
-%             add_unique(ID, {X+1,Y+1}, Map)
-%     end.
-
 update_viewers([], _Type, _EntityMap) ->
     [];
 update_viewers([V|Vs], zombie, EntityMap) ->
@@ -325,7 +313,7 @@ update_viewers([V|Vs], obs_list, ObsList) ->
     update_viewers(Vs, obs_list, ObsList).
 
 
-
+%%% check if a move is valid. this is, calculates a valid move if it is not
 validmove(X,Y,NewX,NewY,State) when (abs(NewX - X)) > 4  ->
     validmove(X,Y,(X + 4),NewY,State);
 
@@ -358,7 +346,7 @@ validmove(X,Y,NewX,NewY,#state{obs_list = ObsList} = State) ->
             end
     end.
 
-
+%%% reflect away from an entitiy.
 reflect(X,Y,TargetX,TargetY)  when {TargetX - X,TargetY - Y} == {0,0} ->
     {X,Y};
 
@@ -415,35 +403,34 @@ reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) > 0) and ((TargetY - Y) < 0) -
     end.
 
 
-
- reflect_obs({OldX,OldY},{X,Y},Obs_list) ->
-   Ways_i_cant_go = 
+%%% a function to work out the reflected position when going into an obstruction
+reflect_obs({OldX,OldY},{X,Y},Obs_list) ->
+    Ways_i_cant_go = 
+        % [right,left,down,up]
         [do_check_obs({(X)+5,Y},Obs_list),
-         do_check_obs({(X)-5,Y},Obs_list),
-         do_check_obs({X,(Y)+5},Obs_list),
-         do_check_obs({(X),(Y)-5},Obs_list)],
-  reflect_obs({OldX,OldY},X,Y,Ways_i_cant_go).
-
-%               [right,left,down,up]
+        do_check_obs({(X)-5,Y},Obs_list),
+        do_check_obs({X,(Y)+5},Obs_list),
+        do_check_obs({(X),(Y)-5},Obs_list)],
+    reflect_obs({OldX,OldY},X,Y,Ways_i_cant_go).
 
 % X,Y is obstructed or we wouldn't be here ...
 
-%
+% all obstructed
 reflect_obs({OldX,OldY},_X,_Y,[true,true,true,true]) -> 
     {OldX,OldY};
-
+% up free
 reflect_obs(_,X,Y,[true,true,true,false]) -> 
     {X,Y-?OBS_REFLECT_RATE};
-
+% down free
 reflect_obs(_,X,Y,[true,true,false,true]) -> 
     {X,Y+?OBS_REFLECT_RATE};
-
+% left free
 reflect_obs(_,X,Y,[true,false,true,true]) -> 
     {X-?OBS_REFLECT_RATE,Y};
-
+%right free
 reflect_obs(_,X,Y,[false,true,true,true]) ->
     {X+?OBS_REFLECT_RATE,Y};
-
+% up and down free
 reflect_obs(_,X,Y,[true,true,false,false]) -> 
     case random:uniform(2) of
         1 ->
@@ -451,7 +438,7 @@ reflect_obs(_,X,Y,[true,true,false,false]) ->
         2 -> 
             {X,Y-?OBS_REFLECT_RATE}
     end;
-
+% left and up free
 reflect_obs(_,X,Y,[true,false,true,false]) -> 
     case random:uniform(2) of
         1 ->
@@ -459,7 +446,7 @@ reflect_obs(_,X,Y,[true,false,true,false]) ->
         2 -> 
             {X,Y-?OBS_REFLECT_RATE}
     end;
-
+% right and down free
 reflect_obs(_,X,Y,[true,false,false,true]) -> 
     case random:uniform(2) of
         1 ->
@@ -467,7 +454,7 @@ reflect_obs(_,X,Y,[true,false,false,true]) ->
         2 -> 
             {X,Y+?OBS_REFLECT_RATE}
     end;
-
+% right and up free
 reflect_obs(_,X,Y,[false,true,true,false]) -> 
     case random:uniform(2) of
         1 ->
@@ -475,7 +462,7 @@ reflect_obs(_,X,Y,[false,true,true,false]) ->
         2 -> 
             {X,Y-?OBS_REFLECT_RATE}
     end;
-
+% right and down free
 reflect_obs(_,X,Y,[false,true,false,true]) -> 
     case random:uniform(2) of
         1 ->
@@ -483,7 +470,7 @@ reflect_obs(_,X,Y,[false,true,false,true]) ->
         2 -> 
             {X,Y+?OBS_REFLECT_RATE}
     end;
-
+% right and left free
 reflect_obs(_,X,Y,[false,false,true,true]) ->
     case random:uniform(2) of
         1 ->
@@ -491,7 +478,7 @@ reflect_obs(_,X,Y,[false,false,true,true]) ->
         2 -> 
             {X-?OBS_REFLECT_RATE,Y}
     end;
-
+% left, down and up free
 reflect_obs(_,X,Y,[true,false,false,false]) ->
     case random:uniform(3) of
         1 ->
@@ -501,7 +488,7 @@ reflect_obs(_,X,Y,[true,false,false,false]) ->
         3 ->
             {X,Y-?OBS_REFLECT_RATE}
     end;
-
+% right, down and up free
 reflect_obs(_,X,Y,[false,true,false,false]) ->
     case random:uniform(3) of
         1 ->
@@ -511,7 +498,7 @@ reflect_obs(_,X,Y,[false,true,false,false]) ->
         3 ->
             {X,Y+?OBS_REFLECT_RATE}
     end;
-
+% right, left and up free
 reflect_obs(_,X,Y,[false,false,true,false]) ->
     case random:uniform(3) of
         1 ->
@@ -521,7 +508,7 @@ reflect_obs(_,X,Y,[false,false,true,false]) ->
         3 ->
             {X+?OBS_REFLECT_RATE,Y}
     end;
-
+% right, left and down free
 reflect_obs(_,X,Y,[false,false,false,true]) ->
     case random:uniform(3) of
         1 ->
@@ -531,7 +518,7 @@ reflect_obs(_,X,Y,[false,false,false,true]) ->
         3 ->
             {X+?OBS_REFLECT_RATE,Y}
         end;
-
+% all free!
 reflect_obs(_,X,Y,[false,false,false,false]) ->
     case random:uniform(4) of
         1 ->
@@ -553,8 +540,5 @@ do_check_obs({X,Y},Obs_list) ->
 	
 %%%%-Notes----------------------------------------------------------------------
 
-% get pid of registered process wheris(module)
-
 % observer:start().
 
-% sys:get_state(Pid).
