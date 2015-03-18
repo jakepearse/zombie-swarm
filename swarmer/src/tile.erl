@@ -401,91 +401,91 @@ end.
 reflect_obs(X,Y,[true,true,true,true]) -> 
     {X,Y};
 reflect_obs(X,Y,[true,true,true,false]) -> 
-    {X,Y-1};
+    {X,Y-2};
 reflect_obs(X,Y,[true,true,false,true]) -> 
-    {X,Y+1};
+    {X,Y+2};
 reflect_obs(X,Y,[true,false,true,true]) -> 
-    {X-1,Y};
+    {X-2,Y};
 reflect_obs(X,Y,[false,true,true,true]) ->
-    {X+1,Y};
+    {X+2,Y};
 reflect_obs(X,Y,[true,true,false,false]) -> 
     case random:uniform(2) of
         1 ->
-            {X,Y-1};
+            {X,Y-2};
         2 -> 
-            {X,Y+1}
+            {X,Y+2}
     end;
 reflect_obs(X,Y,[true,false,true,false]) -> 
-    {X-1,Y-1};
+    {X-2,Y-2};
 reflect_obs(X,Y,[true,false,false,true]) -> 
-    {X-1,Y+1};
+    {X-2,Y+2};
 reflect_obs(X,Y,[false,true,true,false]) -> 
-    {X+1,Y-1};
+    {X+2,Y-2};
 reflect_obs(X,Y,[false,true,false,true]) -> 
-    {X+1,Y+1};
+    {X+2,Y+2};
 reflect_obs(X,Y,[false,false,true,true]) ->
     case random:uniform(2) of
         1 ->
-            {X+1,Y};
+            {X+2,Y};
         2 -> 
-            {X-1,Y}
+            {X-2,Y}
     end;
 reflect_obs(X,Y,[true,false,false,false]) ->
     case random:uniform(3) of
         1 ->
-            {X-1,Y};
+            {X-2,Y};
         2 -> 
-            {X-1,Y+1};
+            {X-2,Y+1};
         3 ->
-            {X-1,Y-1}
+            {X-2,Y-1}
     end;
 reflect_obs(X,Y,[false,true,false,false]) ->
     case random:uniform(3) of
         1 ->
-            {X+1,Y};
+            {X+2,Y};
         2 -> 
-            {X+1,Y-1};
+            {X+2,Y-2};
         3 ->
-            {X+1,Y+1}
+            {X+2,Y+2}
     end;
 reflect_obs(X,Y,[false,false,true,false]) ->
     case random:uniform(3) of
         1 ->
-            {X,Y-1};
+            {X,Y-2};
         2 -> 
-            {X-1,Y-1};
+            {X-2,Y-2};
         3 ->
-            {X+1,Y-1}
+            {X+2,Y-2}
     end;
 reflect_obs(X,Y,[false,false,false,true]) ->
     case random:uniform(3) of
         1 ->
-            {X,Y+1};
+            {X,Y+2};
         2 ->   
-            {X-1,Y+1};
+            {X-2,Y+2};
         3 ->
-            {X+1,Y+1}
+            {X+2,Y+2}
         end;
 reflect_obs(X,Y,[false,false,false,false]) ->
     case random:uniform(9) of
         1 ->
             {X,Y};
         2 ->   
-            {X,Y-1};
+            {X,Y-2};
         3 ->
-            {X,Y+1};
+            {X,Y+2};
         4 ->
-            {X+1,Y};
+            {X+2,Y};
         5 ->   
-            {X+1,Y-1};
+            {X+2,Y-2};
         6 ->
-            {X+1,Y+1};
+            {X+2,Y+2};
         7 ->
-            {X-1,Y};
+            {X-2,Y};
         8 ->   
-            {X-1,Y-1};
+            {X-2,Y-2};
         9 ->
-            {X-1,Y+1}
+            {X-2,Y+2}
         end.
 
 %%%==============
