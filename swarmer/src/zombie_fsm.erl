@@ -307,53 +307,53 @@ obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) 
 obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY == 0)->
     {X,Y,0,0};
 %Obstructions on Y axis.
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelX*VelX) >= (VelY*VelY)) and (VelY > 0)->
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY > 0)->
     Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
         false->
             {NewX,Y-1,VelX,-1}
     end;
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelX*VelX) >= (VelY*VelY)) and (VelY < 0)->
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY < 0)->
     Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
         false->
             {NewX,Y+1,VelX,1}
     end;
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelX*VelX) >= (VelY*VelY)) and (VelY == 0)->
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY == 0)->
     Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
         false->
             {NewX,Y,VelX,0}
     end;
 
 %Obstructions on X axis.
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelY*VelY) > (VelX*VelX)) and (VelX > 0)->
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX > 0)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
         false->
             {X-1,NewY,-1,VelY}
     end;
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelY*VelY) > (VelX*VelX)) and (VelX < 0)->
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX < 0)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
         false->
             {X+1,NewY,1,VelY}
     end;
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((VelY*VelY) > (VelX*VelX)) and (VelX== 0)->
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX== 0)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
         false->
             {X,NewY,0,VelY}
     end.
