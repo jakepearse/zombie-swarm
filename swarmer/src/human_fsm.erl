@@ -195,7 +195,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     tile:remove_entity(Tile, self(), Type),
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed, {X_Velocity, Y_Velocity}),
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},{X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, move),
             {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
                                         bearing = Bearing, tile = NewTile, 
@@ -359,7 +359,6 @@ get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,Near
 pathfind_to_item([Head|Rest], CurrentPos, ObsList) ->
     NearestMemoryItem = nearest_memory_item(Rest, Head, CurrentPos),
     Distance = astar2:dist_between(CurrentPos,NearestMemoryItem),
-    % error_logger:error_report(Distance),
     pathfind_to_item(NearestMemoryItem,CurrentPos,Distance,ObsList).
 
 pathfind_to_item(NearestItem,CurrentPos,Distance,ObsList) when Distance =< ?LONGEST_SEARCH_DISTANCE ->

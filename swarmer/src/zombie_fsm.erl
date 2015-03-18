@@ -161,7 +161,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
             
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY},Bearing,Speed, {New_X_Velocity, New_Y_Velocity}),
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY}, {New_X_Velocity, New_Y_Velocity}),
             gen_fsm:send_event_after(State#state.speed, move),
             {next_state,aimless,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json, x_velocity = Limited_X_Velocity,y_velocity = Limited_Y_Velocity, viewer = NewViewer}}
     end.
@@ -237,8 +237,29 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
 
-make_choice([],[],_State) ->
-    {0,0};
+make_choice([],[],State) ->
+    case random:uniform(9) of
+        1->
+            {0,0};
+        2->
+            {0,-1};
+        3->
+            {0,1};
+        4-> 
+            {-1,0};
+        5->
+            {-1,-1};
+        6->
+            {-1,1};
+        7-> 
+            {1,0};
+        8-> 
+            {1,-1};
+        9->
+            {1,1}
+    end;
+
+    
 
 make_choice(_,[{Dist, {Pid,{_,{{_,_},{_,_}}}}}|_Hlist],_State) when Dist < ?PERSONAL_SPACE ->
 %    KILL HUMAN;
