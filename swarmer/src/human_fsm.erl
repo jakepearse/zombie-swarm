@@ -1,7 +1,7 @@
 -module(human_fsm).
 -author("Joe Mitchard jm710").
 
--define(SIGHT,100).
+-define(SIGHT,99).
 -define(PERSONAL_SPACE, 3).
 
 %Variables for boids.
@@ -46,7 +46,8 @@
                 z_list, h_list, i_list, memory_list,
                 % elements for behavioural control
                 hunger_state, hunger, energy,
-                memory_map = maps:new(), path}).
+                memory_map = maps:new(), path,
+                obs_list}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,
@@ -82,16 +83,30 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
                        num_rows = NumRows,
                        x_velocity = 0, y_velocity = 0,
                        hunger = ?INITIAL_HUNGER, energy = ?INITIAL_ENERGY,
-                       hunger_state = not_hungry}}.
+                       hunger_state = not_hungry,
+                       obs_list = []}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
 %%%%%%==========================================================================
 
 initial(start,State) ->
-    gen_fsm:send_event_after(State#state.timeout, move),
+    gen_fsm:send_event_after(State#state.timeout, check_pos),
     {next_state,run,State}.
-    
+
+% check valid pos fsm state!
+run(check_pos,#state{x=X, y=Y, obs_list = Olist} = State) ->
+    % hard check to see if valid position
+    case check_valid_pos({X,Y},Olist) of
+        true ->
+            % physics stopped existing, I'm in a wall.
+            {stop, shutdown, State};
+            % all good!
+        _ -> 
+            gen_fsm:send_event_after(0,move),
+            {next_state,run,State}
+    end;
+
 run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
@@ -115,17 +130,15 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     Olist = viewer:get_obs(Viewer),
 
-
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
+
 
     % creates a new value for hunger and food, showing the humans getting
     % hungry over time
     {NewHunger, NewEnergy, NewHungerState} = calc_new_hunger_levels(Hunger,Energy),
 
     NearestItem = get_nearest_item(Ilist,{X,Y}),
-
-    % error_logger:error_report(NearestItem),
 
     % For this, I need to pass the path to make choice, and add a new condition to 
     % continue on the path if there is one, but no other cases.
@@ -179,7 +192,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     TargetX = round(X + Limited_X_Velocity),
     TargetY = round(Y + Limited_Y_Velocity),  
-    {NewX,NewY} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity),
+    {NewX,NewY,ObsVelX,ObsVelY} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity),
     Bearing = 0,
 
     case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
@@ -196,26 +209,27 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},{X_Velocity, Y_Velocity}),
-            gen_fsm:send_event_after(State#state.timeout, move),
+            gen_fsm:send_event_after(State#state.timeout, check_pos),
             {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
                                         bearing = Bearing, tile = NewTile, 
                                         z_list = Zlist_Json, h_list = Hlist_Json,
-                                        x_velocity = Limited_X_Velocity, 
-                                        y_velocity = Limited_Y_Velocity,
+                                        x_velocity = ObsVelX, 
+                                        y_velocity = ObsVelY,
                                         hunger = EatenHunger, energy = EatenEnergy,
                                         hunger_state = NewHungerState,
                                         memory_map = NewMemoryMap,
-                                        path = NewPath}}
+                                        path = NewPath,
+                                        obs_list = Olist}}
     end.
 
 %%%%%%==========================================================================
 %%%%%% Event and Sync Functions
 %%%%%%==========================================================================
 
-pause(move, State) -> 
+pause(check_pos, State) -> 
     %% If we get a move event start the timer again but don't actually move
     %% Ensure we will move after unpause.
-    gen_fsm:send_event_after(State#state.timeout, move),
+    gen_fsm:send_event_after(State#state.timeout, check_pos),
     {next_state, pause, State};
 pause(unpause, #state{paused_state = PausedState} = State) ->
     {next_state,PausedState,State}.   
@@ -248,7 +262,8 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
     % take the MemoryMap out of the report for JSX
     PropListNoMemory = proplists:delete(memory_map,PropListNoViewer),
     % error_logger:error_report(PropListNoMemory),
-    {reply, {ok,PropListNoMemory}, StateName,StateData}.
+    PropListNoObs = proplists:delete(obs_list,PropListNoMemory),
+    {reply, {ok,PropListNoObs}, StateName,StateData}.
 
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
@@ -267,6 +282,11 @@ make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, State) when 
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
 %=============================Super Repulsor====================================%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MAKE THIS INTERESTING!!!!!
+
+
 make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, _Path, State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
@@ -381,35 +401,86 @@ nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
     end.  
 
 %%% Check if my next position is obstructed
-obstructed([],_X,_Y,NewX,NewY,_Velx,_VelY) ->
-    {NewX,NewY};
+obstructed([],_X,_Y,NewX,NewY,VelX,VelY) ->
+    {NewX,NewY,VelX,VelY};
 obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
             obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY);
         false->
-            {NewX,NewY}
+            {NewX,NewY,VelX,VelY}
     end.
-obstructedmove(_Olist,X,Y,NewX,NewY,_VelX,_VelY) when X =:= NewX, Y =:= NewY->
-    {X,Y};
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelX*VelX) >= (VelY*VelY)->
+%Obstructions on corners.
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY > 0)->
+    {X-1,Y-1,-1,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY < 0)->
+    {X-1,Y+1,-1,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY > 0)->
+    {X+1,Y-1,1,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY < 0)->
+    {X+1,Y+1,1,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY == 0)->
+    {X-1,Y,-1,0};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX < 0) and (VelY == 0)->
+    {X+1,Y,1,0};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY > 0)->
+    {X,Y-1,0,-1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY < 0)->
+    {X,Y+1,0,1};
+obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY == 0)->
+    {X,Y,0,0};
+%Obstructions on Y axis.
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY > 0)->
     Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,X,NewY,0,VelY);
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
         false->
-            {NewX,Y}
-    end;    
-obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when (VelY*VelY) > (VelX*VelX)->
+            {NewX,Y-1,VelX,-1}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY < 0)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
+        false->
+            {NewX,Y+1,VelX,1}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY == 0)->
+    Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,X,NewY,VelX,VelY);
+        false->
+            {NewX,Y,VelX,0}
+    end;
+
+%Obstructions on X axis.
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX > 0)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
         true->
-            obstructedmove(Olist,X,Y,NewX,Y,VelX,0);
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
         false->
-            {X,NewY}
+            {X-1,NewY,-1,VelY}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX < 0)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
+        false->
+            {X+1,NewY,1,VelY}
+    end;
+obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX== 0)->
+    Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
+    case Member of
+        true->
+            obstructedmove(Olist,X,Y,NewX,Y,VelX,VelY);
+        false->
+            {X,NewY,0,VelY}
     end.
-
 %%% Calculate the new levels for hunger,energy
 %%% Also work out if the hunger state has changed
 calc_new_hunger_levels(Hunger,Energy) ->
@@ -519,3 +590,6 @@ build_memory([], Map) ->
 build_memory([{Pid,{X,Y,Type,Name}}|Rest], Map) ->
     NewMap = maps:put({X,Y}, {Pid,Type,Name}, Map),
     build_memory(Rest, NewMap).
+
+check_valid_pos({X,Y},Obs_list) ->
+    lists:any(fun(C) -> C=={X div 5,Y div 5} end,Obs_list).
