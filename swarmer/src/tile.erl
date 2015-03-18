@@ -425,7 +425,11 @@ reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) > 0) and ((TargetY - Y) < 0) -
   reflect_obs({OldX,OldY},X,Y,Ways_i_cant_go).
 
 %               [right,left,down,up]
-reflect_obs({OldX,OldY},X,Y,[true,true,true,true]) -> 
+
+% X,Y is obstructed or we wouldn't be here ...
+
+%
+reflect_obs({OldX,OldY},_X,_Y,[true,true,true,true]) -> 
     {OldX,OldY};
 
 reflect_obs({OldX,OldY},X,Y,[true,true,true,false]) -> 
