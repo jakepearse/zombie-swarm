@@ -195,7 +195,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     tile:remove_entity(Tile, self(), Type),
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
-            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},Bearing,Speed, {X_Velocity, Y_Velocity}),
+            {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},{X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, move),
             {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
                                         bearing = Bearing, tile = NewTile, 

@@ -17,7 +17,7 @@
 %%%% tile functions
 -export([summon_entity/2,
         remove_entity/3,
-        update_entity/6,
+        update_entity/4,
         get_geometry/1,
         set_viewer/2,
         get_viewer/1,
@@ -28,7 +28,8 @@
         place_item/2,
         remove_item/2,
         check_obs/2,
-        set_obs_list/2]).
+        set_obs_list/2,
+        validmove/5]).
 
 
 -define(SERVER, ?MODULE).
@@ -110,9 +111,9 @@ check_obs(Pid,Pos) ->
 %%%% Update the entities position on the tile.
 %%%% @end
 %%%%----------------------------------------------------------------------------
--spec update_entity(pid(),entity(),pos(),_,_,_) -> ok.
-update_entity(Pid, Entity, Pos, Bearing, _Speed, Velocity) ->
-    gen_server:call(Pid, {update_entity, Entity, Pos, Bearing, _Speed,Velocity}).
+%-spec update_entity(pid(),entity(),pos(),_,_,_) -> ok.
+update_entity(Pid, Entity, NewPos, Velocity) ->
+    gen_server:call(Pid, {update_entity, Entity, NewPos,Velocity}).
 
 %%%%----------------------------------------------------------------------------
 %%%% @doc
@@ -223,14 +224,16 @@ handle_call({remove_item, ID}, _From, #state{item_map = ItemMap} = State) ->
 
 %%%% Updates the entities position on the tile.
 %%%% Will also deal with a new entitiy being moved onto the tile
-handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_From, State) when Type == zombie ->
-    NewMap = maps:put(ID,{Type,{Pos,Velocity}},State#state.zombie_map),
+handle_call({update_entity, {ID,{OldX,OldY},Type},{NewX,NewY},Velocity},_From, State) when Type == zombie ->
+    {TrueX,TrueY} = validmove(OldX,OldY,NewX,NewY,State),
+    NewMap = maps:put(ID,{Type,{{TrueX,TrueY},Velocity}},State#state.zombie_map),
     update_viewers(State#state.neighbours, Type, NewMap),
-    {reply,Pos,State#state{zombie_map = NewMap}};
-handle_call({update_entity, {ID,{_,_},Type}, Pos, _Bearing, _Speed, Velocity},_From, State) when Type == human ->
-    NewMap = maps:put(ID,{Type,{Pos, Velocity}},State#state.human_map),
+    {reply,{TrueX,TrueY},State#state{zombie_map = NewMap}};
+handle_call({update_entity, {ID,{OldX,OldY},Type},{NewX,NewY},Velocity},_From, State) when Type == human ->
+    {TrueX,TrueY} = validmove(OldX,OldY,NewX,NewY,State),
+    NewMap = maps:put(ID,{Type,{{TrueX,TrueY}, Velocity}},State#state.human_map),
     update_viewers(State#state.neighbours, Type, NewMap),
-    {reply,Pos,State#state{human_map = NewMap}};
+    {reply,{TrueX,TrueY},State#state{human_map = NewMap}};
     
 %%%% pushes a list of obstructed coordinates into the state
 handle_call({set_obs_list,New_obs_list},_From,State) ->
@@ -318,7 +321,172 @@ update_viewers([V|Vs], obs_list, ObsList) ->
     viewer:update_obs(V, {self(), ObsList}),
     update_viewers(Vs, obs_list, ObsList).
 
+validmove(X,Y,NewX,NewY,State) when (abs(NewX - X)) > 5  ->
+    validmove(X,Y,(X + 5),NewY,State);
+validmove(X,Y,NewX,NewY,State) when (abs(NewY - Y)) > 5  ->
+    validmove(X,Y,NewX,(Y + 5),State);
+validmove(X,Y,NewX,NewY,State) ->
+    case lists:any(fun({_,{{Tx,Ty},_}}) -> NewX==Tx andalso NewY==Ty end, maps:values(State#state.zombie_map) ++ maps:values(State#state.human_map)) of
+        true -> 
+            
+            reflect(X,Y,NewX,NewY);
 
+        _-> 
+            case lists:any(fun({Ox,Oy}) -> NewX div 5 == Ox andalso NewY div 5 == Oy end,State#state.obs_list) of
+            
+            true ->
+                reflect_obs(X,Y,NewX,NewY,State#state.obs_list);
+            _ ->
+                {NewX,NewY}
+            %error_logger:error_report(maps:values(State#state.zombie_map) ++ maps:values(State#state.human_map)),
+            end
+    end.
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) == 0, (TargetY - Y) == 0 ->
+{X,Y};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) > 0, (TargetY - Y) == 0 ->
+{TargetX-1,Y+random:uniform(3)-2};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) < 0, (TargetY - Y) == 0 ->
+{TargetX+1,Y+random:uniform(3)-2};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) == 0, (TargetY - Y) > 0 ->
+{TargetX +random:uniform(3)-2,Y -1};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) == 0, (TargetY - Y) < 0 ->
+{TargetX +random:uniform(3)-2,Y +1};
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) > 0, (TargetY - Y) > 0 ->
+case random:uniform(3) of
+    1 ->
+        {TargetX -1, TargetY};
+    2 -> 
+        {TargetX -1, TargetY -1};
+    3 ->
+        {TargetX ,TargetY -1}
+end;
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) < 0, (TargetY - Y) < 0 ->
+case random:uniform(3) of
+    1 ->
+        {TargetX +1, TargetY};
+    2 -> 
+        {TargetX +1, TargetY +1};
+    3 ->
+        {TargetX ,TargetY +1}
+end;
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) < 0, (TargetY - Y) > 0 ->
+case random:uniform(3) of
+    1 ->
+        {TargetX +1, TargetY};
+    2 -> 
+        {TargetX +1, TargetY -1};
+    3 ->
+        {TargetX ,TargetY -1}
+end;
+reflect(X,Y,TargetX,TargetY)  when (TargetX - X) > 0, (TargetY - Y) < 0 ->
+case random:uniform(3) of
+    1 ->
+        {TargetX -1, TargetY};
+    2 -> 
+        {TargetX -1, TargetY +1};
+    3 ->
+        {TargetX ,TargetY +1}
+end.
+
+
+
+ reflect_obs(X,Y,_NewX,_NewY,Obs_list) ->
+   Ways_i_cant_go = 
+    [do_check_obs({(X)+5,Y},Obs_list),
+     do_check_obs({(X)-5,Y},Obs_list),
+     do_check_obs({X,(Y)+5},Obs_list),
+     do_check_obs({(X),(Y)-5},Obs_list)],
+  reflect_obs(X,Y,Ways_i_cant_go).
+
+reflect_obs(X,Y,[true,true,true,true]) -> 
+    {X,Y};
+reflect_obs(X,Y,[true,true,true,false]) -> 
+    {X,Y-1};
+reflect_obs(X,Y,[true,true,false,true]) -> 
+    {X,Y+1};
+reflect_obs(X,Y,[true,false,true,true]) -> 
+    {X-1,Y};
+reflect_obs(X,Y,[false,true,true,true]) ->
+    {X+1,Y};
+reflect_obs(X,Y,[true,true,false,false]) -> 
+    case random:uniform(2) of
+        1 ->
+            {X,Y-1};
+        2 -> 
+            {X,Y+1}
+    end;
+reflect_obs(X,Y,[true,false,true,false]) -> 
+    {X-1,Y-1};
+reflect_obs(X,Y,[true,false,false,true]) -> 
+    {X-1,Y+1};
+reflect_obs(X,Y,[false,true,true,false]) -> 
+    {X+1,Y-1};
+reflect_obs(X,Y,[false,true,false,true]) -> 
+    {X+1,Y+1};
+reflect_obs(X,Y,[false,false,true,true]) ->
+    case random:uniform(2) of
+        1 ->
+            {X+1,Y};
+        2 -> 
+            {X-1,Y}
+    end;
+reflect_obs(X,Y,[true,false,false,false]) ->
+    case random:uniform(3) of
+        1 ->
+            {X-1,Y};
+        2 -> 
+            {X-1,Y+1};
+        3 ->
+            {X-1,Y-1}
+    end;
+reflect_obs(X,Y,[false,true,false,false]) ->
+    case random:uniform(3) of
+        1 ->
+            {X+1,Y};
+        2 -> 
+            {X+1,Y-1};
+        3 ->
+            {X+1,Y+1}
+    end;
+reflect_obs(X,Y,[false,false,true,false]) ->
+    case random:uniform(3) of
+        1 ->
+            {X,Y-1};
+        2 -> 
+            {X-1,Y-1};
+        3 ->
+            {X+1,Y-1}
+    end;
+reflect_obs(X,Y,[false,false,false,true]) ->
+    case random:uniform(3) of
+        1 ->
+            {X,Y+1};
+        2 ->   
+            {X-1,Y+1};
+        3 ->
+            {X+1,Y+1}
+        end;
+reflect_obs(X,Y,[false,false,false,false]) ->
+    case random:uniform(9) of
+        1 ->
+            {X,Y};
+        2 ->   
+            {X,Y-1};
+        3 ->
+            {X,Y+1};
+        4 ->
+            {X+1,Y};
+        5 ->   
+            {X+1,Y-1};
+        6 ->
+            {X+1,Y+1};
+        7 ->
+            {X-1,Y};
+        8 ->   
+            {X-1,Y-1};
+        9 ->
+            {X-1,Y+1}
+        end.
 
 %%%==============
 %%% This is called to check if a coordinate pair is obstructed
