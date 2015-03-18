@@ -316,3 +316,4 @@ jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], 
     StringPid = list_to_binary(pid_to_list(Pid)),
     NewList = [[{id, StringPid},{type, Type}, {dist, Dist}, {x, HeadX}, {y, HeadY}, {x_velocity, Head_X_Vel}, {y_velocity, Head_Y_Vel}]| List],
     jsonify_list(Ls, NewList).
+

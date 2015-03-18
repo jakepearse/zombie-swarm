@@ -1,7 +1,7 @@
 -module(human_fsm).
 -author("Joe Mitchard jm710").
 
--define(SIGHT,100).
+-define(SIGHT,99).
 -define(PERSONAL_SPACE, 3).
 
 %Variables for boids.
@@ -46,7 +46,8 @@
                 z_list, h_list, i_list, memory_list,
                 % elements for behavioural control
                 hunger_state, hunger, energy,
-                memory_map = maps:new(), path}).
+                memory_map = maps:new(), path,
+                obs_list}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,
@@ -82,16 +83,30 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
                        num_rows = NumRows,
                        x_velocity = 0, y_velocity = 0,
                        hunger = ?INITIAL_HUNGER, energy = ?INITIAL_ENERGY,
-                       hunger_state = not_hungry}}.
+                       hunger_state = not_hungry,
+                       obs_list = []}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
 %%%%%%==========================================================================
 
 initial(start,State) ->
-    gen_fsm:send_event_after(State#state.timeout, move),
+    gen_fsm:send_event_after(State#state.timeout, check_pos),
     {next_state,run,State}.
-    
+
+% check valid pos fsm state!
+run(check_pos,#state{x=X, y=Y, obs_list = Olist} = State) ->
+    % hard check to see if valid position
+    case check_valid_pos({X,Y},Olist) of
+        true ->
+            % physics stopped existing, I'm in a wall.
+            {stop, shutdown, State};
+            % all good!
+        _ -> 
+            gen_fsm:send_event_after(0,move),
+            {next_state,run,State}
+    end;
+
 run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
@@ -115,17 +130,15 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     Olist = viewer:get_obs(Viewer),
 
-
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
+
 
     % creates a new value for hunger and food, showing the humans getting
     % hungry over time
     {NewHunger, NewEnergy, NewHungerState} = calc_new_hunger_levels(Hunger,Energy),
 
     NearestItem = get_nearest_item(Ilist,{X,Y}),
-
-    % error_logger:error_report(NearestItem),
 
     % For this, I need to pass the path to make choice, and add a new condition to 
     % continue on the path if there is one, but no other cases.
@@ -196,7 +209,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},{X_Velocity, Y_Velocity}),
-            gen_fsm:send_event_after(State#state.timeout, move),
+            gen_fsm:send_event_after(State#state.timeout, check_pos),
             {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
                                         bearing = Bearing, tile = NewTile, 
                                         z_list = Zlist_Json, h_list = Hlist_Json,
@@ -205,17 +218,18 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                         hunger = EatenHunger, energy = EatenEnergy,
                                         hunger_state = NewHungerState,
                                         memory_map = NewMemoryMap,
-                                        path = NewPath}}
+                                        path = NewPath,
+                                        obs_list = Olist}}
     end.
 
 %%%%%%==========================================================================
 %%%%%% Event and Sync Functions
 %%%%%%==========================================================================
 
-pause(move, State) -> 
+pause(check_pos, State) -> 
     %% If we get a move event start the timer again but don't actually move
     %% Ensure we will move after unpause.
-    gen_fsm:send_event_after(State#state.timeout, move),
+    gen_fsm:send_event_after(State#state.timeout, check_pos),
     {next_state, pause, State};
 pause(unpause, #state{paused_state = PausedState} = State) ->
     {next_state,PausedState,State}.   
@@ -248,7 +262,8 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
     % take the MemoryMap out of the report for JSX
     PropListNoMemory = proplists:delete(memory_map,PropListNoViewer),
     % error_logger:error_report(PropListNoMemory),
-    {reply, {ok,PropListNoMemory}, StateName,StateData}.
+    PropListNoObs = proplists:delete(obs_list,PropListNoMemory),
+    {reply, {ok,PropListNoObs}, StateName,StateData}.
 
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
@@ -267,6 +282,11 @@ make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, State) when 
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
 %=============================Super Repulsor====================================%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MAKE THIS INTERESTING!!!!!
+
+
 make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, _Path, State) ->
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
@@ -519,3 +539,6 @@ build_memory([], Map) ->
 build_memory([{Pid,{X,Y,Type,Name}}|Rest], Map) ->
     NewMap = maps:put({X,Y}, {Pid,Type,Name}, Map),
     build_memory(Rest, NewMap).
+
+check_valid_pos({X,Y},Obs_list) ->
+    lists:any(fun(C) -> C=={X div 5,Y div 5} end,Obs_list).

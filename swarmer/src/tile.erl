@@ -34,8 +34,9 @@
 
 -define(SERVER, ?MODULE).
 
+-define(SPEED_HARD_LIMIT,5).
 -define(ENT_REFLECT_RATE,1).
--define(OBS_REFLECT_RATE,5).
+-define(OBS_REFLECT_RATE,2).
 
 -type   coord() ::  pos_integer().
 -type   pos()  ::  {pos_integer(),pos_integer()}.
@@ -314,222 +315,244 @@ update_viewers([V|Vs], obs_list, ObsList) ->
 
 
 %%% check if a move is valid. this is, calculates a valid move if it is not
-validmove(X,Y,NewX,NewY,State) when (abs(NewX - X)) > 4  ->
-    validmove(X,Y,(X + 4),NewY,State);
+%% enforce hard speed limit
+validmove(X,Y,NewX,NewY,State) when ((NewX - X) > 0) and ((NewX - X) > ?SPEED_HARD_LIMIT) ->
+    validmove(X,Y,(X + ?SPEED_HARD_LIMIT),NewY,State);
 
-validmove(X,Y,NewX,NewY,State) when (abs(NewY - Y)) > 4  ->
-    validmove(X,Y,NewX,(Y + 4),State);
+validmove(X,Y,NewX,NewY,State) when ((NewX - X) <0) and ((NewX - X) < -?SPEED_HARD_LIMIT) ->
+    validmove(X,Y,X-?SPEED_HARD_LIMIT,NewY,State);
 
+validmove(X,Y,NewX,NewY,State) when ((NewY - Y) > 0) and ((NewY - Y) > ?SPEED_HARD_LIMIT) ->
+    validmove(X,Y,NewX,(Y + ?SPEED_HARD_LIMIT),State);
+
+validmove(X,Y,NewX,NewY,State) when ((NewY - Y) < 0) and ((NewY - Y) < -?SPEED_HARD_LIMIT)->
+    validmove(X,Y,NewX,(Y - ?SPEED_HARD_LIMIT),State);    
+
+%% check obstacles and entity bouncing
 validmove(X,Y,NewX,NewY,#state{obs_list = ObsList} = State) ->
-    case lists:any(fun({_,{{Tx,Ty},_}}) -> {NewX,NewY}=={Tx,Ty} end, maps:values(State#state.zombie_map) ++ maps:values(State#state.human_map)) of
-        true -> 
-            % we are hitting an entity
-            {TestX,TestY} = reflect(X,Y,NewX,NewY),
-            % check if reflected position is obstructed
-            case do_check_obs({TestX,TestY},ObsList) of
-                % we are obstructed
+    case do_check_obs({NewX,NewY},ObsList) of
+        % we are obstructed
+        true ->
+            {ReturnedX, ReturnedY} = reflect_obs(X,Y,ObsList),
+            % sanity check, is the returned XY, valid
+            case do_check_obs({ReturnedX,ReturnedY},ObsList) of
                 true ->
                     {X,Y};
-                % not obstructed
-                false ->
-                    {TestX,TestY}
-            end;
-        _-> 
-            % we are not hitting an entitiy, check for obstructions
-            case do_check_obs({NewX,NewY},ObsList) of
-                % we are obstructed
-                true ->
-                    reflect_obs({X,Y},{NewX,NewY},ObsList);
-                % not obstructed
                 _ ->
-                    {NewX,NewY}
-            end
+                    % check new position for entitiy clashes
+                    validmove_entity(X,Y,ReturnedX,ReturnedY,State)
+            end;
+        % not obstructed
+        _ ->
+            {NewX,NewY}
     end.
 
+%% check if bouncing into an entity
+validmove_entity(X,Y, NewX, NewY, #state{zombie_map = Zmap, human_map = Hmap, obs_list = Olist}) ->
+    case lists:any(fun({_,{{Tx,Ty},_}}) -> {NewX,NewY}=={Tx,Ty} end, maps:values(Zmap) ++ maps:values(Hmap)) of
+        % new position will bounce into an entity
+        true ->
+            % calculate the new position after bouncing off of other entities
+            {ReflectedX,ReflectedY} = reflect(X,Y,NewX,NewY),
+            {ValidX,ValidY} = reflect_obs(ReflectedX,ReflectedY,Olist),
+            % final check, new reflected position is valid
+            case do_check_obs({ValidX,ValidY},Olist) of
+                true ->
+                    % no good, invalid move
+                    {X,Y};
+                _ ->
+                    % all good, you can move
+                    {ValidX,ValidY}
+            end;
+        % move valid, no clash.
+        _ -> 
+            {NewX,NewY}
+    end.
+    
 %%% reflect away from an entitiy.
 reflect(X,Y,TargetX,TargetY)  when {TargetX - X,TargetY - Y} == {0,0} ->
     {X,Y};
 
 reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) > 0) and ((TargetY - Y) == 0) ->
-    {TargetX-1,Y+random:uniform(3)-2};
+    {TargetX-?ENT_REFLECT_RATE,Y+random:uniform(3)-2};
 
 reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) < 0) and ((TargetY - Y) == 0) ->
-    {TargetX+1,Y+random:uniform(3)-2};
+    {TargetX+?ENT_REFLECT_RATE,Y+random:uniform(3)-2};
 
 reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) == 0) and ((TargetY - Y) > 0) ->
-    {TargetX +random:uniform(3)-2,Y -1};
+    {TargetX +random:uniform(3)-2,Y -?ENT_REFLECT_RATE};
 
 reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) == 0) and ((TargetY - Y) < 0) ->
-    {TargetX +random:uniform(3)-2,Y +1};
+    {TargetX +random:uniform(3)-2,Y +?ENT_REFLECT_RATE};
 
 reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) > 0) and ((TargetY - Y) > 0) ->
     case random:uniform(3) of
         1 ->
-            {TargetX -1, TargetY};
+            {TargetX -?ENT_REFLECT_RATE, TargetY};
         2 -> 
-            {TargetX -1, TargetY -1};
+            {TargetX -?ENT_REFLECT_RATE, TargetY -?ENT_REFLECT_RATE};
         3 ->
-            {TargetX ,TargetY -1}
+            {TargetX ,TargetY -?ENT_REFLECT_RATE}
     end;
 
 reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) < 0) and ((TargetY - Y) < 0) ->
     case random:uniform(3) of
         1 ->
-            {TargetX +1, TargetY};
+            {TargetX +?ENT_REFLECT_RATE, TargetY};
         2 -> 
-            {TargetX +1, TargetY +1};
+            {TargetX +?ENT_REFLECT_RATE, TargetY +?ENT_REFLECT_RATE};
         3 ->
-            {TargetX ,TargetY +1}
+            {TargetX ,TargetY +?ENT_REFLECT_RATE}
     end;
 
 reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) < 0) and ((TargetY - Y) > 0) ->
     case random:uniform(3) of
         1 ->
-            {TargetX +1, TargetY};
+            {TargetX +?ENT_REFLECT_RATE, TargetY};
         2 -> 
-            {TargetX +1, TargetY -1};
+            {TargetX +?ENT_REFLECT_RATE, TargetY -?ENT_REFLECT_RATE};
         3 ->
-            {TargetX ,TargetY -1}
+            {TargetX ,TargetY -?ENT_REFLECT_RATE}
     end;
 
 reflect(X,Y,TargetX,TargetY)  when ((TargetX - X) > 0) and ((TargetY - Y) < 0) ->
     case random:uniform(3) of
         1 ->
-            {TargetX -1, TargetY};
+            {TargetX -?ENT_REFLECT_RATE, TargetY};
         2 -> 
-            {TargetX -1, TargetY +1};
+            {TargetX -?ENT_REFLECT_RATE, TargetY +?ENT_REFLECT_RATE};
         3 ->
-            {TargetX ,TargetY +1}
+            {TargetX ,TargetY +?ENT_REFLECT_RATE}
     end.
 
 
 %%% a function to work out the reflected position when going into an obstruction
-reflect_obs({OldX,OldY},{X,Y},Obs_list) ->
+reflect_obs(OldX,OldY,Obs_list) ->
     Ways_i_cant_go = 
         % [right,left,down,up]
-        [do_check_obs({(X)+5,Y},Obs_list),
-        do_check_obs({(X)-5,Y},Obs_list),
-        do_check_obs({X,(Y)+5},Obs_list),
-        do_check_obs({(X),(Y)-5},Obs_list)],
-    reflect_obs({OldX,OldY},X,Y,Ways_i_cant_go).
+        [do_check_obs({(OldX)+5,OldY},Obs_list),
+        do_check_obs({(OldX)-5,OldY},Obs_list),
+        do_check_obs({OldX,(OldY)+5},Obs_list),
+        do_check_obs({(OldX),(OldY)-5},Obs_list)],
+    reflect_obs({OldX,OldY},Ways_i_cant_go).
 
 % X,Y is obstructed or we wouldn't be here ...
 
 % all obstructed
-reflect_obs({OldX,OldY},_X,_Y,[true,true,true,true]) -> 
+reflect_obs({OldX,OldY},[true,true,true,true]) -> 
     {OldX,OldY};
 % up free
-reflect_obs(_,X,Y,[true,true,true,false]) -> 
-    {X,Y-?OBS_REFLECT_RATE};
+reflect_obs({OldX,OldY},[true,true,true,false]) -> 
+    {OldX,OldY-?OBS_REFLECT_RATE};
 % down free
-reflect_obs(_,X,Y,[true,true,false,true]) -> 
-    {X,Y+?OBS_REFLECT_RATE};
+reflect_obs({OldX,OldY},[true,true,false,true]) -> 
+    {OldX,OldY+?OBS_REFLECT_RATE};
 % left free
-reflect_obs(_,X,Y,[true,false,true,true]) -> 
-    {X-?OBS_REFLECT_RATE,Y};
+reflect_obs({OldX,OldY},[true,false,true,true]) -> 
+    {OldX-?OBS_REFLECT_RATE,OldY};
 %right free
-reflect_obs(_,X,Y,[false,true,true,true]) ->
-    {X+?OBS_REFLECT_RATE,Y};
+reflect_obs({OldX,OldY},[false,true,true,true]) ->
+    {OldX+?OBS_REFLECT_RATE,OldY};
 % up and down free
-reflect_obs(_,X,Y,[true,true,false,false]) -> 
+reflect_obs({OldX,OldY},[true,true,false,false]) -> 
     case random:uniform(2) of
         1 ->
-            {X,Y+?OBS_REFLECT_RATE};
+            {OldX,OldY+?OBS_REFLECT_RATE};
         2 -> 
-            {X,Y-?OBS_REFLECT_RATE}
+            {OldX,OldY-?OBS_REFLECT_RATE}
     end;
 % left and up free
-reflect_obs(_,X,Y,[true,false,true,false]) -> 
+reflect_obs({OldX,OldY},[true,false,true,false]) -> 
     case random:uniform(2) of
         1 ->
-            {X-?OBS_REFLECT_RATE,Y};
+            {OldX-?OBS_REFLECT_RATE,OldY};
         2 -> 
-            {X,Y-?OBS_REFLECT_RATE}
+            {OldX,OldY-?OBS_REFLECT_RATE}
     end;
-% right and down free
-reflect_obs(_,X,Y,[true,false,false,true]) -> 
+% left and down free
+reflect_obs({OldX,OldY},[true,false,false,true]) -> 
     case random:uniform(2) of
         1 ->
-            {X-?OBS_REFLECT_RATE,Y};
+            {OldX-?OBS_REFLECT_RATE,OldY};
         2 -> 
-            {X,Y+?OBS_REFLECT_RATE}
+            {OldX,OldY+?OBS_REFLECT_RATE}
     end;
 % right and up free
-reflect_obs(_,X,Y,[false,true,true,false]) -> 
+reflect_obs({OldX,OldY},[false,true,true,false]) -> 
     case random:uniform(2) of
         1 ->
-            {X+?OBS_REFLECT_RATE,Y};
+            {OldX+?OBS_REFLECT_RATE,OldY};
         2 -> 
-            {X,Y-?OBS_REFLECT_RATE}
+            {OldX,OldY-?OBS_REFLECT_RATE}
     end;
 % right and down free
-reflect_obs(_,X,Y,[false,true,false,true]) -> 
+reflect_obs({OldX,OldY},[false,true,false,true]) -> 
     case random:uniform(2) of
         1 ->
-            {X+?OBS_REFLECT_RATE,Y};
+            {OldX+?OBS_REFLECT_RATE,OldY};
         2 -> 
-            {X,Y+?OBS_REFLECT_RATE}
+            {OldX,OldY+?OBS_REFLECT_RATE}
     end;
 % right and left free
-reflect_obs(_,X,Y,[false,false,true,true]) ->
+reflect_obs({OldX,OldY},[false,false,true,true]) ->
     case random:uniform(2) of
         1 ->
-            {X+?OBS_REFLECT_RATE,Y};
+            {OldX+?OBS_REFLECT_RATE,OldY};
         2 -> 
-            {X-?OBS_REFLECT_RATE,Y}
+            {OldX-?OBS_REFLECT_RATE,OldY}
     end;
 % left, down and up free
-reflect_obs(_,X,Y,[true,false,false,false]) ->
+reflect_obs({OldX,OldY},[true,false,false,false]) ->
     case random:uniform(3) of
         1 ->
-            {X-?OBS_REFLECT_RATE,Y};
+            {OldX-?OBS_REFLECT_RATE,OldY};
         2 -> 
-            {X,Y+?OBS_REFLECT_RATE};
+            {OldX,OldY+?OBS_REFLECT_RATE};
         3 ->
-            {X,Y-?OBS_REFLECT_RATE}
+            {OldX,OldY-?OBS_REFLECT_RATE}
     end;
 % right, down and up free
-reflect_obs(_,X,Y,[false,true,false,false]) ->
+reflect_obs({OldX,OldY},[false,true,false,false]) ->
     case random:uniform(3) of
         1 ->
-            {X+?OBS_REFLECT_RATE,Y};
+            {OldX+?OBS_REFLECT_RATE,OldY};
         2 -> 
-            {X,Y-?OBS_REFLECT_RATE};
+            {OldX,OldY-?OBS_REFLECT_RATE};
         3 ->
-            {X,Y+?OBS_REFLECT_RATE}
+            {OldX,OldY+?OBS_REFLECT_RATE}
     end;
 % right, left and up free
-reflect_obs(_,X,Y,[false,false,true,false]) ->
+reflect_obs({OldX,OldY},[false,false,true,false]) ->
     case random:uniform(3) of
         1 ->
-            {X,Y-?OBS_REFLECT_RATE};
+            {OldX,OldY-?OBS_REFLECT_RATE};
         2 -> 
-            {X-?OBS_REFLECT_RATE,Y};
+            {OldX-?OBS_REFLECT_RATE,OldY};
         3 ->
-            {X+?OBS_REFLECT_RATE,Y}
+            {OldX+?OBS_REFLECT_RATE,OldY}
     end;
 % right, left and down free
-reflect_obs(_,X,Y,[false,false,false,true]) ->
+reflect_obs({OldX,OldY},[false,false,false,true]) ->
     case random:uniform(3) of
         1 ->
-            {X,Y+?OBS_REFLECT_RATE};
+            {OldX,OldY+?OBS_REFLECT_RATE};
         2 ->   
-            {X-?OBS_REFLECT_RATE,Y};
+            {OldX-?OBS_REFLECT_RATE,OldY};
         3 ->
-            {X+?OBS_REFLECT_RATE,Y}
-        end;
+            {OldX+?OBS_REFLECT_RATE,OldY}
+    end;
 % all free!
-reflect_obs(_,X,Y,[false,false,false,false]) ->
+reflect_obs({OldX,OldY},[false,false,false,false]) ->
     case random:uniform(4) of
         1 ->
-            {X+?OBS_REFLECT_RATE,Y};
+            {OldX+?OBS_REFLECT_RATE,OldY};
         2 ->   
-            {X,Y+?OBS_REFLECT_RATE};
+            {OldX,OldY+?OBS_REFLECT_RATE};
         3 ->
-            {X,Y-?OBS_REFLECT_RATE};
+            {OldX,OldY-?OBS_REFLECT_RATE};
         4 ->
-            {X-?OBS_REFLECT_RATE,Y}
-        end.
+            {OldX-?OBS_REFLECT_RATE,OldY}
+    end.
 
 %%%==============
 %%% This is called to check if a coordinate pair is obstructed
@@ -541,4 +564,3 @@ do_check_obs({X,Y},Obs_list) ->
 %%%%-Notes----------------------------------------------------------------------
 
 % observer:start().
-
