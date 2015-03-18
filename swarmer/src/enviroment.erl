@@ -456,11 +456,12 @@ get_supplies_list() ->
   supervisor:which_children(supplies_sup).
 
 avoidObs(Ob_List,TileSize,Rows) ->
+  random:seed(now()),
   X =random:uniform(TileSize*Rows-1),
   Y =random:uniform(TileSize*Rows-1),
-  case lists:any(fun({_T,{A,B}}) -> X div 5 == B andalso Y div 5 == A end,Ob_List) of
+  case lists:any(fun({_T,{A,B}}) -> {X div 5,Y div 5}=={A,B} end,Ob_List) of
     true ->
       avoidObs(Ob_List,TileSize,Rows);
     false ->
-    {X,Y}
-    end.
+      {X,Y}
+  end.
