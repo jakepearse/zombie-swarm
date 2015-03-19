@@ -5,9 +5,9 @@
 -define(PERSONAL_SPACE, 3).
 
 %Variables for boids.
--define(LIMIT,5).
--define(TIRED_LIMIT,2).
--define(HUNGRY_LIMIT,4).
+-define(SPEED_LIMIT,5).
+-define(TIRED_SPEED_LIMIT,2).
+-define(HUNGRY_SPEED_LIMIT,4).
 -define(SUPER_EFFECT, 0.3).
 -define(FLOCKING_EFFECT,0.5).
 -define(VELOCITY_EFFECT,0.5).
@@ -95,11 +95,12 @@ initial(start,State) ->
     {next_state,run,State}.
 
 % check valid pos fsm state!
-run(check_pos,#state{x=X, y=Y, obs_list = Olist} = State) ->
+run(check_pos,#state{x=X, y=Y, obs_list = Olist, tile = Tile, type = Type} = State) ->
     % hard check to see if valid position
     case check_valid_pos({X,Y},Olist) of
         true ->
             % physics stopped existing, I'm in a wall.
+            tile:remove_entity(Tile, self(), Type),
             {stop, shutdown, State};
             % all good!
         _ -> 
@@ -133,7 +134,6 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
 
-
     % creates a new value for hunger and food, showing the humans getting
     % hungry over time
     {NewHunger, NewEnergy, NewHungerState} = calc_new_hunger_levels(Hunger,Energy),
@@ -148,7 +148,7 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
             MemoryList = maps:keys(NewMemoryMap),
             % error_logger:error_report(MemoryList),
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
-                                X,Y,Olist,MemoryList, Path, State) of
+                                X, Y, Olist, MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
                     % error_logger:error_report("I've eaten!"),
                     {{BX,BY},NewP,?INITIAL_HUNGER,?INITIAL_ENERGY};
@@ -160,7 +160,7 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
             MemoryList = maps:keys(NewMemoryMap),
             % error_logger:error_report(MemoryList),
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
-                                X,Y,Olist,MemoryList, Path, State) of
+                                X, Y, Olist, MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
                     % error_logger:error_report("I've eaten!"),
                     {{BX,BY},NewP,?INITIAL_HUNGER,?INITIAL_ENERGY};
@@ -181,13 +181,13 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
     {Limited_X_Velocity,Limited_Y_Velocity} = case NewHungerState of
         tired ->
             % need to limit speed drastically
-            boids_functions:limit_speed(?TIRED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
+            boids_functions:limit_speed(?TIRED_SPEED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
-            boids_functions:limit_speed(?HUNGRY_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
+            boids_functions:limit_speed(?HUNGRY_SPEED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
         _ ->
             % need to search for food, boids a little, but also limit speed
-            boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity)
+            boids_functions:limit_speed(?SPEED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity)
     end,
 
     TargetX = round(X + Limited_X_Velocity),
@@ -201,9 +201,11 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
             NewTile = 
             % This calculates if the human is still in it's initial tile
             case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
-                {XTile, XTile, YTile, YTile} -> % In same tile
+                {XTile, XTile, YTile, YTile} -> 
+                    % In same tile
                     Tile;
                 {_, NewXTile, _, NewYTile} ->
+                    % Left the tile, find new tile and remove self from old one.
                     tile:remove_entity(Tile, self(), Type),
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
@@ -274,29 +276,45 @@ record_to_proplist(#state{} = Record) ->
 % Make choice is called with ->
 %          (HumanList, ZombieList, NearestItem, HungerState, State)
 make_choice([],[],_NearestItem, _HungerState, _Path, _State) ->
-    % fallthrough case, should never match.
-    {0,0};
+    % Nothing around, wander aimlessly
+    case random:uniform(9) of
+        1->
+            {0,0};
+        2->
+            {0,-1};
+        3->
+            {0,1};
+        4-> 
+            {-1,0};
+        5->
+            {-1,-1};
+        6->
+            {-1,1};
+        7-> 
+            {1,0};
+        8-> 
+            {1,-1};
+        9->
+            {1,1}
+    end;
 
 %===========================Collision Avoidance================================%
-make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, State) when Dist < ?PERSONAL_SPACE ->
-    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, #state{x=X,y=Y}) when Dist < ?PERSONAL_SPACE ->
+    boids_functions:collision_avoidance(X, Y, HeadX, HeadY,?COHESION_EFFECT);
 
 %=============================Super Repulsor====================================%
-make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, _Path, State) ->
-    % run get XY from super_repulsor
-    % check for obstacles
-    % if obstacles in your new direction, don't move thay way, move a more inteligent direction
-    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
+make_choice(_,[{_Dist, {_,{_,{{ZomX,ZomY},{_,_}}}}}|_],_, _, _Path, #state{x=X,y=Y}) ->
+    boids_functions:super_repulsor(X,Y,ZomX,ZomY,?SUPER_EFFECT);  
 
 %===============================Flocking========================================%
-make_choice(Hlist,_,_NearestItem, not_hungry, _Path, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+make_choice(Hlist,_,_NearestItem, not_hungry, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,X,Y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,XVel,YVel,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
-make_choice(Hlist,_,_NearestItem, hungry, _Path, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+make_choice(Hlist,_,_NearestItem, hungry, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,X,Y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,XVel,YVel,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
 %============================Hungry - Local Item================================%
@@ -312,7 +330,7 @@ make_choice(_,[],_, tired, Path, _State) when length(Path) >= 1 ->
     {BX,BY,Rest};
 
 % There is no zombie, I have no path, move towards food blindly!
-make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, y=Y} = State) ->
+make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, y=Y}) ->
     case pythagoras:pyth(X,Y,ItemX,ItemY) of
         Value when Value =< 2 ->
             Item = supplies:picked_up(ItemId),
@@ -323,10 +341,10 @@ make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, 
                     {X,Y}
             end;
         _ ->
-            boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
+            boids_functions:super_attractor(X,Y,ItemX,ItemY,?SUPER_EFFECT)
     end;
 
-make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=Y} = State) ->
+make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=Y}) ->
     case pythagoras:pyth(X,Y,ItemX,ItemY) of
         Value when Value =< 2 ->
             Item = supplies:picked_up(ItemId),
@@ -337,18 +355,18 @@ make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=
                     {X,Y}
             end;
         _ ->
-            boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
+            boids_functions:super_attractor(X,Y,ItemX,ItemY,?SUPER_EFFECT)
     end;
 
 % Got some humans, but no food
-make_choice(Hlist,_,nothing_found, very_hungry, _Path, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+make_choice(Hlist,_,nothing_found, very_hungry, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,X,Y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,XVel,YVel,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found};
 
-make_choice(Hlist,_,nothing_found, tired, _Path, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+make_choice(Hlist,_,nothing_found, tired, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,X,Y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,XVel,YVel,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found}.
 
 %%%%%%==========================================================================
