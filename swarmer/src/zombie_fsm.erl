@@ -263,8 +263,13 @@ make_choice([],[],State) ->
 
 make_choice(_,[{Dist, {Pid,{_,{{_,_},{_,_}}}}}|_Hlist],_State) when Dist < ?PERSONAL_SPACE ->
 %    KILL HUMAN;
-    human_fsm:zombify(Pid),
-    {0,0};
+    case random:uniform(3) of 
+        1 ->
+            {0,0};
+        _ ->
+            human_fsm:zombify(Pid),
+            {0,0}
+    end;
 
 make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],_,State) when Dist < ?PERSONAL_SPACE ->
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);

@@ -302,7 +302,7 @@ create_mob(#state{tileSize = TileSize, columns = Columns, rows = Rows, obs_list 
         fun(_) ->
             {Xpos,Ypos} = avoidObs(Obs_List,TileSize,Rows),
             {Tile,Viewer} = get_tile(Xpos,Ypos,State),
-            {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,1,0,?HUMAN_TIMEOUT]),
+            {ok,Human}=supervisor:start_child(human_sup,[Xpos,Ypos,Tile,TileSize,Columns,Rows,Viewer,?HUMAN_TIMEOUT]),
             human_fsm:start(Human)
         end,lists:seq(1,Num)).
 

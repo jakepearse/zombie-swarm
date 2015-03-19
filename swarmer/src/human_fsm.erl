@@ -28,7 +28,7 @@
          handle_info/3,init/1,terminate/3]).
 
 %%% system functions
--export([start_link/10,run/2,initial/2,start/1,pause/2]).
+-export([start_link/8,run/2,initial/2,start/1,pause/2]).
 
 %%% API exports
 -export([get_state/1, pause/1, unpause/1,zombify/1]).
@@ -38,7 +38,7 @@
                 tile, viewer, viewerStr,
                 tile_size, num_columns, num_rows,
                 % movement control
-                speed, bearing, x_velocity, y_velocity,
+                x_velocity, y_velocity,
                 x,y,
                 % timing and state
                 timeout, type, paused_state,
@@ -49,9 +49,9 @@
                 memory_map = maps:new(), path,
                 obs_list}).
 
-start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
+start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,
-                                Speed,Bearing,Timeout],[]).
+                                Timeout],[]).
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -72,12 +72,12 @@ zombify(Pid) ->
 get_state(Pid) ->
     catch gen_fsm:sync_send_all_state_event(Pid, get_state).
 
-init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
+init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Timeout]) ->
     random:seed(erlang:now()),
     tile:summon_entity(Tile,{self(),{X,Y}, human}),
     {ok,initial,#state{id = list_to_binary(pid_to_list(self())),
-                       tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
-                       bearing=random:uniform(360), timeout=Timeout,type =human,
+                       tile = Tile,viewer = Viewer, x = X, y = Y,
+                       timeout=Timeout,type =human,
                        viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows,
@@ -107,7 +107,7 @@ run(check_pos,#state{x=X, y=Y, obs_list = Olist} = State) ->
             {next_state,run,State}
     end;
 
-run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
+run(move,#state{x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
                     x_velocity = X_Velocity, y_velocity = Y_Velocity,
@@ -193,7 +193,6 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     TargetX = round(X + Limited_X_Velocity),
     TargetY = round(Y + Limited_Y_Velocity),  
     {NewX,NewY,ObsVelX,ObsVelY} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity),
-    Bearing = 0,
 
     case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
@@ -211,7 +210,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},{X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, check_pos),
             {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
-                                        bearing = Bearing, tile = NewTile, 
+                                        tile = NewTile, 
                                         z_list = Zlist_Json, h_list = Hlist_Json,
                                         x_velocity = ObsVelX, 
                                         y_velocity = ObsVelY,
@@ -273,8 +272,9 @@ record_to_proplist(#state{} = Record) ->
 %%%%%% Boids Functions
 %%%%%%==========================================================================
 % Make choice is called with ->
-%   (HumanList, ZombieList, NearestItem, HungerState, State)
+%          (HumanList, ZombieList, NearestItem, HungerState, State)
 make_choice([],[],_NearestItem, _HungerState, _Path, _State) ->
+    % fallthrough case, should never match.
     {0,0};
 
 %===========================Collision Avoidance================================%
@@ -282,12 +282,10 @@ make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, State) when 
     boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
 
 %=============================Super Repulsor====================================%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MAKE THIS INTERESTING!!!!!
-
-
 make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, _Path, State) ->
+    % run get XY from super_repulsor
+    % check for obstacles
+    % if obstacles in your new direction, don't move thay way, move a more inteligent direction
     boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
 
 %===============================Flocking========================================%
@@ -411,6 +409,7 @@ obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
         false->
             {NewX,NewY,VelX,VelY}
     end.
+
 %Obstructions on corners.
 obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY > 0)->
     {X-1,Y-1,-1,-1};
@@ -481,6 +480,7 @@ obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X)
         false->
             {X,NewY,0,VelY}
     end.
+
 %%% Calculate the new levels for hunger,energy
 %%% Also work out if the hunger state has changed
 calc_new_hunger_levels(Hunger,Energy) ->
