@@ -21,5 +21,5 @@ clamp(_,MaxVelocity) -> MaxVelocity.
 % I haven't tested this yet but its about right ...
 zombie_target(ZombieX,ZombieY,ListOfHumans) ->
   [Target|_OtherStuff] = lists:keysort(1,lists:map(fun({HumanPid,{X,Y}}) ->
-    {pythagoras:pyth(ZombieX,ZombieY,X,Y),HumanPid,{X,Y}} end, ListOfHumans)),
+    {swarm_libs:pyth(ZombieX,ZombieY,X,Y),HumanPid,{X,Y}} end, ListOfHumans)),
   Target.

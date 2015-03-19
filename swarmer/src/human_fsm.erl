@@ -328,7 +328,7 @@ make_choice(_,[],_, tired, Path, _State) when length(Path) >= 1 ->
 
 % There is no zombie, I have no path, move towards food blindly!
 make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, y=Y}) ->
-    case pythagoras:pyth(X,Y,ItemX,ItemY) of
+    case swarm_libs:pyth(X,Y,ItemX,ItemY) of
         Value when Value =< 2 ->
             Item = supplies:picked_up(ItemId),
             case Item of
@@ -342,7 +342,7 @@ make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, 
     end;
 
 make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=Y}) ->
-    case pythagoras:pyth(X,Y,ItemX,ItemY) of
+    case swarm_libs:pyth(X,Y,ItemX,ItemY) of
         Value when Value =< 2 ->
             Item = supplies:picked_up(ItemId),
             case Item of
@@ -380,22 +380,22 @@ get_nearest_item([I|Is], {HumanX, HumanY}) ->
 get_nearest_item([], _, NearestItem) ->
     NearestItem;
 get_nearest_item([{ID,{X,Y,Type,Item}}|Is],{HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}}) ->
-    BestItem = pythagoras:pyth(NearestX, NearestY, HumanX, HumanY),
-    case pythagoras:pyth(X, Y, HumanX, HumanY) of
+    BestItem = swarm_libs:pyth(NearestX, NearestY, HumanX, HumanY),
+    case swarm_libs:pyth(X, Y, HumanX, HumanY) of
         Value when Value < BestItem ->
             get_nearest_item(Is, {HumanX, HumanY}, {ID, {X,Y,Type,Item}});
         _ -> 
             get_nearest_item(Is, {HumanX, HumanY}, {NID,{NearestX,NearestY,NType,NItem}})
     end.
 
-%%% Ask astar2 for a path to an item, avoiding obstacles
+%%% Ask astar for a path to an item, avoiding obstacles
 pathfind_to_item([Head|Rest], CurrentPos, ObsList) ->
     NearestMemoryItem = nearest_memory_item(Rest, Head, CurrentPos),
-    Distance = astar2:dist_between(CurrentPos,NearestMemoryItem),
+    Distance = astar:dist_between(CurrentPos,NearestMemoryItem),
     pathfind_to_item(NearestMemoryItem,CurrentPos,Distance,ObsList).
 
 pathfind_to_item(NearestItem,CurrentPos,Distance,ObsList) when Distance =< ?LONGEST_SEARCH_DISTANCE ->
-    astar2:astar(CurrentPos,NearestItem, ObsList);
+    astar:astar(CurrentPos,NearestItem, ObsList);
 pathfind_to_item(_NearestItem,_CurrentPos,_Distance,_ObsList) ->
     too_far_away.
 
@@ -403,8 +403,8 @@ pathfind_to_item(_NearestItem,_CurrentPos,_Distance,_ObsList) ->
 nearest_memory_item([], Nearest, _CurrentPos) ->
     Nearest;
 nearest_memory_item([Head|Rest], Nearest, CurrentPos) ->
-    NearestDist = astar2:dist_between(Nearest,CurrentPos),
-    case astar2:dist_between(Head,CurrentPos) of
+    NearestDist = astar:dist_between(Nearest,CurrentPos),
+    case astar:dist_between(Head,CurrentPos) of
         Value when Value < NearestDist ->
             % Head of the list is closer than current best
             nearest_memory_item(Rest,Head,CurrentPos);
@@ -565,7 +565,7 @@ build_zombie_list(Viewer, X, Y,Olist) ->
 
     Z_DistanceList = lists:map(fun(
                                 {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-                                    {abs(pythagoras:pyth(X,Y,ZX,ZY)),
+                                    {abs(swarm_libs:pyth(X,Y,ZX,ZY)),
                                     {ZomPid,{ZType,{{ZX,ZY},
                                     {ZX_Velocity,ZY_Velocity}}}}} 
                                 end,ZombieList),
@@ -593,7 +593,7 @@ build_human_list(Viewer, X, Y,Olist) ->
 
     H_DistanceList = lists:map(fun(
                                 {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-                                    {abs(pythagoras:pyth(X,Y,HX,HY)),
+                                    {abs(swarm_libs:pyth(X,Y,HX,HY)),
                                     {Hpid,{human,{{HX,HY},
                                     {HXV,HYV}}}}} 
                             end,NoSelfList),

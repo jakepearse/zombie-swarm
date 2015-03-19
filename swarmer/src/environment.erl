@@ -1,4 +1,4 @@
--module(enviroment).
+-module(environment).
 -author("Jake Pearse jp480@kent.ac.uk").
 
 -behaviour(gen_server).
@@ -76,7 +76,7 @@ make_grid(Rows,Columns,TileSize,Obs_list) ->
 
 %%%%------------------------------------------------------------------------------
 %%%% @doc
-%% retrive the state of the whole enviroment
+%% retrive the state of the whole environment
 %%%% @end
 %%%%------------------------------------------------------------------------------
 report() ->

@@ -39,15 +39,15 @@ websocket_handle({text, Json}, Req, State) ->
         Obs= proplists:get_value(<<"obArray">>,Parsed),
         % Now TileSize must be a hardcoded value.
         TileSize=50,
-        enviroment:make_grid(Arrity,Arrity,TileSize,Obs),
-        GridInfo = [enviroment:get_grid_info()],
-        % create_obs pushes all the obstructed coordinates into enviroment
+        environment:make_grid(Arrity,Arrity,TileSize,Obs),
+        GridInfo = [environment:get_grid_info()],
+        % create_obs pushes all the obstructed coordinates into environment
         % it returns ok, which I dont need any more.
-        %_ = enviroment:create_obs(Obs,TileSize*Arrity),
-        enviroment:set_swarm(Size),
-        enviroment:set_mob(Pop),
-        enviroment:set_items(10),
-        Report = enviroment:report(),
+        %_ = environment:create_obs(Obs,TileSize*Arrity),
+        environment:set_swarm(Size),
+        environment:set_mob(Pop),
+        environment:set_items(10),
+        Report = environment:report(),
         % error_logger:error_report(Report),
         Status=jsx:encode(Report++GridInfo),
         {reply, [{text,Status}], Req, State};
@@ -57,25 +57,25 @@ websocket_handle({text, Json}, Req, State) ->
         Size = proplists:get_value(<<"size">>,Parsed),
         		error_logger:error_report(Size),
         %Size = binary_to_integer(BinSize),
-        enviroment:set_swarm(Size),
+        environment:set_swarm(Size),
         % will need to be a param for mob soon
-        enviroment:set_mob(50),
-        %enviroment:start_entities(),
-        %enviroment:pause_entities(),
-        Report = jsx:encode(enviroment:report()),
+        environment:set_mob(50),
+        %environment:start_entities(),
+        %environment:pause_entities(),
+        Report = jsx:encode(environment:report()),
         {reply, [{text,Report}], Req, State};
 
       <<"report">> ->
-        Report = jsx:encode(enviroment:report()),
+        Report = jsx:encode(environment:report()),
         {reply, [{text,Report}], Req, State};
       
       <<"start">> ->
 		%error_logger:error_report("hit start"),
-		enviroment:unpause_entities(),
+		environment:unpause_entities(),
 		{reply,[{text,"ok"}], Req, State};
 
     <<"pause">> ->
-      enviroment:pause_entities(),
+      environment:pause_entities(),
       {reply,[{text,"ok"}], Req, State};
       
       _ ->
@@ -85,13 +85,13 @@ websocket_handle({text, Json}, Req, State) ->
 
 websocket_handle({text, <<"update">>}, Req, State)  ->
   %error_logger:error_report("ws2 handle started"),
-  Report=mochijson2:encode(enviroment:report()),
+  Report=mochijson2:encode(environment:report()),
   %error_logger:error_report(Report),
   {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 websocket_handle({text, Msg}, Req, State) ->
   %error_logger:error_report(Msg),
-  Report=mochijson2:encode(enviroment:report()),
+  Report=mochijson2:encode(environment:report()),
   {reply, [{text, Report}], Req, State}; % << "report", Report/binary >>
 
 websocket_handle(_Any, Req, State) ->

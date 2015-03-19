@@ -86,7 +86,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     Z_DistanceList = lists:map(fun(
                                 {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
-                                    {abs(pythagoras:pyth(X,Y,ZX,ZY)),
+                                    {abs(swarm_libs:pyth(X,Y,ZX,ZY)),
                                     {ZomPid,{ZType,{{ZX,ZY},
                                     {ZX_Velocity,ZY_Velocity}}}}} 
                             end,NoSelfList),
@@ -113,7 +113,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     H_DistanceList = lists:map(fun(
                                 {Hpid,{human,{{HX,HY},{HXV,HYV}}}}) -> 
-                                    {abs(pythagoras:pyth(X,Y,HX,HY)),
+                                    {abs(swarm_libs:pyth(X,Y,HX,HY)),
                                     {Hpid,{human,{{HX,HY},
                                     {HXV,HYV}}}}} 
                                 end,HumanList),
