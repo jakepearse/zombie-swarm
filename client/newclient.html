@@ -2,6 +2,10 @@
 <html ng-app = "swarm">
 
 <head>
+  <title>Zombie Swarm</title>
+  <link rel="icon" 
+      type="image/png" 
+      href="img/zombie.png">
   <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css"/>
   
   <script type="text/javascript" src="js/jquery.min.js"></script>
@@ -20,20 +24,22 @@
     <h1>Concurrent Zombie Swarm</h1>
   <form name="panelForm" ng-controller="PanelController as panelCtrl" ng-submit="start()"  class="form-inline">
     <fieldset>
-        <label for="arrity" class="control-label" >Grid Arrity</label>
-        <select name="gridArrity" class="form-control" ng-disabled="runningFlag" data-ng-model="arrity" data-ng-options="item for item in arrityOpts" ng-change="update()"></select>
         
+	<label for="gridMaps" class="control-label" >Map</label>
+        <select name="gridMaps" class="form-control" ng-disabled="controlsFlag" data-ng-model="gridMap" data-ng-options="map.tag for map in gridMaps" ng-change="update()"></select>
+        
+	
         <label for="gridScale" class="control-label">Grid Scale</label>
-        <select name="gridScale" class="form-control" ng-disabled="runningFlag" data-ng-model="gridScale" data-ng-options="item for item in gridScaleOpts" ng-change="update()"></select>
+        <select name="gridScale" class="form-control" ng-disabled="controlsFlag" data-ng-model="gridScale" data-ng-options="item for item in gridScaleOpts" ng-change="update()"></select>
 
         <label for="swarmSize" class="control-label">Swarm Size</label>
-        <select name="swarmSize" class="form-control" ng-disabled="runningFlag" data-ng-model="swarmSize" data-ng-options="item for item in swarmSizeOpts" ng-change="update()"></select>
+        <select name="swarmSize" class="form-control" ng-disabled="controlsFlag" data-ng-model="swarmSize" data-ng-options="item for item in swarmSizeOpts" ng-change="update()"></select>
 
         <label for="popSize" class="control-label">Population Size</label>
-        <select name="popSize" class="form-control" ng-disabled="runningFlag" data-ng-model="popSize" data-ng-options="item for item in popSizeOpts" ng-change="update()"></select>
+        <select name="popSize" class="form-control" ng-disabled="controlsFlag" data-ng-model="popSize" data-ng-options="item for item in popSizeOpts" ng-change="update()"></select>
 
         <label for="foodAmount" class="control-label">Amount of food</label>
-        <select name="foodAmount" class="form-control" ng-disabled="runningFlag" data-ng-model="foodAmount" data-ng-options="item for item in foodAmountOpts" ng-change="update()"></select>
+        <select name="foodAmount" class="form-control" ng-disabled="controlsFlag" data-ng-model="foodAmount" data-ng-options="item for item in foodAmountOpts" ng-change="update()"></select>
 
 
 
