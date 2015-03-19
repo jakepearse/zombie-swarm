@@ -1,7 +1,6 @@
 -module(zombie_fsm).
 -author("Robert Hales rsjh3@kent.ac.uk").
 
--define(AIMLESS_STAY_COURSE, 8).
 -define(SIGHT,75).
 -define(PERSONAL_SPACE, 3).
 -define(ENERGY_INIT,100).
@@ -20,34 +19,23 @@
 -export([code_change/4,handle_event/3,handle_sync_event/4,
 		 handle_info/3,init/1,terminate/3]).
 
--export([start_link/9,aimless/2,initial/2,aimless_search/2,active/2,
-         active_search/2,chasing/2,chasing_search/2,calc_state/1,
-         calc_aimlessbearing/3,start/1,pause/2,get_surroundings/2,
+-export([start_link/9,aimless/2,initial/2,
+         start/1,pause/2,get_surroundings/2,
 		 find_visible/2,find_visible/3]).
 
 %API
 -export([get_state/1, pause/1, unpause/1]).
 
 -record(state, {id,
-                tile,
-                tile_size,
-                num_columns,
-                num_rows,
-                viewer,
-                viewerStr,
+                tile,tile_size,
+                num_columns,num_rows,
+                viewer,viewerStr,
                 speed,
-                bearing,
-                x,
-                y,
-                type,
+                x,y,type,
                 paused_state,
-                x_velocity,
-                y_velocity,
-                z_list,
-                h_list,
-                energy,
-                energy_state
-                }).
+                x_velocity,y_velocity,
+                z_list,h_list,
+                energy,energy_state}).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing) -> 
 	gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing],[]).
@@ -71,7 +59,7 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
     tile:summon_entity(Tile,{self(),{X,Y}, zombie}),
 	{ok,initial,#state{id = list_to_binary(pid_to_list(self())), 
                        tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
-                       bearing=random:uniform(360),type =zombie,
+                       type =zombie,
                        viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows,
@@ -84,7 +72,7 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
 
 initial(start,State) ->
     gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,calc_state(aimless),State}.
+	{next_state,aimless,State}.
 	
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
@@ -95,6 +83,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     NewViewer = tile:get_viewer(Tile),
     ZombieList = viewer:get_zombies(NewViewer),
     NoSelfList = lists:keydelete(self(),1,ZombieList),
+
     Z_DistanceList = lists:map(fun(
                                 {ZomPid,{ZType,{{ZX,ZY},{ZX_Velocity,ZY_Velocity}}}}) ->
                                     {abs(pythagoras:pyth(X,Y,ZX,ZY)),
@@ -114,7 +103,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                     {_,{_,{{ZX,ZY},
                                     {_,_}}}}}) ->
                                       los:findline(X,Y,ZX,ZY,Olist)
-                                      end,Z_FilteredList),
+                                end,Z_FilteredList),
                                       
     Zlist = lists:keysort(1,Z_Sight_List),
 
@@ -127,7 +116,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                     {abs(pythagoras:pyth(X,Y,HX,HY)),
                                     {Hpid,{human,{{HX,HY},
                                     {HXV,HYV}}}}} 
-                            end,HumanList),
+                                end,HumanList),
 
     H_FilteredList = lists:filter(
                                 fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
@@ -139,7 +128,7 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                     {_,{_,{{HX,HY},
                                     {_,_}}}}}) ->
                                       los:findline(X,Y,HX,HY,Olist)
-                                      end,H_FilteredList),
+                                end,H_FilteredList),
     
     
     Hlist = lists:keysort(1,H_Sight_List),
@@ -177,9 +166,8 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     TargetX = round(X + Limited_X_Velocity),
     TargetY = round(Y + Limited_Y_Velocity), 
-    {NewX,NewY,ObsXVel,ObsYVel} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity), 
 
-    Bearing = 0,
+    {NewX,NewY,ObsXVel,ObsYVel} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity), 
 
     case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
@@ -196,33 +184,14 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             end,
             
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY}, {New_X_Velocity, New_Y_Velocity}),
-            gen_fsm:send_event_after(State#state.speed, move),
-            {next_state,aimless,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, 
+            
+            gen_fsm:send_event_after(Speed, move),
+            
+            {next_state,aimless,State#state{x=ReturnedX,y=ReturnedY, 
                                             tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json, 
                                             x_velocity = ObsXVel,y_velocity = ObsYVel, viewer = NewViewer,
                                             energy = FinalEnergy, energy_state = NewEnergyState}}
     end.
-
-aimless_search(move,State) ->
-	%get_surroundings(self(),State),
-    gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,calc_state(aimless),State}.
-
-active(move,State) ->
-    gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,active_search,State}.
-
-active_search(move,State) ->
-    gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,calc_state(active),State}.
-	
-chasing(move,State) ->
-    gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,chasing_search,State}.
-
-chasing_search(move,State) ->
-    gen_fsm:send_event_after(State#state.speed, move),
-	{next_state,calc_state(chasing),State}.
 
 pause(move, State) -> 
     %% If we get a move event start the timer again but don't actually move
@@ -240,9 +209,6 @@ get_surroundings(_Pid,#state{viewer=Viewer} = State) ->
 			_ -> Surroundings = maps:values(Map),
 					find_visible(Surroundings,State)
 		end.
-		
-calc_state(_Current_state) ->
-	aimless.
 
 find_visible(All,State) ->
 	Visible = [],
@@ -252,8 +218,7 @@ find_visible([],_State,Visible) ->
 find_visible([[{Pid,{_Otherx,_Othery}}]|_Tail],_State,_Visible) ->
 	error_logger:error_report(Pid),
 	[].	
-calc_aimlessbearing(Rand,X,Y) ->
-	trigstuff:findcoordinates(Rand,X,Y).
+
 %stuff for gen_fsm.
 terminate(_,_StateName, #state{tile = Tile, type = Type} = _StateData) ->
     tile:remove_entity(Tile, self(), Type),
@@ -274,7 +239,7 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
 record_to_proplist(#state{} = Record) ->
     lists:zip(record_info(fields, state), tl(tuple_to_list(Record))).
 
-make_choice([],[],State) ->
+make_choice([],[],_State) ->
     case random:uniform(9) of
         1->
             {0,0};
