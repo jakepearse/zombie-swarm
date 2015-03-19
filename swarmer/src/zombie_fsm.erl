@@ -106,12 +106,21 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                     {ZX_Velocity,ZY_Velocity}}}}} 
                             end,NoSelfList),
 
+    Olist = viewer:get_obs(NewViewer),
+
     Z_FilteredList = lists:filter(
                                 fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
                                     Dist =< ?SIGHT
                                 end,Z_DistanceList),
-
-    Zlist = lists:keysort(1,Z_FilteredList),
+    
+    Z_Sight_List = lists:filter(
+                                fun({_,
+                                    {_,{_,{{ZX,ZY},
+                                    {_,_}}}}}) ->
+                                      los:findline(X,Y,ZX,ZY,Olist)
+                                      end,Z_FilteredList),
+                                      
+    Zlist = lists:keysort(1,Z_Sight_List),
 
 
     % Build a list of nearby humans
@@ -129,9 +138,17 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                                     Dist =< ?SIGHT
                                 end,H_DistanceList),
 
-    Hlist = lists:keysort(1,H_FilteredList),
+    H_Sight_List = lists:filter(
+                                fun({_,
+                                    {_,{_,{{HX,HY},
+                                    {_,_}}}}}) ->
+                                      los:findline(X,Y,HX,HY,Olist)
+                                      end,H_FilteredList),
+    
+    
+    Hlist = lists:keysort(1,H_Sight_List),
 
-    Olist = viewer:get_obs(NewViewer),
+    %Olist = viewer:get_obs(NewViewer),
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
 
