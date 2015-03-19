@@ -17,7 +17,7 @@ Linux/Unix
 
   From /zombie-swarm/swarmer
   
-    ./start.swarm.sh
+    ./swarmer
 
 Windows
 
@@ -25,7 +25,7 @@ Windows
   
     .\startswarm.bat
 
-Open file /zombie-swarmer/client/swarmclient.html
+Open file /zombie-swarmer/client/newclient.html
 
 Documentation
 =============
