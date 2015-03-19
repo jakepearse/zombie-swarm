@@ -164,6 +164,7 @@ function update_web(data,gridScale,$scope) {
   //lines to zombies
     var zmodData=[];
     for (var i=0;i<data.length;i++){
+        if (data[i] === undefined) {continue};
       if (data[i].z_list.length>0) {
         for (j=0;j<data[i].z_list.length;j++){
           zmodData.push([data[i].id+data[i].z_list[j].id,
