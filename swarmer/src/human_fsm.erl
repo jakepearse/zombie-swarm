@@ -127,7 +127,16 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
 
     % Build a list of nearby items and store them to memory
     Ilist = viewer:get_items(Viewer),
-    NewMemoryMap = build_memory(Ilist, MemoryMap),
+    
+        I_Sight_List = lists:filter(
+                                fun(
+                                    {_,{IX,IY,_,_}}) ->
+                                      los:findline(X,Y,IX,IY,Olist)
+                                end,Ilist),
+    
+    
+
+    NewMemoryMap = build_memory(I_Sight_List, MemoryMap),
 
     %Olist = viewer:get_obs(Viewer),
 
