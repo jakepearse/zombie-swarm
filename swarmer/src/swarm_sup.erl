@@ -11,8 +11,8 @@ start_link([]) ->
 	supervisor:start_link({local,?MODULE}, ?MODULE, []).
 
 init([]) ->
-    Environment = {enviroment, {enviroment,start_link,[]},
-                    permanent,1000,worker,[enviroment]},
+    Environment = {environment, {environment,start_link,[]},
+                    permanent,1000,worker,[environment]},
     TileSup = {tile_sup, {tile_sup, start_link, []},
                     permanent,infinity,supervisor,[tile_sup]},
     ViewerSup = {viewer_sup, {viewer_sup, start_link, []},
