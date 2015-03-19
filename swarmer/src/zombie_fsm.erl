@@ -4,9 +4,10 @@
 -define(AIMLESS_STAY_COURSE, 8).
 -define(SIGHT,75).
 -define(PERSONAL_SPACE, 3).
--define(HUNGER_FULL,50).
+-define(ENERGY_INIT,100).
 %Variables for boids.
 -define(LIMIT,3).
+-define(LIMIT_SLOW,1).
 -define(SUPER_EFFECT, 0.3).
 -define(FLOCKING_EFFECT,0.05).
 -define(VELOCITY_EFFECT,0.5).
@@ -43,7 +44,9 @@
                 x_velocity,
                 y_velocity,
                 z_list,
-                h_list
+                h_list,
+                energy,
+                energy_state
                 }).
 
 start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing) -> 
@@ -72,7 +75,8 @@ init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing]) ->
                        viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows,
-                       x_velocity = 0, y_velocity = 0}}.
+                       x_velocity = 0, y_velocity = 0,
+                       energy = ?ENERGY_INIT, energy_state = ok}}.
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -85,17 +89,9 @@ initial(start,State) ->
 aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
-                    x_velocity = X_Velocity, y_velocity = Y_Velocity} = State) ->
-    % OldBearing = State#state.bearing,
-    % StaySame = random:uniform(?AIMLESS_STAY_COURSE),
-    % Bearing = case StaySame of
-    %     1 ->
-    %         random:uniform(360);
-    %     _ ->
-    %         OldBearing
-    % end,
-    % {NewX, NewY} = calc_aimlessbearing(Bearing,X,Y),
-    % Build a list of nearby zombies
+                    x_velocity = X_Velocity, y_velocity = Y_Velocity,
+                    energy = Energy, energy_state = EnergyState} = State) ->
+
     NewViewer = tile:get_viewer(Tile),
     ZombieList = viewer:get_zombies(NewViewer),
     NoSelfList = lists:keydelete(self(),1,ZombieList),
@@ -135,12 +131,33 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
 
+    % calculate new energy levls
+    {NewEnergy, NewEnergyState} = case Energy of 
+        Value when Value =:= 0 ->
+            {Energy,slowed};
+        _ ->
+            {Energy-1,EnergyState}
+    end,
 
-    {BoidsX,BoidsY} = make_choice(Zlist,Hlist,State), 
+    {BoidsX,BoidsY,FinalEnergy} = 
+    case make_choice(Zlist,Hlist,State) of
+        {Bx,By,eaten} ->
+            {Bx,By,?ENERGY_INIT};
+        {Bx,By} ->
+            {Bx,By,NewEnergy}
+    end, 
     
     New_X_Velocity = X_Velocity + BoidsX,
     New_Y_Velocity = Y_Velocity + BoidsY,
-    {Limited_X_Velocity,Limited_Y_Velocity} = boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity),
+
+    % slow entities down when they are out of energy
+    {Limited_X_Velocity,Limited_Y_Velocity} = case NewEnergyState of 
+        slowed ->
+            boids_functions:limit_speed(?LIMIT_SLOW,X,Y,New_X_Velocity,New_Y_Velocity);
+        _ ->
+            boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity)
+    end,
+
     TargetX = round(X + Limited_X_Velocity),
     TargetY = round(Y + Limited_Y_Velocity), 
     {NewX,NewY,ObsXVel,ObsYVel} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity), 
@@ -163,7 +180,10 @@ aimless(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y},Type},{NewX, NewY}, {New_X_Velocity, New_Y_Velocity}),
             gen_fsm:send_event_after(State#state.speed, move),
-            {next_state,aimless,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json, x_velocity = ObsXVel,y_velocity = ObsYVel, viewer = NewViewer}}
+            {next_state,aimless,State#state{x=ReturnedX,y=ReturnedY,bearing = Bearing, 
+                                            tile = NewTile, z_list = Zlist_Json, h_list = Hlist_Json, 
+                                            x_velocity = ObsXVel,y_velocity = ObsYVel, viewer = NewViewer,
+                                            energy = FinalEnergy, energy_state = NewEnergyState}}
     end.
 
 aimless_search(move,State) ->
@@ -268,7 +288,7 @@ make_choice(_,[{Dist, {Pid,{_,{{_,_},{_,_}}}}}|_Hlist],_State) when Dist < ?PERS
             {0,0};
         _ ->
             human_fsm:zombify(Pid),
-            {0,0}
+            {0,0,eaten}
     end;
 
 make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_Head_X_Vel,_Head_Y_Vel}}}}}|_Zlist],_,State) when Dist < ?PERSONAL_SPACE ->

@@ -16,7 +16,7 @@
 
 % Behaviour Parameters
 -define(INITIAL_HUNGER,100).
--define(INITIAL_ENERGY,100).
+-define(INITIAL_ENERGY,100 ).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
 
@@ -203,8 +203,10 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
                     tile:remove_entity(Tile, self(), Type),
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
+            
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},{X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, check_pos),
+
             {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
                                         tile = NewTile, 
                                         z_list = Zlist_Json, h_list = Hlist_Json,
@@ -297,7 +299,7 @@ make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, #state{x=X,y
 
 %=============================Super Repulsor====================================%
 make_choice(_,[{_Dist, {_,{_,{{ZomX,ZomY},{_,_}}}}}|_],_, _, _Path, #state{x=X,y=Y}) ->
-    boids_functions:super_repulsor(X,Y,ZomX,ZomY,?SUPER_EFFECT);  
+    boids_functions:super_repulsor(X,Y,ZomX,ZomY,?SUPER_EFFECT);
 
 %===============================Flocking========================================%
 make_choice(Hlist,_,_NearestItem, not_hungry, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
