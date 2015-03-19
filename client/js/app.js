@@ -19,6 +19,8 @@
     $scope.swarmSize = $scope.swarmSizeOpts[2];
     $scope.popSizeOpts = [1,2,5,10,20,30,40,50,100];
     $scope.popSize = $scope.popSizeOpts[4];
+    $scope.foodAmountOpts = [5,10,20,30];
+    $scope.foodAmount = $scope.foodAmountOpts[1];
     $scope.runningFlag=false;
     
 	var squares_map="......................................................................................................iiiiiii..iiiiiiiiiiiiiiiiiiiiiiiiiiiiiii..iiii....iiiiiii..iiiiiiiiiiiiiiiii..iiiiiiiiiiii..iiii....ii..iiiiiiiiiiiiiiiii.......iiiiii..iiii..iiii....ii..iii..iiiiiiiiiiii.......iiiiii..iiiiiiiiii....iiiiiii..iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii..........iiii.......iiiiiiiiiiiiiiiiiiiiiiiiiiiii..........iiii.......iiiiiii..................iiii....iiiiiiiiiiiiiiiiiiiiiiii..................iiii....iiiiiiiiiiiiiiiiiiiiiiii..................iiii....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii....iiiiiii..iiiiii...iiiiiiiiiiiiiiiiiiiiiiiiiiii....iiiiiii..iiiiii...iiii..iiiiiiiiiiiiiiiiiiiiii....iiiiiiiiiiiiiii...iiii..iiiiiii....iiiiiiiiiii....iiiiiiiiiiiiiiiiiiiiiiiiiiiiiii...................i..........iiiiiiiiiiiiiiiiiiiiii.................i..........iiiiiiiiiiii...iiiiiiiiiiiiiiiiiiii....iiiiiiiiiiiiii....iiiii...iiiiiiiiiiiiiiiiiiii....iiiiiiiiiiiiii....iiiii...iiiiiiiiiiiiiiiiiiii....iii....iiiiiii....iiiii...iii..iiiiiiiiiiiiiii....iii....iiiiiiiiiiiiiiii...iii..iiiiiiiiiiiiiii....iii....iiiiiiiiiiiiiiii...iiiiiiii..iiiiiiiiii....iii....iiiiiiiiiiiiiiii...iiiiiiii................iiiiiiiiiiiiiiiiiiiiiii...iiiiiiii................iiiiiiiiiiiiii....iiiii...iii..iii..iiiiiiiiii....iiiiiiiiiiiiii....iiiii...iii..iii..iiiiiiiiii....iiiiiiiiiiiiii....iiiii...iiiiiiii..iiiiiiiiii....iiiiiiiiiii.......i..ii...iii..iii..iiiiiiiiii....iii...iiiii.......i..ii...iii..iii..iiii..iiii....iii...iiiii.......iiiii...iiiiiiii..iiii..iiii....iii...iiiiiiiiiiiiiiiii...iiiiiiii..iiiiiiiiii....iii...iiiiiiiii...iiiii...iii..iii..iiiiiiiiii....iii...iiiii...i...iiiii...iii..iiiiiiiiiiiiiii....iii...iiiii...i...iiiii...iiiiiiiiiiiiiiiiiiii....iii...iiiii...iiiiiiiii...iiiiiiiiiiiiiiiiiiii....iii...iiiii...iiiiiiiii...iiiiiiiiiiiiiiiiiiii....iii...iiiii...iiiiiiiii...iiiiiii.........iiii....iii...iiiii...iiiiiiiii...iiiiiii.........iiii....iii...iiiii...iiiiiiiii...iiiiiii..iiiiiiiiiii....iii...iiiiiiiiiiiiiiiii...iiiiiii..iiiiiiiiiii....iii...iiiiiiiiiiiii..iiiiiiii..ii..ii..iiiiiii....iii...iiiiiiiiiiiii..iiiiiiii..ii..ii.....iiii....iii...iiii.....iiii..ii...iii..iiiiiii.......i....iii...iiii.....iiii..ii...iii..iiiiiiiii..........iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii.......iiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiii........................................................................................................";
@@ -37,7 +39,7 @@
 		}; 
 		//console.log($scope.simpleObArray[395]);
     socket = new WebSocket('ws://localhost:8080/websocket');
-    var json = JSON.stringify({"type":"setup","arrity":$scope.arrity,"swarmSize":$scope.swarmSize,"popSize":$scope.popSize,"obArray":$scope.simpleObArray});
+    var json = JSON.stringify({"type":"setup","arrity":$scope.arrity,"swarmSize":$scope.swarmSize,"popSize":$scope.popSize,"obArray":$scope.simpleObArray,"items":$scope.foodAmount});
     $scope.inspectList = [];
     socket.onopen = function() {
       socket.send(json);
@@ -65,7 +67,9 @@
       "arrity":$scope.arrity,
       "swarmSize":$scope.swarmSize,
       "popSize":$scope.popSize,
-      "obArray":$scope.simpleObArray});
+      "obArray":$scope.simpleObArray,
+      "items":$scope.foodAmount
+      });
       
     if (socket.readyState != 0) {
       socket.send(new_json);
@@ -93,7 +97,7 @@
 	  var dummy_json = JSON.stringify({"type":"report"});
 	    //This sends the "update" message to the socket every X ms
 	    // and updates the circles with the recived data
-	    setInterval(function() {doUpdate()},300);
+	    setInterval(function() {doUpdate()},600);
 	      
 	    function doUpdate() {
 	      socket.send(dummy_json);
