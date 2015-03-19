@@ -30,6 +30,7 @@ websocket_handle({text, Json}, Req, State) ->
         Size = proplists:get_value(<<"swarmSize">>,Parsed),
         Pop = proplists:get_value(<<"popSize">>,Parsed),
         Obs= proplists:get_value(<<"obArray">>,Parsed),
+        Items = proplists:get_value(<<"items">>,Parsed),
         % Now TileSize must be a hardcoded value.
         TileSize=50,
         environment:make_grid(Arrity,Arrity,TileSize,Obs),
@@ -38,7 +39,7 @@ websocket_handle({text, Json}, Req, State) ->
         % it returns ok, which I dont need any more.
         environment:set_swarm(Size),
         environment:set_mob(Pop),
-        environment:set_items(10),
+        environment:set_items(Items),
         Report = environment:report(),
         Status=jsx:encode(Report++GridInfo),
         {reply, [{text,Status}], Req, State};
