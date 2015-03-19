@@ -93,7 +93,7 @@
 	  var dummy_json = JSON.stringify({"type":"report"});
 	    //This sends the "update" message to the socket every X ms
 	    // and updates the circles with the recived data
-	    setInterval(function() {doUpdate()},290);
+	    setInterval(function() {doUpdate()},300);
 	      
 	    function doUpdate() {
 	      socket.send(dummy_json);

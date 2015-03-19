@@ -116,11 +116,13 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
                     memory_map = MemoryMap,
                     path = Path} = State) ->
 
+    Olist = viewer:get_obs(Viewer),
+    
     % Build a list of nearby zombies
-    Zlist = build_zombie_list(Viewer, X, Y),
+    Zlist = build_zombie_list(Viewer, X, Y,Olist),
 
     % Build a list of nearby humans
-    Hlist = build_human_list(Viewer, X, Y),
+    Hlist = build_human_list(Viewer, X, Y,Olist),
 
     % Build a list of nearby items and store them to memory
     Ilist = viewer:get_items(Viewer),
@@ -128,7 +130,7 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     NewMemoryMap = build_memory(Ilist, MemoryMap),
     % error_logger:error_report(NewMemoryMap),
 
-    Olist = viewer:get_obs(Viewer),
+    %Olist = viewer:get_obs(Viewer),
 
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
@@ -544,7 +546,7 @@ jsonify_list([{Dist, {Pid,{Type,{{HeadX,HeadY},{Head_X_Vel,Head_Y_Vel}}}}}|Ls], 
     jsonify_list(Ls, NewList).
 
 %%% Build a list of local zombie entities that are in sight
-build_zombie_list(Viewer, X, Y) ->
+build_zombie_list(Viewer, X, Y,Olist) ->
     ZombieList = viewer:get_zombies(Viewer),
 
     Z_DistanceList = lists:map(fun(
@@ -558,13 +560,20 @@ build_zombie_list(Viewer, X, Y) ->
                                 fun({Dist,{_,{_,{{_,_},{_,_}}}}}) ->
                                     Dist =< ?SIGHT
                                 end,Z_DistanceList),
-
-    Zlist = lists:keysort(1,Z_FilteredList),
+    
+        Z_Sight_List = lists:filter(
+                                fun({_,
+                                    {_,{_,{{ZX,ZY},
+                                    {_,_}}}}}) ->
+                                      los:findline(X,Y,ZX,ZY,Olist)
+                                      end,Z_FilteredList),
+    
+    Zlist = lists:keysort(1,Z_Sight_List),
     %return
     Zlist.
 
 %%% Build a list of local zombie entities that are in sight
-build_human_list(Viewer, X, Y) ->
+build_human_list(Viewer, X, Y,Olist) ->
     HumanList = viewer:get_humans(Viewer),
     NoSelfList = lists:keydelete(self(),1,HumanList),
 
@@ -580,7 +589,14 @@ build_human_list(Viewer, X, Y) ->
                                     Dist =< ?SIGHT
                                 end,H_DistanceList),
 
-    Hlist = lists:keysort(1,H_FilteredList),
+        H_Sight_List = lists:filter(
+                                fun({_,
+                                    {_,{_,{{HX,HY},
+                                    {_,_}}}}}) ->
+                                      los:findline(X,Y,HX,HY,Olist)
+                                      end,H_FilteredList),
+
+    Hlist = lists:keysort(1,H_Sight_List),
     %return
     Hlist.
 
