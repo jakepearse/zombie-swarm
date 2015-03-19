@@ -5,9 +5,9 @@
 -define(PERSONAL_SPACE, 3).
 
 %Variables for boids.
--define(LIMIT,5).
--define(TIRED_LIMIT,2).
--define(HUNGRY_LIMIT,4).
+-define(SPEED_LIMIT,5).
+-define(TIRED_SPEED_LIMIT,2).
+-define(HUNGRY_SPEED_LIMIT,4).
 -define(SUPER_EFFECT, 0.3).
 -define(FLOCKING_EFFECT,0.5).
 -define(VELOCITY_EFFECT,0.5).
@@ -16,7 +16,7 @@
 
 % Behaviour Parameters
 -define(INITIAL_HUNGER,100).
--define(INITIAL_ENERGY,100).
+-define(INITIAL_ENERGY,100 ).
 -define(HUNGRY_LEVEL, 25).
 -define(TIRED_LEVEL, 25).
 
@@ -28,7 +28,7 @@
          handle_info/3,init/1,terminate/3]).
 
 %%% system functions
--export([start_link/10,run/2,initial/2,start/1,pause/2]).
+-export([start_link/8,run/2,initial/2,start/1,pause/2]).
 
 %%% API exports
 -export([get_state/1, pause/1, unpause/1,zombify/1]).
@@ -38,7 +38,7 @@
                 tile, viewer, viewerStr,
                 tile_size, num_columns, num_rows,
                 % movement control
-                speed, bearing, x_velocity, y_velocity,
+                x_velocity, y_velocity,
                 x,y,
                 % timing and state
                 timeout, type, paused_state,
@@ -49,9 +49,9 @@
                 memory_map = maps:new(), path,
                 obs_list}).
 
-start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,Bearing,Timeout) -> 
+start_link(X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Timeout) -> 
     gen_fsm:start_link(?MODULE,[X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,
-                                Speed,Bearing,Timeout],[]).
+                                Timeout],[]).
 
 %%%%%%==========================================================================
 %%%%%% State Machine
@@ -72,12 +72,12 @@ zombify(Pid) ->
 get_state(Pid) ->
     catch gen_fsm:sync_send_all_state_event(Pid, get_state).
 
-init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Speed,_Bearing,Timeout]) ->
+init([X,Y,Tile,TileSize,NumColumns,NumRows,Viewer,Timeout]) ->
     random:seed(erlang:now()),
     tile:summon_entity(Tile,{self(),{X,Y}, human}),
     {ok,initial,#state{id = list_to_binary(pid_to_list(self())),
-                       tile = Tile,viewer = Viewer, x = X, y = Y,speed=Speed, 
-                       bearing=random:uniform(360), timeout=Timeout,type =human,
+                       tile = Tile,viewer = Viewer, x = X, y = Y,
+                       timeout=Timeout,type =human,
                        viewerStr = list_to_binary(pid_to_list(Viewer)),
                        tile_size = TileSize, num_columns = NumColumns, 
                        num_rows = NumRows,
@@ -94,20 +94,21 @@ initial(start,State) ->
     gen_fsm:send_event_after(State#state.timeout, check_pos),
     {next_state,run,State}.
 
-% check valid pos fsm state!
-run(check_pos,#state{x=X, y=Y, obs_list = Olist} = State) ->
+%%% failsafe test to ensure the entity is still in a valid position
+run(check_pos,#state{x=X, y=Y, obs_list = Olist, tile = Tile, type = Type} = State) ->
     % hard check to see if valid position
     case check_valid_pos({X,Y},Olist) of
         true ->
             % physics stopped existing, I'm in a wall.
+            tile:remove_entity(Tile, self(), Type),
             {stop, shutdown, State};
             % all good!
         _ -> 
-            gen_fsm:send_event_after(0,move),
+            gen_fsm:send_event(self(),move),
             {next_state,run,State}
     end;
 
-run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
+run(move,#state{x = X, y = Y, tile_size = TileSize,
                     num_columns = NumColumns, num_rows = NumRows,
                     tile = Tile, type = Type,
                     x_velocity = X_Velocity, y_velocity = Y_Velocity,
@@ -126,15 +127,12 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
 
     % Build a list of nearby items and store them to memory
     Ilist = viewer:get_items(Viewer),
-    % NewMemoryMap = build_memory(Ilist, TileSize, MemoryMap),
     NewMemoryMap = build_memory(Ilist, MemoryMap),
-    % error_logger:error_report(NewMemoryMap),
 
     %Olist = viewer:get_obs(Viewer),
 
     Zlist_Json = jsonify_list(Zlist),
     Hlist_Json = jsonify_list(Hlist),
-
 
     % creates a new value for hunger and food, showing the humans getting
     % hungry over time
@@ -148,11 +146,9 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
         tired ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
-            % error_logger:error_report(MemoryList),
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
-                                X,Y,Olist,MemoryList, Path, State) of
+                                X, Y, Olist, MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
-                    % error_logger:error_report("I've eaten!"),
                     {{BX,BY},NewP,?INITIAL_HUNGER,?INITIAL_ENERGY};
                 {BX,BY,NewP} ->
                     {{BX,BY},NewP,NewHunger,NewEnergy}
@@ -160,11 +156,9 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
-            % error_logger:error_report(MemoryList),
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
-                                X,Y,Olist,MemoryList, Path, State) of
+                                X, Y, Olist, MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
-                    % error_logger:error_report("I've eaten!"),
                     {{BX,BY},NewP,?INITIAL_HUNGER,?INITIAL_ENERGY};
                 {BX,BY,NewP} ->
                     {{BX,BY},NewP,NewHunger,NewEnergy}
@@ -183,19 +177,18 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
     {Limited_X_Velocity,Limited_Y_Velocity} = case NewHungerState of
         tired ->
             % need to limit speed drastically
-            boids_functions:limit_speed(?TIRED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
+            boids_functions:limit_speed(?TIRED_SPEED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
-            boids_functions:limit_speed(?HUNGRY_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
+            boids_functions:limit_speed(?HUNGRY_SPEED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity);
         _ ->
             % need to search for food, boids a little, but also limit speed
-            boids_functions:limit_speed(?LIMIT,X,Y,New_X_Velocity,New_Y_Velocity)
+            boids_functions:limit_speed(?SPEED_LIMIT,X,Y,New_X_Velocity,New_Y_Velocity)
     end,
 
     TargetX = round(X + Limited_X_Velocity),
     TargetY = round(Y + Limited_Y_Velocity),  
     {NewX,NewY,ObsVelX,ObsVelY} = obstructed(Olist,X,Y,TargetX,TargetY,Limited_X_Velocity,Limited_Y_Velocity),
-    Bearing = 0,
 
     case (NewX < 0) or (NewY < 0) or (NewX > NumColumns * (TileSize-1)) or (NewY > NumRows * (TileSize-1)) of
         true -> % We are off the screen!
@@ -204,16 +197,20 @@ run(move,#state{speed = Speed, x = X, y = Y, tile_size = TileSize,
             NewTile = 
             % This calculates if the human is still in it's initial tile
             case {trunc(X) div TileSize, trunc(NewX) div TileSize, trunc(Y) div TileSize, trunc(NewY) div TileSize} of
-                {XTile, XTile, YTile, YTile} -> % In same tile
+                {XTile, XTile, YTile, YTile} -> 
+                    % In same tile
                     Tile;
                 {_, NewXTile, _, NewYTile} ->
+                    % Left the tile, find new tile and remove self from old one.
                     tile:remove_entity(Tile, self(), Type),
                     list_to_atom("tile" ++  "X" ++ integer_to_list(NewXTile) ++  "Y" ++ integer_to_list(NewYTile))
             end,
+            
             {ReturnedX,ReturnedY} = tile:update_entity(NewTile,{self(),{X,Y}, Type},{NewX, NewY},{X_Velocity, Y_Velocity}),
             gen_fsm:send_event_after(State#state.timeout, check_pos),
+
             {next_state,run,State#state{x=ReturnedX,y=ReturnedY,
-                                        bearing = Bearing, tile = NewTile, 
+                                        tile = NewTile, 
                                         z_list = Zlist_Json, h_list = Hlist_Json,
                                         x_velocity = ObsVelX, 
                                         y_velocity = ObsVelY,
@@ -263,7 +260,6 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
     PropListNoViewer = proplists:delete(viewer,PropList),
     % take the MemoryMap out of the report for JSX
     PropListNoMemory = proplists:delete(memory_map,PropListNoViewer),
-    % error_logger:error_report(PropListNoMemory),
     PropListNoObs = proplists:delete(obs_list,PropListNoMemory),
     {reply, {ok,PropListNoObs}, StateName,StateData}.
 
@@ -275,32 +271,47 @@ record_to_proplist(#state{} = Record) ->
 %%%%%% Boids Functions
 %%%%%%==========================================================================
 % Make choice is called with ->
-%   (HumanList, ZombieList, NearestItem, HungerState, State)
+%          (HumanList, ZombieList, NearestItem, HungerState, State)
 make_choice([],[],_NearestItem, _HungerState, _Path, _State) ->
-    {0,0};
+    % Nothing around, wander aimlessly
+    case random:uniform(9) of
+        1->
+            {0,0};
+        2->
+            {0,-1};
+        3->
+            {0,1};
+        4-> 
+            {-1,0};
+        5->
+            {-1,-1};
+        6->
+            {-1,1};
+        7-> 
+            {1,0};
+        8-> 
+            {1,-1};
+        9->
+            {1,1}
+    end;
 
 %===========================Collision Avoidance================================%
-make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, State) when Dist < ?PERSONAL_SPACE ->
-    boids_functions:collision_avoidance(State#state.x, State#state.y, HeadX, HeadY,?COHESION_EFFECT);
+make_choice([{Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_,_,_, _Path, #state{x=X,y=Y}) when Dist < ?PERSONAL_SPACE ->
+    boids_functions:collision_avoidance(X, Y, HeadX, HeadY,?COHESION_EFFECT);
 
 %=============================Super Repulsor====================================%
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MAKE THIS INTERESTING!!!!!
-
-
-make_choice(_,[{_Dist, {_,{_,{{HeadX,HeadY},{_,_}}}}}|_],_NearestItem, _, _Path, State) ->
-    boids_functions:super_repulsor(State#state.x,State#state.y,HeadX,HeadY,?SUPER_EFFECT);
+make_choice(_,[{_Dist, {_,{_,{{ZomX,ZomY},{_,_}}}}}|_],_, _, _Path, #state{x=X,y=Y}) ->
+    boids_functions:super_repulsor(X,Y,ZomX,ZomY,?SUPER_EFFECT);
 
 %===============================Flocking========================================%
-make_choice(Hlist,_,_NearestItem, not_hungry, _Path, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+make_choice(Hlist,_,_NearestItem, not_hungry, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,X,Y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,XVel,YVel,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
-make_choice(Hlist,_,_NearestItem, hungry, _Path, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+make_choice(Hlist,_,_NearestItem, hungry, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,X,Y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,XVel,YVel,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy)};
 
 %============================Hungry - Local Item================================%
@@ -316,7 +327,7 @@ make_choice(_,[],_, tired, Path, _State) when length(Path) >= 1 ->
     {BX,BY,Rest};
 
 % There is no zombie, I have no path, move towards food blindly!
-make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, y=Y} = State) ->
+make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, y=Y}) ->
     case pythagoras:pyth(X,Y,ItemX,ItemY) of
         Value when Value =< 2 ->
             Item = supplies:picked_up(ItemId),
@@ -327,10 +338,10 @@ make_choice(_,[],{ItemId,{ItemX,ItemY,food,_}}, very_hungry, _Path, #state{x=X, 
                     {X,Y}
             end;
         _ ->
-            boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
+            boids_functions:super_attractor(X,Y,ItemX,ItemY,?SUPER_EFFECT)
     end;
 
-make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=Y} = State) ->
+make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=Y}) ->
     case pythagoras:pyth(X,Y,ItemX,ItemY) of
         Value when Value =< 2 ->
             Item = supplies:picked_up(ItemId),
@@ -341,18 +352,18 @@ make_choice(_,[],{ItemId,{ItemX,ItemY,food,_Name}}, tired, _Path, #state{x=X, y=
                     {X,Y}
             end;
         _ ->
-            boids_functions:super_attractor(State#state.x,State#state.y,ItemX,ItemY,?SUPER_EFFECT)
+            boids_functions:super_attractor(X,Y,ItemX,ItemY,?SUPER_EFFECT)
     end;
 
 % Got some humans, but no food
-make_choice(Hlist,_,nothing_found, very_hungry, _Path, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+make_choice(Hlist,_,nothing_found, very_hungry, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,X,Y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,XVel,YVel,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found};
 
-make_choice(Hlist,_,nothing_found, tired, _Path, State) ->
-    {Fx,Fy} = boids_functions:flocking(Hlist,State#state.x,State#state.y,?FLOCKING_EFFECT),
-    {Vx,Vy} = boids_functions:velocity(Hlist,State#state.x_velocity,State#state.y_velocity,?VELOCITY_EFFECT),
+make_choice(Hlist,_,nothing_found, tired, _Path, #state{x=X,y=Y,x_velocity = XVel, y_velocity = YVel}) ->
+    {Fx,Fy} = boids_functions:flocking(Hlist,X,Y,?FLOCKING_EFFECT),
+    {Vx,Vy} = boids_functions:velocity(Hlist,XVel,YVel,?VELOCITY_EFFECT),
     {(Fx+Vx),(Fy+Vy),nothing_found}.
 
 %%%%%%==========================================================================
@@ -413,7 +424,8 @@ obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
         false->
             {NewX,NewY,VelX,VelY}
     end.
-%Obstructions on corners.
+
+%%% Obstructions on corners.
 obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY > 0)->
     {X-1,Y-1,-1,-1};
 obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY < 0)->
@@ -432,7 +444,8 @@ obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) 
     {X,Y+1,0,1};
 obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY == 0)->
     {X,Y,0,0};
-%Obstructions on Y axis.
+
+%%% Obstructions on Y axis.
 obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY > 0)->
     Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
@@ -458,7 +471,7 @@ obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y
             {NewX,Y,VelX,0}
     end;
 
-%Obstructions on X axis.
+%%% Obstructions on X axis.
 obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX > 0)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
@@ -483,6 +496,7 @@ obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X)
         false->
             {X,NewY,0,VelY}
     end.
+
 %%% Calculate the new levels for hunger,energy
 %%% Also work out if the hunger state has changed
 calc_new_hunger_levels(Hunger,Energy) ->
