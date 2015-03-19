@@ -94,7 +94,7 @@ initial(start,State) ->
     gen_fsm:send_event_after(State#state.timeout, check_pos),
     {next_state,run,State}.
 
-% check valid pos fsm state!
+%%% failsafe test to ensure the entity is still in a valid position
 run(check_pos,#state{x=X, y=Y, obs_list = Olist, tile = Tile, type = Type} = State) ->
     % hard check to see if valid position
     case check_valid_pos({X,Y},Olist) of
@@ -104,7 +104,7 @@ run(check_pos,#state{x=X, y=Y, obs_list = Olist, tile = Tile, type = Type} = Sta
             {stop, shutdown, State};
             % all good!
         _ -> 
-            gen_fsm:send_event_after(0,move),
+            gen_fsm:send_event(self(),move),
             {next_state,run,State}
     end;
 
@@ -125,9 +125,7 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
 
     % Build a list of nearby items and store them to memory
     Ilist = viewer:get_items(Viewer),
-    % NewMemoryMap = build_memory(Ilist, TileSize, MemoryMap),
     NewMemoryMap = build_memory(Ilist, MemoryMap),
-    % error_logger:error_report(NewMemoryMap),
 
     Olist = viewer:get_obs(Viewer),
 
@@ -146,11 +144,9 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
         tired ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
-            % error_logger:error_report(MemoryList),
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
                                 X, Y, Olist, MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
-                    % error_logger:error_report("I've eaten!"),
                     {{BX,BY},NewP,?INITIAL_HUNGER,?INITIAL_ENERGY};
                 {BX,BY,NewP} ->
                     {{BX,BY},NewP,NewHunger,NewEnergy}
@@ -158,11 +154,9 @@ run(move,#state{x = X, y = Y, tile_size = TileSize,
         very_hungry ->
             % need to search for food, boids a little, but also limit speed
             MemoryList = maps:keys(NewMemoryMap),
-            % error_logger:error_report(MemoryList),
             case calc_new_hungry_xy(Hlist,Zlist,NearestItem,NewHungerState,
                                 X, Y, Olist, MemoryList, Path, State) of
                 {BX,BY,NewP,eaten} ->
-                    % error_logger:error_report("I've eaten!"),
                     {{BX,BY},NewP,?INITIAL_HUNGER,?INITIAL_ENERGY};
                 {BX,BY,NewP} ->
                     {{BX,BY},NewP,NewHunger,NewEnergy}
@@ -262,7 +256,6 @@ handle_sync_event(get_state, _From, StateName, StateData) ->
     PropListNoViewer = proplists:delete(viewer,PropList),
     % take the MemoryMap out of the report for JSX
     PropListNoMemory = proplists:delete(memory_map,PropListNoViewer),
-    % error_logger:error_report(PropListNoMemory),
     PropListNoObs = proplists:delete(obs_list,PropListNoMemory),
     {reply, {ok,PropListNoObs}, StateName,StateData}.
 
@@ -428,7 +421,7 @@ obstructed(Olist,X,Y,NewX,NewY,VelX,VelY) ->
             {NewX,NewY,VelX,VelY}
     end.
 
-%Obstructions on corners.
+%%% Obstructions on corners.
 obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY > 0)->
     {X-1,Y-1,-1,-1};
 obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX > 0) and (VelY < 0)->
@@ -447,7 +440,8 @@ obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) 
     {X,Y+1,0,1};
 obstructedmove(_Olist,X,Y,NewX,NewY,VelX,VelY) when (X == NewX) and (Y == NewY) and (VelX == 0) and (VelY == 0)->
     {X,Y,0,0};
-%Obstructions on Y axis.
+
+%%% Obstructions on Y axis.
 obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y))) and (VelY > 0)->
     Member = lists:any(fun({A,B}) -> Y div 5 == B andalso NewX div 5 == A end,Olist),
     case Member of
@@ -473,7 +467,7 @@ obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewX-X)) >= (abs(NewY-Y
             {NewX,Y,VelX,0}
     end;
 
-%Obstructions on X axis.
+%%% Obstructions on X axis.
 obstructedmove(Olist,X,Y,NewX,NewY,VelX,VelY) when ((abs(NewY-Y)) > (abs(NewX-X))) and (VelX > 0)->
     Member = lists:any(fun({A,B}) -> NewY div 5 == B andalso X div 5 == A end,Olist),
     case Member of
