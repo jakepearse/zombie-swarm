@@ -46,7 +46,7 @@
 		}; 
     
     // global variable
-    socket = new WebSocket('ws://192.168.1.10:8080/websocket');
+    socket = new WebSocket('ws://localhost:8080/websocket');
     
     var json = JSON.stringify({"type":"setup","arrity":$scope.arrity,"swarmSize":$scope.swarmSize,"popSize":$scope.popSize,"obArray":$scope.simpleObArray,"items":$scope.foodAmount});
     $scope.inspectList = [];
