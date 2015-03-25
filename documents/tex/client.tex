@@ -1,6 +1,25 @@
-The software which we tenatively call 'the client' was designed to fullfill two major functions.
-Provide a visulaisation of the current state of the simulation, as we were aware this would be the uer-facing component of the system we wanted to make it attractive and easy to interpret.
-The secondary function of the software is to provide a daignostic tool to be used to examine the state of the system and individual entiys within it.
-Early on the group seleceted HTML and JavaScript as the technologys which the client would leverage. The initial stages of development centred around establishing two-way communication via webscoket. The job of establishing the socket was delegated to the Cowboy framework (link to cowboy). For the sake of convience we decided on JSON as the format of websocket messages, on the Erlang side we initally identifed the MochiJSON library as our method for encodeing to JSON however as development progressed we ran into some difficulties with the library, Specifically relating to the encoding of atoms as strings and we switched to the JSX library for our JSON encoder.
-The client software underwent one major revision, the inital version was constructed peice by peice in JavaScript in response to each change in the simulation arhectecture resulting in a lot of messy and difficult to maintain code, once the archetecture was largely implemented the client was entirely rewritten using the angularJS framework.
+\pagestyle{empty}
+\section{Client and visualisation\\{\small\tt{J.~Pearse}}}
+We were aware this would be the user-facing component of the system we wanted to make it attractive and easy to interpret and use.
+The software which we tentatively call the client, was designed to fulfil two major functions.
+\begin{enumerate}
+  \item{Provide a visualisation of the current state of the simulation and a method of control of various parameters.}
+  \item{The secondary function of the software is to provide a diagnostic tool to be used to examine the state of the system and individual entities.}
+\end{enumerate}
+The client was always envisioned as a prototype but during the course of the systems development the client came to play a substantial role. The development of the client itself became a major focus of the project at points and a lot of effort was required to learn the two JavaScript libraries utilised.
+\subsection{Core technologies choices}
+Early on the group selected HTML and JavaScript as the platform, which the client would leverage. The initial stages of development centred around establishing two-way communication via WebSocket. The job of establishing the socket was delegated to the Cowboy framework (link to cowboy). For the sake of convenience we decided on JSON as the format of WebSocket messages, on the Erlang side we initially identified the MochiJSON library as our method for encoding to JSON however as development progressed we ran into some difficulties with the library, Specifically relating to the encoding of atoms as strings and we switched to the JSX library for our JSON encoder.
+\subsection{Angular.js}
+The client software underwent one major revision, the initial version was constructed piece-by-piece in JavaScript in response to each change in the simulation architecture resulting in a lot of messy and difficult to maintain code, once the architecture was largely implemented the client was entirely rewritten using the AngularJS framework. The re-factoring into the AnuglarJS framework granted an opportunity for the convoluted logic to abstracted into a more easily maintainable code-base. The {\tt{app.js}}
+source code file contains all the logic which maps variables to HTML elements and communicates with the swarm application essentially providing an control layer between the JSON data coming from the swarm application and mapping the data to the visualisation library.
+\subsection{D3.js library}
+In the early stages of our background research the D3 data visualisation library was identified as our visualisation solution. D3 provides a library for mapping data to elements of a scalable vector graphic image. All of the functions related to the visualisation and animation are contained in the draw.js source file. As the client provides important diagnostic information almost everything visualised is from data returned over the WebSocket the only exception being the axis lines marking tile separation. All obstructions, entities and sight-lines are drawn from application data.
+\subsection{Diagnostic elements}
+The main diagnostic elements of the client include the Inspector panel and the sightline visulaisation, in conjunction with the visualisation itself.
+\subsubsection{Inspection panel}
+The inspector provides continualy updated inspection of the state of selected processes, we took pains to ensure that everything in the entity state is reported over the WebSocket so any aspect of an entities sate can simple be added to the inspector display. To add an entity to the inspector simply click on it in the visualisation.
+\subsubsection{Sight-lines}
+In additon to added an
 
+\clearpage
+\endinput
