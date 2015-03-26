@@ -15,11 +15,11 @@ source code file contains all the logic which maps variables to HTML elements an
 \subsection{D3.js library}
 In the early stages of our background research the D3 data visualisation library was identified as our visualisation solution. D3 provides a library for mapping data to elements of a scalable vector graphic image. All of the functions related to the visualisation and animation are contained in the draw.js source file. As the client provides important diagnostic information almost everything visualised is from data returned over the WebSocket the only exception being the axis lines marking tile separation. All obstructions, entities and sight-lines are drawn from application data.
 \subsection{Diagnostic elements}
-The main diagnostic elements of the client include the Inspector panel and the sightline visulaisation, in conjunction with the visualisation itself.
+The main diagnostic elements of the client include the Inspector panel and the sight-line visualisation, in conjunction with the visualisation itself. We also included a button to pause the currently running simulation. Because every entity must be sent a pause signal individually you can occasionally observe slight a slight delay between one entity entering its paused state and another, it's a staggered pause rather than a hard pause. While the system is paused there is still a continuous stream of reports coming over the WebSocket the data in each report however is unchanging while the system is paused.
 \subsubsection{Inspection panel}
 The inspector provides continualy updated inspection of the state of selected processes, we took pains to ensure that everything in the entity state is reported over the WebSocket so any aspect of an entities sate can simple be added to the inspector display. To add an entity to the inspector simply click on it in the visualisation.
 \subsubsection{Sight-lines}
-In additon to added an
+Sight lines were a late addition to the visualisation, mapping a line from each selected entity to all other entities recorded in its state, this turned out to be one of the most useful features in understanding entity state. 
 
 \clearpage
 \endinput
