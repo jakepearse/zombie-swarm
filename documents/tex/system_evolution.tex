@@ -15,6 +15,7 @@ As this early system diagram shows, we had planned for positions (represented as
 The group would like to thank Dr Fred Barnes for his input in our system revision, DR Barnes remarked that our design was similar to an early iteration of a concurrent flocking program he had worked on and provided us with a description of the system used by his program which greatly influenced our subsequent revisions.
 
 \subsection{The Tile-Viewer model}
+\label{tile_viewer_diagram}
 In our revised design employed a system of concurrent tiles used to model space, we abandoned the idea of positions-as-processes, each tile would keep a list of the positions of entities on it and each entity would keep a record of it's own position and the address of the tile it currently occupies. Viewers contain lists of cross-tile data allowing entities to "see" into neighbouring tiles. An entity requests it's sensory data from its Tile's corresponding Viewer and a Tile updates all its neighbouring viewers with the positions of entities it contains. This duplication of data allows us to maintain a high level of concurrency in the simulation, reducing potential message-passing bottle necks. Each Tile has a corresponding Viewer, but the Viewer additionally contains the data of neighbouring Tiles.
 \begin{figure}[h]
   \centering

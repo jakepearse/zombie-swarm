@@ -1,18 +1,18 @@
 \pagestyle{empty}
 \section{System Overview\\{\small\tt J.~Mitchard}}
 
-
 \subsection{Supervisor-Child Architecture}
 % another intro to OTP
 % what is a SupervisorSupervisor-Child Architecture
 % why this is useful
     % gen-servery stuff
+The \verb+swarmer+ application has been implemented as a hierarchical process structure using Erlang Supervisor processes\footnote{http://www.erlang.org/doc/man/supervisor.html}. This means that all processes are children of a supervisor process within the applications supervision tree.
+
 
 \subsection{System Architecture}
 % Overall Architecture
 % Link back to evolution and design documents
 % Include a new, final Architecture Overview diagram
-%
 
 \subsection{Communication}
 % intro to the Communication of processes
