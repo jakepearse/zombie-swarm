@@ -1,6 +1,6 @@
 \pagestyle{empty}
 \section{Entity Interaction\\{\small\tt J.~Mitchard}}
-As explained in [SYSTEM OVERVIEW REFERENCE], the simulation has been implemented with a tile-viewer architecture. Whilst this allows for the the system to run more efficiently, it meant that a slightly more creative way of entities maintaining awareness had to be created. This section will cover the specifics of how tile and viewer processes interact, and how each entity interacts with them throughout the simulation.
+As explained in section \ref{sys_overview_architecture}, the simulation has been implemented with a tile-viewer architecture. Whilst this allows for the the system to run more efficiently, it meant that a slightly more creative way of entities maintaining awareness had to be created. This section will cover the specifics of how tile and viewer processes interact, and how each entity interacts with them throughout the simulation.
 
 \subsection{Tiles and Viewers}
 When the map of tiles and viewers are created by \emph{environment.fsm}, they are each assigned a unique viewer along with the viewers of all of the neighbouring tile processes. This creates a grid as shown in section \ref{tile_viewer_diagram}. The purpose of these viewers is to allow entities to ask the viewer for their current tile what is around them, or, more specifically, what other entities are currently located on the same tile and in each of those surrounding it.
@@ -32,9 +32,9 @@ Firstly, each list is filtered to remove entities further than a defined distanc
 This diagam shows an example snapshot of communication between a human, tile and viewer processes in which the human  requests information from the viewer, and then requests to move to a new position. The example assumes that the requested position was not obstructed.
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.8\textwidth]{img/tile-viewer-human-msgs.png}
-\caption{Human, Tile and Viewer Communication}
-    \label{fig:Message passing between human, tile and viewer}
+  \includegraphics[width=0.6\textwidth]{img/tile-viewer-human-msgs.png}
+  \caption{Human, Tile and Viewer Communication}
+  \label{fig:tile_viewer_communication}
 \end{figure}
 
 \clearpage
