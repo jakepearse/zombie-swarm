@@ -26,7 +26,7 @@ In order for humans and zombies to have an awareness of their surroundings, it i
 
 However, because each entity has a defined line of sight that is considerably less than the length and height of three tiles, which is what the viewer would provide information for, these lists will have to be filtered down to have this taken into consideration.
 
-Firstly, each list is filtered to remove entities further than a defined distance away, the line of sight varies between humans and zombies. Secondly, the list uses the \emph{findline} function from the \emph{los.erl} module [LOS REF HERE] to filter out entities in which line of sight is obstructed by obstacles. This will provide each entity with the information needed to make informed decisions of what to do next.
+Firstly, each list is filtered to remove entities further than a defined distance away, the line of sight varies between humans and zombies. Secondly, the list uses the \emph{findline} function from the \emph{los.erl} module, which is introduced in section \ref{los}, to filter out entities in which line of sight is obstructed by obstacles. This will provide each entity with the information needed to make informed decisions of what to do next.
 
 \subsection{Example of Process Communication}
 This diagam shows an example snapshot of communication between a human, tile and viewer processes in which the human  requests information from the viewer, and then requests to move to a new position. The example assumes that the requested position was not obstructed.

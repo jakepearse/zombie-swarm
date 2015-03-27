@@ -14,11 +14,11 @@
    // $scope.arrityOpts = [3,4,5,6,7,8,9,10];
    // $scope.arrity = $scope.arrityOpts[7];
     $scope.gridScaleOpts = [1,2,3,4,5,6,7,8,9,10];
-    $scope.gridScale = $scope.gridScaleOpts[5];
+    $scope.gridScale = $scope.gridScaleOpts[8];
     $scope.swarmSizeOpts = [0,1,2,5,10,20,30,40,50,100];
     $scope.swarmSize = $scope.swarmSizeOpts[2];
     $scope.popSizeOpts = [1,2,5,10,20,30,40,50,100,250];
-    $scope.popSize = $scope.popSizeOpts[4];
+    $scope.popSize = $scope.popSizeOpts[8];
     $scope.foodAmountOpts = [5,10,20,30];
     $scope.foodAmount = $scope.foodAmountOpts[1];
     $scope.runningFlag=false;
