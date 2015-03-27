@@ -6,7 +6,7 @@
 -include_lib("include/swarmer.hrl").
 
 %%% API
--export([start_link/0,make_grid/4,get_grid_info/0,report/0, 
+-export([start_link/0,make_grid/4,get_grid_info/0,report/0,
          pause_entities/0, unpause_entities/0, start_entities/0,
          type_pause_unpause/2,create_obs/2]).
 
@@ -32,7 +32,7 @@
   rows,
 % number of tile columns
   columns,
-% size of each tile  
+% size of each tile
   tileSize,
 % list of obstructions
   obs_list = []
@@ -47,7 +47,7 @@
 %%%% Start the server.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-start_link() -> 
+start_link() ->
     gen_server:start_link({local,?MODULE},?MODULE, [], []).
 
 %%%%------------------------------------------------------------------------------
@@ -87,7 +87,7 @@ report() ->
 %% create Num zombies and add add them to the tiles
 %%%% @end
 %%%%------------------------------------------------------------------------------
-set_swarm(Num) -> 
+set_swarm(Num) ->
   gen_server:call(?MODULE,{swarm,Num}).
 
 %%%%------------------------------------------------------------------------------
@@ -95,7 +95,7 @@ set_swarm(Num) ->
 %% create Num zombies and add add them to the tiles
 %%%% @end
 %%%%------------------------------------------------------------------------------
-set_mob(Num) -> 
+set_mob(Num) ->
   gen_server:call(?MODULE,{mob,Num}).
 
 %%%%------------------------------------------------------------------------------
@@ -103,7 +103,7 @@ set_mob(Num) ->
 %% Place items on the map
 %%%% @end
 %%%%------------------------------------------------------------------------------
-set_items(Num) -> 
+set_items(Num) ->
   gen_server:call(?MODULE,{items,Num}).
 
 %%%%------------------------------------------------------------------------------
@@ -111,7 +111,7 @@ set_items(Num) ->
 %% create Num zombies and add add them to the tiles
 %%%% @end
 %%%%------------------------------------------------------------------------------
-start_entities() -> 
+start_entities() ->
   do_start_entities().
 
 %%%%------------------------------------------------------------------------------
@@ -119,7 +119,7 @@ start_entities() ->
 %% Pauses all running entities
 %%%% @end
 %%%%------------------------------------------------------------------------------
-pause_entities() -> 
+pause_entities() ->
   do_pause_entities().
 
 %%%%------------------------------------------------------------------------------
@@ -127,7 +127,7 @@ pause_entities() ->
 %% Unpauses all running entities
 %%%% @end
 %%%%------------------------------------------------------------------------------
-unpause_entities() -> 
+unpause_entities() ->
   do_unpause_entities().
 
 %%%%------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ unpause_entities() ->
 %% Pauses or unpauses entities of a specific type.
 %%%% @end
 %%%%------------------------------------------------------------------------------
-type_pause_unpause(Action,Type) -> 
+type_pause_unpause(Action,Type) ->
   do_action_entities_type(Action,Type).
 
 create_obs(Obs_list,TileSize) ->
@@ -146,12 +146,12 @@ create_obs(Obs_list,TileSize) ->
 %%%%%% gen_server Callbacks
 %%%%%%=============================================================================
 
-init([]) -> 
+init([]) ->
    {ok, #state{}}. %new state record with default values
 
-%%% calls   
+%%% calls
 handle_call(report,_From,State) ->
-    Report = make_report(), 
+    Report = make_report(),
     % error_logger:error_report(Report),
     {reply,Report,State};
 
@@ -189,12 +189,12 @@ handle_call({make_grid,{Rows,Columns,TileSize,Obs_list}},_From,State) ->
 
   make_neighbourhood(Grid,Viewers),
   %error_logger:error_report(State#state.viewerPropList),
-  
-  Cord_list = lists:map(fun(I)-> X=I rem (10*Rows), Y=I div (10*Columns), T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list), 
+
+  Cord_list = lists:map(fun(I)-> X=I rem (10*Rows), Y=I div (10*Columns), T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list),
     %error_logger:error_report(Cord_list),
 	lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
-  
-  
+
+
   {reply,ok,State#state{rows=Rows,columns=Columns,tileSize=TileSize,viewerPropList=Viewers,obs_list=Cord_list}};
 
 handle_call({swarm,Num},_From,State) ->
@@ -202,7 +202,7 @@ handle_call({swarm,Num},_From,State) ->
   supervisor:terminate_child(swarm_sup, zombie_sup),
   supervisor:restart_child(swarm_sup, zombie_sup),
   create_swarm(State,Num),
-  do_action_entities_type(pause, zombies),  
+  do_action_entities_type(pause, zombies),
   {reply,ok,State};
 
 handle_call({mob,Num},_From,State) ->
@@ -222,12 +222,12 @@ handle_call({items,Num},_From,State) ->
 
 %%% map a list of integers to [{Tile,{X,Y}},...] and pushes them into the relevant tile's State#state.obs_list
 %handle_call({create_obs_map,Obs_list,GridSize},_From,State) ->
-	%Cord_list = lists:map(fun(I)-> X=I rem 50, Y=I div 50, T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list), 
+	%Cord_list = lists:map(fun(I)-> X=I rem 50, Y=I div 50, T = list_to_atom("tile" ++  "X" ++ integer_to_list(X div 10) ++  "Y" ++ integer_to_list(Y div 10)),{T,{X,Y}} end,Obs_list),
     %error_logger:error_report(Cord_list),
 	%lists:foreach(fun(K) -> tile:set_obs_list(K,proplists:get_all_values(K,Cord_list)) end,proplists:get_keys(Cord_list)),
 
   %{reply,ok,State#state{obs_list = Cord_list}}.
-	
+
 handle_call(terminate,State) ->
   {stop,normal,State}.
 
@@ -265,7 +265,7 @@ make_row(RowCounter,Columns,ColumnCounter,TileSize,Row) ->
                                         RowCounter*TileSize,
                                         TileSize]),
   make_row(RowCounter,Columns,ColumnCounter +1,TileSize, Row++[Name]).
-  
+
 %%% populate could be misleading, it means populate a grid with tiles %%%
 populate_grid(Rows,Columns,TileSize) ->
   populate_grid(0,Rows,Columns,TileSize,[]).
@@ -324,7 +324,7 @@ place_items(#state{tileSize = TileSize, rows = Rows, obs_list = Obs_List} = Stat
         end,lists:seq(1,Num)).
 
 %% search for a tile by X,Y in the viewerPropList
-get_tile(Xpos,Ypos,#state{viewerPropList = ViewerPropList, tileSize = TileSize}) -> 
+get_tile(Xpos,Ypos,#state{viewerPropList = ViewerPropList, tileSize = TileSize}) ->
   Tile = list_to_atom("tile" ++  "X" ++ integer_to_list(Xpos div TileSize) ++  "Y" ++ integer_to_list(Ypos div TileSize)),
   Viewer = proplists:get_value(Tile,ViewerPropList),
   {Tile,Viewer}.
@@ -340,7 +340,7 @@ make_report() ->
                     {true, StateData};
                 _ ->
                     false
-            end 
+            end
         end, get_entities_list()),
 
     % Build a list of items from the supervisor
@@ -351,7 +351,7 @@ make_report() ->
                     {true, StateData};
                 _ ->
                     false
-            end 
+            end
         end, get_supplies_list()),
 
     % Remove all items that have been eaten
@@ -372,15 +372,15 @@ do_make_neighbourhood(TileList,ViewerGeomList) ->
   {Xo,Yo,_,_,_Size} = tile:get_geometry(T),
   tile:set_neighbours(T,get_neighbours(Xo,Yo,ViewerGeomList)),
   do_make_neighbourhood(Ts,ViewerGeomList).
-  
-setup_neighbours(ViewerPropList) -> 
+
+setup_neighbours(ViewerPropList) ->
   %reformat the viewer propslist inot one with geometry
   lists:map(fun({T,V})-> {tile:get_geometry(T),V} end, ViewerPropList).
 
 
 get_neighbours(Xo,Yo,ViewersWithGeometry) ->
   get_neighbours(Xo,Yo,ViewersWithGeometry,[]).
-  
+
 get_neighbours(_,_,[],NeighbourList) -> NeighbourList;
 get_neighbours(Xo,Yo,ViewersWithGeometry,NeighbourList) ->
   [V|Vs]=ViewersWithGeometry,
@@ -445,7 +445,7 @@ apply_to_all__humans(Fun) ->
 
 get_entities_list() ->
   get_zombies_list() ++ get_humans_list().
-    
+
 get_zombies_list() ->
   supervisor:which_children(zombie_sup).
 

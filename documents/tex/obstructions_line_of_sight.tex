@@ -1,0 +1,24 @@
+\pagestyle{empty}
+
+\section{Obstructions and line-of-sight\\{\small\tt{J.~Pearse}}}
+
+\subsection{Physical obstructions in the simulation space}
+One of the primary motivations for including obstructions in the simulation was to allow the implementation of path finding and the potential for more complex or unexpected behaviours to arise. There was concern that the resolution of the simulation could incur to high a computational cost with multiple agents all executing heuristic searches concurrently over a large space. As a result it was decided to implement obstructions at a lower resolution than the one used naturally by entities in the simulation. Although the resolution of the 'obstruction grid' was parametrized, it has only been tested at a single resolution \(\frac{1}{10}\) of the the resolution of the natural simulation space.
+As each tile in the simulation has a resolution of \(50^2\) the resolution of the obstruction grid was set as a matrix of \(5^2\), so each tile contains a grid of \(10^2\) obstruction cells. We wanted a simple method of drawing maps of obstructions so we selected a paint program (mtpaint) with the capability to export ascii art pictures. Each ascii art map was stripped of line breaks and included in the main JavaScript application as a string. The strings were then indexed to locate the integer positions of obstructed cells and using modulo and integer division, translated into co-ordinates within the obstruction grid space. The implementation of the obstruction grid within the simulation although simplistic with hindsight was a fairly complicated process involving a lot of experimentation, testing and a great deal of drawing everything out on graph paper to make sure it was functioning correctly. However once the correct functions had been established the obstruction grid worked smoothly.
+The process of instantiating the obstruction map is;
+\begin{enumerate}
+\item{Iterate over the map string (in JavaScript) to create an array, of indices, of obstructed cells}
+\item{Pass the array over the web socket into the swarm application when the simulation is being set-up}
+\item{As part of the make\_grid method of the environment module(cross reference), the obstructed cells are assigned to the state of their respective tile when the tile is created.}
+\end{enumerate}
+Each tile maintains a list of obstructed cells inside its geometry as co-ordinate pair on the obstructed grid scale.
+When entities call a function which requires consideration of obstruction the native co-ordinates are simply divide by 5 to determine if they are inside an obstructed cell.
+
+\subsection{Line-of-sight}
+The main system dynamic which makes use of obstructions is line of sight, when we first implemented the obstruction system we observed the behaviour of entities become very unrealistic, there was nothing in place to prevent entietie from 'seeing' other entities through obstructed cells. This caused large swarms to become trapped up against the opposite side of obstructions as they continually tried to close the distance between themselves and the target. It was opbvious that to maintain any sense of realism we would need to prevent entities from seeing through obstructions.
+It was clear that data obtained from the viewer's (already filtered by distance) would need an additional filter to contain them to only those entities to which an uninterrupted line segment could be traced, i.e a line segment which did not intersect an obstructed cell. An extra module was written to provide the linear algebra functions required to trace these line segments, again a seemingly simple task in task hindsight, this required a great deal of testing and drawing out of graphs with pencils and paper.
+\subsection{Conclusion}
+As a result an extra functionality was added to the client [cross reference] to visualise every uninterrupted line which could be drawn from a given entity. This new functionality when added to the client proved to be an unexpected source of information about the system state and inadvertently revealed one of the more interesting aspects of trying to visualise a highly concurrent system.
+
+\clearpage
+\endinput
