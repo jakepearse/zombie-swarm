@@ -1,2 +1,2 @@
 #!/bin/bash
-pdflatex document.tex && pdflatex document.tex && xdg-open document.pdf
+pdflatex corpus.tex && pdflatex corpus.tex && xdg-open corpus.pdf
