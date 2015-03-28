@@ -1,0 +1,89 @@
+\documentclass{article}
+\usepackage{times}
+\usepackage{mystyle}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{color}
+\definecolor{Gray}{gray}{0.9} % oh my god! why can't americans spell?
+%\usepackage{ifpdf}
+%\includeonly{project_ouline.tex}
+%\usepackage{layout}
+%\addtolength{\oddsidemargin}{-1.0in}
+%\addtolength{\evensidemargin}{-1.0in}
+%\addtolength{\textwidth}{1.8in}
+%\addtolength{\textheight}{1.8in}
+%\addtolength{\topmargin}{-0.8in}
+
+\begin{document}
+\title{Realistic Concurrent Zombie Horde Simulation}
+
+%\maketitle
+
+%\ifx\HCode\undefined \else
+%\CutAt{section}    % tell is to cut as if we did "htm,2", make
+%\fi                % section separate
+
+%\tableofcontents
+%\listoffigures
+%\listoftables
+%\clearpage
+
+
+% introduction
+\input{./tex/project_outline.tex}
+\input{./tex/zombies.tex}
+\input{./tex/requirements_specification.tex}
+\input{./tex/client_requirements_specification.tex}
+\input{./tex/coding_standards.tex}
+\input{./tex/risk_assessment.tex}
+\input{./tex/testing_plan.tex}
+
+% research
+\input{./tex/languages_research.tex}
+\input{./tex/intelligence.tex}
+\input{./tex/updated_client_requirements_specification.tex}
+
+% development
+\input{./tex/system_evolution.tex}
+\input{./tex/phase_1_development_reflection.tex}
+\input{./tex/system_architecture_it1.tex}
+\input{./tex/process_evaluation.tex}
+\input{./tex/particle_swarm.tex}
+\input{./tex/boids.tex}
+\input{./tex/system-testing.tex}
+
+% overview
+\input{./tex/system_overview.tex}
+\input{./tex/client.tex}
+\input{./tex/entity_interaction.tex}
+\input{./tex/obstructions_line_of_sight.tex}
+% intelligence
+\input{./tex/zombie_behaviour.tex}
+\input{./tex/human_intelligence.tex}
+
+% look back
+\input{./tex/survey_results.tex}
+\input{./tex/unimplemented_features_and_fixes.tex}
+
+
+
+%
+% \input{./tex/module_swarm_handler.tex}
+% \input{./tex/module_swarm_server.tex}
+% \input{./tex/module_tile.tex}
+% \input{./tex/module_viewer.tex}
+% \input{./tex/module_environment.tex}
+
+
+
+%\input{./tex/QACode/environment_qa.tex}
+
+%\input{./tex/QAD/biology_qa.tex}
+%\input{./tex/QAD/concurrency_and_feasibility_research_qa.tex}
+%\input{./tex/QAD/phase_one_development_reflection_qa.tex}
+
+
+\end{document}
