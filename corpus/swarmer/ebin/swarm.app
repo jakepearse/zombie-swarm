@@ -1,0 +1,12 @@
+{application,swarm,
+             [{description,[]},
+              {vsn,"0.1.0"},
+              {modules,[astar,boids_functions,enviroment,environment,
+                        human_fsm,human_sup,los,pso,pythagoras,supplies,
+                        supplies_sup,swarm_handler,swarm_libs,swarm_server,
+                        swarm_sup,tile,tile_sup,trigstuff,viewer,viewer_sup,
+                        zombie_fsm,zombie_sup]},
+              {mod,{swarm_server,[]}},
+              {registered,[]},
+              {applications,[kernel,stdlib,cowboy]},
+              {env,[]}]}.

@@ -1,12 +1,13 @@
 \pagestyle{empty}
 \section{Entity Interaction\\{\small\tt J.~Mitchard}}
+\label{entity_interactions}
 As explained in section \ref{sys_overview_architecture}, the simulation has been implemented with a tile-viewer architecture. Whilst this allows for the the system to run more efficiently, it meant that a slightly more creative way of entities maintaining awareness had to be created. This section will cover the specifics of how tile and viewer processes interact, and how each entity interacts with them throughout the simulation.
 
 \subsection{Tiles and Viewers}
 \label{tiles_and_viewers}
 When the map of tiles and viewers are created by \emph{environment.fsm}, they are each assigned a unique viewer along with the viewers of all of the neighbouring tile processes. This creates a grid as shown in section \ref{tile_viewer_diagram}. The purpose of these viewers is to allow entities to ask the viewer for their current tile what is around them, or, more specifically, what other entities are currently located on the same tile and in each of those surrounding it.
 
-Each tile updates each of the viewers making up up it's 'neighbourhood' of local tiles and viewers with new data regarding which entities are on it and where. Each tile reports to it's viewers from four sets of data held in it's state. These are:
+Each tile updates each of the viewers making up it's 'neighbourhood' of local tiles and viewers with new data regarding which entities are on it and where. Each tile reports to it's viewers from four sets of data held in it's state. These are:
 \begin{description}
   \item[zombie\textunderscore map] - A map of each zombie currently on the tile with the zombies Process ID as the key.
   \item[human\textunderscore map] - A map of each human currently on the tile with the humans Process ID as the key.
@@ -24,7 +25,7 @@ Because these data sets change so often and unpredictably, Erlang Maps are perfe
 \subsection{Entities and Awareness}
 \label{entities_awareness}
 \label{viewer_intro}
-In order for humans and zombies to have an awareness of their surroundings, it is necessary for them to ask the viewer process of their current tile for information regarding nearby zombies, items, obstacles and other humans. Because this information is constantly changing, it will have to do this at the start of each cycle of it's state machine.
+In order for humans and zombies to have an awareness of their surroundings, it is necessary for them to ask the Viewer process for their current Tile for information; regarding nearby zombies, items, obstacles, and other humans. Because this information is constantly changing, it will have to do this at the start of each cycle of its state machine.
 
 However, because each entity has a defined line of sight that is considerably less than the length and height of three tiles, which is what the viewer would provide information for, these lists will have to be filtered down to have this taken into consideration.
 
