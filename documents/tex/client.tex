@@ -1,6 +1,7 @@
 \pagestyle{empty}
 \section{Client and visualisation\\{\small\tt{J.~Pearse}}}
 \label{client}
+\label{client_doc}
 We were aware this would be the user-facing component of the system we wanted to make it attractive and easy to interpret and use.
 The software which we tentatively call the client, was designed to fulfil two major functions.
 \begin{enumerate}
@@ -21,8 +22,12 @@ The main diagnostic elements of the client include the Inspector panel and the s
 \subsubsection{Inspection panel}
 The inspector provides continualy updated inspection of the state of selected processes, we took pains to ensure that everything in the entity state is reported over the WebSocket so any aspect of an entities sate can simple be added to the inspector display. To add an entity to the inspector simply click on it in the visualisation. For detail on the implementation of the panel see section:\ref{inspector_panel}
 \subsubsection{Sight-lines}
+<<<<<<< HEAD
 \label{sight_lines}
 Sight lines were a late addition to the visualisation, mapping a line from each selected entity to all other entities recorded in its state, this turned out to be one of the most useful features in understanding entity state and concurrent behaviour in the simulation. More detail on sight-lines is included in Section:\ref{line_of_sight} 
+=======
+Sight lines were a late addition to the visualisation, mapping a line from each selected entity to all other entities recorded in its state, this turned out to be one of the most useful features in understanding entity state.
+>>>>>>> 97c526a53e01137df58a1697e4feb66eacdee129
 
 \clearpage
 \endinput
