@@ -1,5 +1,6 @@
 \pagestyle{empty}
 \section{Zombie Intelligence\\{\small\tt{R.~Hales}}}
+\label{zombie_doc}
 The zombie entities are designed to be relatively unintelligent, only interested in chasing and killing humans or following a group of other zombies. To achieve this a swarming algorithm, based off of the Boids algorithm,  was created to decide zombie behaviours.
 \subsection{Decision Making}
 Zombies make decisions based off the entities of the map a zombie can see. Zombies look around by querying their viewer to find lists of the human and zombie entities within its vicinity, the zombie then cuts down these lists to only contain entities within the zombies sight range and then cuts the list again to remove all entities that would be blocked from line of sight by obstructions.
@@ -27,10 +28,9 @@ After making a decision the change in velocity resulting is added to the zombies
 Zombies have a maximum distance they can move in one action, if they exceed that limit then they will have their movement changed to move in the same direction but not far enough to surpass the limit.
 
 \subsubsection{Energy}
-Energy represents how recently a zombie has eaten. Energy decreases over time and as it does so it decreases the maximum distance a zombie can move in one action.  
+Energy represents how recently a zombie has eaten. Energy decreases over time and as it does so it decreases the maximum distance a zombie can move in one action.
 
 \subsubsection{Obstructions}
 If the spot the zombie intends to move to is obstructed either by another entity or an obstacle then the zombie will bounce off it to avoid collisions.
 \clearpage
 \endinput
- 
