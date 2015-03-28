@@ -18,7 +18,7 @@ The reason that when a zombie makes a decision it changes velocity rather than d
 The way zombies decide how to change their velocity is to investigate their local area to find all the human and zombies entities it can see and then uses this information to perform the highest priority action that is possible.Priority is determined by the types of entities visible and how close those entities are.In particular entities will be considered either in reach of the zombie or within sight of the zombie based on distance.
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.8\textwidth]{img/zombie_range.png}
+  \includegraphics[width=0.3\textwidth]{img/zombie_range.png}
 \caption{Illustration of a zombies sight and reach ranges}
     \label{fig:Illustration of a zombies sight and reach ranges}
 \end{figure}
@@ -26,7 +26,7 @@ The way zombies decide how to change their velocity is to investigate their loca
 The zombies priorities are very simple.Zombies prioritise killing humans above all else, if a human is within reach of the zombie it will try and kill and eat the human.The next priority is not being too close to another zombie, if another zombie is within reach then the zombies will attempt to move away from each other to prevent clustering together, this is to ensure that zombies form swarms rather than clustering together too closely and being unable to move away from each other due to getting surrounded by other entities.Next if a human is within sight of a zombie then the zombie will attempt to chase after the human, this allows zombies to break from swarming and attempt to kill humans.The next priority is forming a swarm with other zombies, this allows the zombies to form groups and combined with the previous priority will cause whole swarms of zombies to chase after humans even if not all of them can see the human. Finally if there is no other entities to interact with the zombies will move in an attempt to locate something to interact with.
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.8\textwidth]{img/zombie_decision_tree.png}
+  \includegraphics[width=0.3\textwidth]{img/zombie_decision_tree.png}
 \caption{Zombie priorities diagram}
     \label{fig:Zombie priorities diagram}
 \end{figure}
