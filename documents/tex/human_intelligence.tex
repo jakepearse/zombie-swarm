@@ -22,6 +22,7 @@
 }
 
 \section{Human Intelligence\\{\small\tt J.~Mitchard}}
+\label{human_doc}
 From early on, we have decided that human entities are to be more intelligent than that of their undead counterparts. In order to establish a sense of realism in our simulation the, human entities have to make complicated decisions based on their current situation and what is going on around them. This section will explain which behaviours have been implemented, which decisions are made in order to achieve them and what is taken into consideration to make them believable actions.
 
 \subsection{Human Behaviours}
@@ -41,7 +42,7 @@ Human entities in our simulation are currently able to replicate a number of dif
 
 \subsection{Human Intelligence Implementation}
 \subsubsection{The Decision Making Process}
-Humans decide what to do next based on a set of weighted priorities, taking into consideration their current surroundings and circumstance. Each time a human runs through it's state machine cycle, it will calculate new levels of hunger and energy and request new, updated lists of nearby entities from the it's current tiles Viewer, this process is explained in section \ref{viewer_intro}. These include a list of other humans, a list of zombies and a list of items, allowing the human to know what is happening around him.
+Humans decide what to do next based on a set of weighted priorities, taking into consideration their current surroundings and circumstance. Each time a human runs through it's state machine cycle, introduced in section \ref{otp_behaviours}, it will calculate new levels of hunger and energy and request new, updated lists of nearby entities from the it's current tiles Viewer, this process is explained in section \ref{viewer_intro}. These include a list of other humans, a list of zombies and a list of items, allowing the human to know what is happening around him.
 
 Based on the information received from the Viewer the human can now make an informed decision. The priorities are ordered as such:
 \begin{enumerate}

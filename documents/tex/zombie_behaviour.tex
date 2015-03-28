@@ -11,10 +11,10 @@ These new velocities are then rounded down and added to their respective current
 	New Y = Current Y + Rounded New Y Velocity
 These new co-ordinates then have checks performed on them to ensure the move is legal and if not to change it to the nearest legal move.After this the zombie is moved and is then ready to perform his next move.
 \subsection{Velocity} 
-The reason that when a zombie makes a decision it changes velocity rather than directly changing its position is that it allows the system to keep track of the zombies current speed and heading.because of this if a zombie keeps choosing to head in the same direction it will gradually speed up from moving small distances each action to moving larger ones, simulating the zombie building up momentum. This momentum also means that if a zombie suddenly decides to change direction it will not instantly move in the direction he wants, instead it will start turning gradually from its current heading towards the heading it wants to be going. The zombies therefore move in a much more natural and realistic way than without the use of velocities.
+The reason that when a zombie makes a decision it changes velocity rather than directly changing its position is that it allows the system to keep track of the zombies current speed and heading.because of this if a zombie keeps choosing to head in the same direction it will gradually speed up from moving small distances each action to moving larger distances, simulating the zombie building up momentum. This momentum also means that if a zombie suddenly decides to change direction it will not instantly move in the direction he wants, instead it will start turning gradually from its current heading towards the heading it wants to be going. The zombies therefore move in a much more natural and realistic way than without the use of velocities.
 
 \subsection{Decision Making}
-The way zombies decide how to change their velocity is to investigate its local area to find all the human and zombies entities it can see and then uses this information to perform the highest priority action that is possible.Priority is determined by the types of entities visible and how close those entities are.In particular entities will be considered either in reach of the zombie or within sight of the zombie based on distance.
+The way zombies decide how to change their velocity is to investigate their local area to find all the human and zombies entities it can see and then uses this information to perform the highest priority action that is possible.Priority is determined by the types of entities visible and how close those entities are.In particular entities will be considered either in reach of the zombie or within sight of the zombie based on distance.
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.8\textwidth]{img/zombie_range.png}
@@ -58,9 +58,9 @@ Zombies have a maximum distance they can move in one action,if the velocity of t
 \subsubsection{Energy}
 Energy represents how recently a zombie has eaten. Energy decreases every time a zombie makes an action. If the energy of a zombie falls too low then the maximum distance a zombie can move per action is decreased to represent the zombie slowing down from hunger.Energy is refilled by killing humans and eating them.  
 
+
 \subsubsection{Obstructions}
 If the spot the zombie intends to move to is obstructed either by another entity or an obstacle then the zombie will bounce off it to avoid collisions.If the obstacle is a wall, the zombie is placed next to the wall and its velocity is changed to -1 of whatever direction it hit the wall in but kept the same in the other axis to enable the zombie to keep moving without repeatedly hitting the wall again. If the zombie hit another entity it is placed next to the entity it hit but its velocity is not reset as there is little risk of repeatedly running into the same entity as all other entities will be moving at the same time.
 
 \clearpage
 \endinput
- 
