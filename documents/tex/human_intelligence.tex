@@ -23,7 +23,7 @@
 
 \section{Human Intelligence\\{\small\tt J.~Mitchard}}
 \label{human_doc}
-From early on, we have decided that human entities are to be more intelligent than that of their undead counterparts. In order to establish a sense of realism in our simulation the, human entities have to make complicated decisions based on their current situation and what is going on around them. This section will explain which behaviours have been implemented, which decisions are made in order to achieve them and what is taken into consideration to make them believable actions.
+From early on, we have decided that human entities are to be more intelligent than that of their undead counterparts. In order to establish a sense of realism in our simulation, the human entities have to make complicated decisions based on their current situation and what is going on around them. This section will explain which behaviours have been implemented, which decisions are made in order to achieve them and what is taken into consideration to make them believable actions.
 
 \subsection{Human Behaviours}
 The human behaviours in the simulation are modelled through a heavily extended version of the Boids algorithm, as introduced in section \ref{boids_document}. In order to survive, the human entities have to avoid the zombies, however it is also necessary for humans to eat food found around the world in order to maintain energy. Over time the humans become hungry which, in turn, will cause the humans to slow down as they lose energy, making them easier for the zombies to catch.
@@ -34,7 +34,7 @@ Human entities in our simulation are currently able to replicate a number of dif
   \item[Collision Avoidance] - The human avoids hitting both other entities and obstacles.
   \item[Zombie Repulsion] - In order to survive, a human entity must try and avoid contact with zombies.
   \item[Flock Attraction] - Humans are social creatures, this behaviour will allow the humans to attempt to group together with other humans and move as a group.
-  \item[Food Attraction] - When hungry, and their is nearby food a human will be attracted to the item of food.
+  \item[Food Attraction] - When hungry, and there is nearby food a human will be attracted to the item of food.
   \item[Maintaining Memory] - Food can be scarce, so it is important for a human to remember the location of food that it doesn't need at present.
   \item[Pathfinding to Food] - When hungry, a human will try and move towards known locations of food.
   \item[Search] - When there is nothing else to do, a human can search the area around him, looking for food or other humans.
@@ -42,7 +42,7 @@ Human entities in our simulation are currently able to replicate a number of dif
 
 \subsection{Human Intelligence Implementation}
 \subsubsection{The Decision Making Process}
-Humans decide what to do next based on a set of weighted priorities, taking into consideration their current surroundings and circumstance. Each time a human runs through it's state machine cycle, introduced in section \ref{otp_behaviours}, it will calculate new levels of hunger and energy and request new, updated lists of nearby entities from the it's current tiles Viewer, this process is explained in section \ref{viewer_intro}. These include a list of other humans, a list of zombies and a list of items, allowing the human to know what is happening around him.
+Humans decide what to do next based on a set of weighted priorities, taking into consideration their current surroundings and circumstances. Each time a human runs through its state machine cycle, introduced in section \ref{otp_behaviours}, it will calculate new levels of hunger and energy and request new, updated lists of nearby entities from its current tiles' Viewer, this process is explained in section \ref{viewer_intro}. These include a list of other humans, a list of zombies, and a list of items; allowing the human to know what is happening around him.
 
 Based on the information received from the Viewer the human can now make an informed decision. The priorities are ordered as such:
 \begin{enumerate}
