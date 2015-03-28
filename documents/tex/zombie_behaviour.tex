@@ -1,0 +1,36 @@
+\pagestyle{empty}
+\section{Zombie Intelligence\\{\small\tt{R.~Hales}}}
+The zombie entities are designed to be relatively unintelligent, only interested in chasing and killing humans or following a group of other zombies. To achieve this a swarming algorithm, based off of the Boids algorithm,  was created to decide zombie behaviours.
+\subsection{Decision Making}
+Zombies make decisions based off the entities of the map a zombie can see. Zombies look around by querying their viewer to find lists of the human and zombie entities within its vicinity, the zombie then cuts down these lists to only contain entities within the zombies sight range and then cuts the list again to remove all entities that would be blocked from line of sight by obstructions.
+
+The zombies will then make a decision to change its velocity based on the following in order of priority.
+\subsubsection{Human entity within reach}
+If a human entity is within reach of a zombie, the zombie will attempt to kill the human. If the zombie succeeds it will send a message to the human instructing the human to die and create a new zombie in its place as well as restoring the zombies energy.
+
+\subsubsection{Zombie entity within reach}
+If there is another zombie within reach, the zombie making the decision will accelerate away from the second zombie to avoid swarms clustering too closely.
+
+\subsubsection{Human Entity within sight}
+The zombie will accelerate towards the nearest human entity to chase it down.
+
+\subsubsection{Zombie entity within sight}
+The zombie will attempt to move towards the centre point of all zombies within sight and to match the average direction and speed of all zombies in sight. This allows the zombies to form swarms and to move as a group.
+
+\subsubsection{No entities in sight}
+If there are no humans or zombies in sight then the zombie will start to change course randomly until it finds another entity to react to.
+
+\subsection{Behaviour After Decision Making}
+After making a decision the change in velocity resulting is added to the zombies current velocity then several limits will be checked to prevent the zombie moving against the rules of the simulation.
+
+\subsubsection{Limit speed}
+Zombies have a maximum distance they can move in one action, if they exceed that limit then they will have their movement changed to move in the same direction but not far enough to surpass the limit.
+
+\subsubsection{Energy}
+Energy represents how recently a zombie has eaten. Energy decreases over time and as it does so it decreases the maximum distance a zombie can move in one action.  
+
+\subsubsection{Obstructions}
+If the spot the zombie intends to move to is obstructed either by another entity or an obstacle then the zombie will bounce off it to avoid collisions.
+\clearpage
+\endinput
+ 

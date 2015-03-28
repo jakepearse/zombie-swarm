@@ -1,0 +1,28 @@
+\pagestyle{empty}
+\section{Unimplemented Features and Fixes\\{\small\tt{R.~Hales}}}
+Unfortunately we did not have time to implement everything we would have liked to in the time given for our project. The following are all features we intended to include at some point in our project and would like to implement if given more time.
+
+\subsection{Features}
+
+\subsubsection{Humans fighting back}
+One feature we had in mind since early development was for humans to be able to fight back against zombies. To do this we  intended to have a more complex combat system where, based on the number of entities of each type in the immediate vicinity and the states of those entities, the results of combat are calculated and either humans or zombies are killed.
+
+\subsubsection{Weapons}
+Extending on humans fighting back, we were also planning on implementing weapons, such as guns. These could be used to improve a humans chance of winning against zombies. The weapons would be items similar to the food implemented in the current system, which would be sought out and picked up by humans as part of their behaviour.
+
+\subsubsection{Different families of humans}
+ We would like to create more variety in human behaviour by implementing different varieties or families of humans. This would allow different humans to have different priorities while path-finding. This would create more interesting behaviour and also allow a way to see what sort of behaviour improves a humans survivability.
+
+\subsubsection{More visually appealing GUI}
+We would have liked to create a more interesting looking user interface,as our current one is very plain.  One idea was to make an interface that visually more closely fits the theme of a zombie apocalypse. 
+
+\subsubsection{Humans turning into corpses before becoming zombies}
+We would also have liked to create a form of entity that humans become between dying and becoming zombies. This would allow a slower transformation, making it less easy for a single zombie to quickly wipe out lots of humans,  and would allow the zombies more chance to eat from the new form. 
+
+\subsection{Fixes}
+
+\subsubsection{Ghosts}
+One bug we have identified but have not fixed is entities that seem to move without regards for obstacles or other entities and are ignored by other entities in return. We believe this bug to be caused by the entities somehow losing track of their viewer, as without a viewer an entity would be unable to notice its surroundings and would also have no way of being seen by other entities.
+
+\clearpage
+\endinput
