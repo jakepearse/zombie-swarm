@@ -1,6 +1,7 @@
 \pagestyle{empty}
 
 \section{The evolution of concurrent system design\\{\small\tt{J.~Pearse}}}
+\label{system-design}
 This document provides a description of the process of developing a coherent and effective strategy for using concurrency to simulate a spatial environment, providing data required for navigation to the entities within it.
 Rather than a more traditional technique of maintaining a canonical model of each entities position in space and repeatedly dividing it to provide relevant data relative to position, we wanted to use smaller concurrent regions of space each maintaining it's own data internally.
 \subsection{Initial design}
@@ -12,7 +13,7 @@ Our original (naive) idea for the system was to use concurrent processes to repr
     \label{fig:Initial system design}
 \end{figure}
 As this early system diagram shows, we had planned for positions (represented as some kind of co-ordinate data) to be separate processes which would be generic and used by different "classes" of entities. Thankfully we revised this design further before we began to implement such a system.
-The group would like to thank Dr Fred Barnes for his input in our system revision, DR Barnes remarked that our design was similar to an early iteration of a concurrent flocking program he had worked on and provided us with a description of the system used by his program which greatly influenced our subsequent revisions.
+The group would like to thank Dr F Barnes for his input in our system revision. Dr Barnes, remarked that our design was similar to an early iteration of a concurrent flocking program he had worked on and provided us with a description of the system used by his program which greatly influenced our subsequent revisions.
 
 \subsection{The Tile-Viewer model}
 In our revised design employed a system of concurrent tiles used to model space, we abandoned the idea of positions-as-processes, each tile would keep a list of the positions of entities on it and each entity would keep a record of it's own position and the address of the tile it currently occupies. Viewers contain lists of cross-tile data allowing entities to "see" into neighbouring tiles. An entity requests it's sensory data from its Tile's corresponding Viewer and a Tile updates all its neighbouring viewers with the positions of entities it contains. This duplication of data allows us to maintain a high level of concurrency in the simulation, reducing potential message-passing bottle necks. Each Tile has a corresponding Viewer, but the Viewer additionally contains the data of neighbouring Tiles.
