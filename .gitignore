@@ -9,3 +9,7 @@ swarmer.rebar
 .rebar
 *.aux
 *.log
+corpus/swarmer/erl_crash.dump
+corpus/swarmer/ebin
+corpus/swarmer.rebar
+corpus/swarmer/.eunit

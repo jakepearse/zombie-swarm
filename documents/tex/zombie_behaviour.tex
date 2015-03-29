@@ -3,6 +3,7 @@
 \label{zombie_doc}
 The zombie entities are designed to be relatively unintelligent, only interested in finding,chasing and killing humans,avoiding obstacles and following a group of other zombies to form a swarm.To achieve this zombies have had multiple behaviours implemented to enable them to act realistically and follow the rules of our system.
 \subsection{Movement}
+\label{movement}
 Before going into specific behaviours it is important to understand how zombies move in the simulation. Each zombie contains two pairs of variables that are directly used in determining it's next position; An X co-ordinate and a Y co-ordinate, which together represent the current position of the zombie in the simulation, and an X velocity and a Y Velocity, which represent how fast the zombie is currently moving and in which direction.
 As well as these variables, whenever a zombie makes a decision two numbers are returned.These represent the change in X velocity and the change in Y velocity resulting from the decision.These numbers are naturally added to the current X velocity and current Y velocity respectively to create the new velocity of the zombie.
 	New X Velocity = Current X Velocity + Change in X Velocity
@@ -11,7 +12,7 @@ These new velocities are then rounded down and added to their respective current
 	New X = Current X + Rounded New X Velocity
 	New Y = Current Y + Rounded New Y Velocity
 These new co-ordinates then have checks performed on them to ensure the move is legal and if not to change it to the nearest legal move.After this the zombie is moved and is then ready to perform his next move.
-\subsection{Velocity} 
+\subsection{Velocity}
 The reason that when a zombie makes a decision it changes velocity rather than directly changing its position is that it allows the system to keep track of the zombies current speed and heading.because of this if a zombie keeps choosing to head in the same direction it will gradually speed up from moving small distances each action to moving larger distances, simulating the zombie building up momentum. This momentum also means that if a zombie suddenly decides to change direction it will not instantly move in the direction he wants, instead it will start turning gradually from its current heading towards the heading it wants to be going. The zombies therefore move in a much more natural and realistic way than without the use of velocities.
 
 \subsection{Decision Making}
@@ -57,7 +58,7 @@ After making a decision the change in velocity resulting is added to the zombies
 Zombies have a maximum distance they can move in one action,if the velocity of the zombie exceeds this value then a new velocity is calculated that keeps the same heading but with a distance at the maximum allowed, this prevents zombies moving unrealistically fast if they repeatedly change velocity to go the same direction.
 
 \subsubsection{Energy}
-Energy represents how recently a zombie has eaten. Energy decreases every time a zombie makes an action. If the energy of a zombie falls too low then the maximum distance a zombie can move per action is decreased to represent the zombie slowing down from hunger.Energy is refilled by killing humans and eating them.  
+Energy represents how recently a zombie has eaten. Energy decreases every time a zombie makes an action. If the energy of a zombie falls too low then the maximum distance a zombie can move per action is decreased to represent the zombie slowing down from hunger.Energy is refilled by killing humans and eating them.
 
 
 \subsubsection{Obstructions}

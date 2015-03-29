@@ -23,7 +23,7 @@
 
 \section{Human Intelligence\\{\small\tt J.~Mitchard}}
 \label{human_doc}
-From early on, we had decided that human entities are to be more intelligent than their undead counterparts. In order to establish a sense of realism in our simulation, the human entities have to make complicated decisions based on their current situation and what is going on around them. This section will explain which behaviours have been implemented, which decisions are made in order to achieve them and what is taken into consideration to make them believable actions.
+From early on, we had decided that human entities are to be more intelligent than their undead counterparts. In order to establish a sense of realism in our simulation, the human entities have to make complicated decisions based on their current situation and what is going on around them. The way in which an moves is covered in section \ref{movement}, as this is generic to both types of entity within the simulation. This section will explain which behaviours have been implemented, which decisions are made in order to achieve them and what is taken into consideration to make them believable actions.
 
 \subsection{Human Behaviours}
 The human behaviours in the simulation are modelled through a heavily extended version of the Boids algorithm, as introduced in section \ref{boids_document}. In order to survive, the human entities have to avoid the zombies, however it is also necessary for humans to eat food found around the world in order to maintain energy. Over time the humans become hungry which, in turn, will cause the humans to slow down as they lose energy, making them easier for the zombies to catch.

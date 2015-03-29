@@ -3,7 +3,7 @@
 \section{The evolution of concurrent system design\\{\small\tt{J.~Pearse}}}
 \label{system-design-document}
 \label{system_evolution}
-This document provides a description of the process of developing a coherent and effective strategy for using concurrency to simulate a spatial environment, providing data required for navigation to the entities within it.
+This document provides a description of the process for developing a coherent and effective strategy for using concurrency to simulate a spatial environment, providing data required for navigation to the entities within it.
 Rather than a more traditional technique of maintaining a canonical model of each entities position in space and repeatedly dividing it to provide relevant data relative to position, we wanted to use smaller concurrent regions of space each maintaining it's own data internally.
 \subsection{Initial design}
 Our original (naive) idea for the system was to use concurrent processes to represent each position in the system, if a position in space was occupied; a process would be created to represent it. By modelling space as a set of occupied points we intended to keep the system overhead low. As we explored the system it became apparent that we were in fact doubling the number the required processes; one entity and an additional position for each entity.
