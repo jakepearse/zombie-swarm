@@ -6,15 +6,6 @@
 % manually specify the path to it like:
 % \documentclass[conference]{../sty/IEEEtran}
 
-
-
-
-
-% Some very useful LaTeX packages include:
-% (uncomment the ones you want to load)
-
-
-% *** MISC UTILITY PACKAGES ***
 % *** CITATION PACKAGES ***
 %
 \usepackage{cite}
@@ -91,36 +82,51 @@
 \IEEEauthorblockA{Email: jakes email here}
 \and
 \IEEEauthorblockN{Robert Hales}
-\IEEEauthorblockA{Email: robs email here}
-}
+\IEEEauthorblockA{Email: robs email here}}
 % make the title area
 \maketitle
 
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
+% what the fuck is an abstract?
 The abstract goes here.
 \end{abstract}
 
-\section{Introduction}
-% no \IEEEPARstart
-This demo file is intended to serve as a ``starter file''
-for IEEE conference papers produced under \LaTeX\ using
-IEEEtran.cls version 1.8a and later.
-% You must have at least 2 lines in the paragraph with the drop letter
-% (should never be an issue)
-I wish you the best of success.
+\section{Introduction \label{intro}}
+% what is the project?
+% what have we done?
+% why have we done it? maybe
+% what is in the rest of the document
+In this
 
-\hfill mds
-
-\hfill September 17, 2014
-
-\subsection{Subsection Heading Here \label{section}}
-Subsection text here.
+Throughout the document we will introduce the \verb+swarmer+ application, as well as the client we have built to visualise the simulation, explaining how we have implemented the integral parts of the application. We will also introduce the behaviour models that we have created in order to make the different entitiy types within the simulation behave the way they do.
 
 
-\subsubsection{Subsubsection Heading Here \label{section2}}
-Subsubsection text here.
+\section{Background \label{background}}
+% research into the area
+% feasibility checks and stuff
+
+\section{Aims \label{aims}}
+% what we set out to achieve
+
+\section{System Architecture \label{architecture}}
+% overall architecture, include one/two of my arch diagrams
+% tile-viewer system, why it's awesome (because it's awesome)
+
+% from jake:  how obstructions work in the application
+%             system setup
+
+\section{Behaviours and Intelligence \label{behaviours}}
+% from rob: boids
+%           what are they?
+%           different entities and their Intelligence
+
+\section{Client \label{client}}
+% from jake: client stuff
+
+
+
 
 
 % An example of a floating figure using the graphicx package.
