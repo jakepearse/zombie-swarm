@@ -1,0 +1,2 @@
+#!/bin/bash
+pdflatex swarmer_tech_report.tex && pdflatex swarmer_tech_report.tex && xdg-open swarmer_tech_report.pdf
