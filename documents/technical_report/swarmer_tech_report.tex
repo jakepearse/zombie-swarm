@@ -98,10 +98,9 @@ The abstract goes here.
 % what have we done?
 % why have we done it? maybe
 % what is in the rest of the document
-In this
+zsxfcghadgbadfgbadfghba
 
 Throughout the document we will introduce the \verb+swarmer+ application, as well as the client we have built to visualise the simulation, explaining how we have implemented the integral parts of the application. We will also introduce the behaviour models that we have created in order to make the different entitiy types within the simulation behave the way they do.
-
 
 \section{Background \label{background}}
 % research into the area
@@ -113,6 +112,26 @@ Throughout the document we will introduce the \verb+swarmer+ application, as wel
 \section{System Architecture \label{architecture}}
 % overall architecture, include one/two of my arch diagrams
 % tile-viewer system, why it's awesome (because it's awesome)
+
+Using Erlang and the Open Telecom Platform\cite{otp} (OTP) provides us with a unique set of tools perfectly suited to creating a highly concurrent, fault resistant, message passing system. Included in this is the Supervisor-Child process architecture that allows you to create a robust system in which a supervisor process maintains a number of child processes. As part of the OTP, certain module behaviours are defined, providing a number of useful functions to allow for cross process communication. Of this, we have used the Gen-Server and Gen-Fsm behaviours. Gen-Server provides useful functions for passing messages between processes, and Gen-Fsm is used to implement a finite state machine in Erlang.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.4\textwidth]{../img/supervisor.png}
+\caption{Supervision Tree for Swarmer}
+    \label{fig:sup_tree}
+\end{figure}
+
+blah blah system architecture
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.4\textwidth]{../img/final_system_ws.png}
+\caption{System Architecture}
+    \label{fig:system_ws}
+\end{figure}
+
+tile/viewery things
 
 % from jake:  how obstructions work in the application
 %             system setup
@@ -245,9 +264,19 @@ The conclusion goes here.
 % (used to reserve space for the reference number labels box)
 \begin{thebibliography}{1}
 
-\bibitem{IEEEhowto:kopka}
-H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
-  0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
+% \bibitem{IEEEhowto:kopka}
+% H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
+%   0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
+
+  \bibitem{otp}
+    Ericsson Computer Science Laboratory
+		\emph{Open Telecom Platform Design Principles},
+    http://www.erlang.org/doc/design\_principles/sup\_princ.html\
+
+  \bibitem{supervisors}
+    Ericsson Computer Science Laboratory
+		\emph{Erlang Supervisors},
+    http://www.erlang.org/doc/man/supervisor.html
 
 \end{thebibliography}
 
