@@ -23,7 +23,7 @@
 
 \section{Human Intelligence\\{\small\tt J.~Mitchard}}
 \label{human_doc}
-From early on, we have decided that human entities are to be more intelligent than that of their undead counterparts. In order to establish a sense of realism in our simulation, the human entities have to make complicated decisions based on their current situation and what is going on around them. This section will explain which behaviours have been implemented, which decisions are made in order to achieve them and what is taken into consideration to make them believable actions.
+From early on, we had decided that human entities are to be more intelligent than their undead counterparts. In order to establish a sense of realism in our simulation, the human entities have to make complicated decisions based on their current situation and what is going on around them. The way in which an moves is covered in section \ref{movement}, as this is generic to both types of entity within the simulation. This section will explain which behaviours have been implemented, which decisions are made in order to achieve them and what is taken into consideration to make them believable actions.
 
 \subsection{Human Behaviours}
 The human behaviours in the simulation are modelled through a heavily extended version of the Boids algorithm, as introduced in section \ref{boids_document}. In order to survive, the human entities have to avoid the zombies, however it is also necessary for humans to eat food found around the world in order to maintain energy. Over time the humans become hungry which, in turn, will cause the humans to slow down as they lose energy, making them easier for the zombies to catch.
@@ -50,7 +50,7 @@ Based on the information received from the Viewer the human can now make an info
   \item If there are nearby zombies, move away to avoid them.
   \item If hungry and currently next to the food, attempt to pick it up.
   \item If hungry, there are no zombies and there is a path to an item set, follow the next position from the path.
-  \item If hungry, there are no zombies and there is a nearby food, move towards it.
+  \item If hungry, there are no zombies and there is nearby food, move towards it.
   \item If there are no zombies, group together with other human entities.
   \item If nothing else matches, search for food.
 \end{enumerate}
@@ -82,7 +82,7 @@ This snippet of code from \emph{human\textunderscore fsm.erl} shows how the huma
 
 On the other hand, functional programming has presented us with a number of interesting ways of solving problems. Deciding what behaviour to next carry out lends itself perfectly to pattern matching, whereby the function will fall through multiple function headers until one meets the current state. Using pattern matching in Erlang, we have created a 'one-size-fits-all' function that decides on what the entity should do next; The behaviours are each implemented in a different branch of the function, each meeting a different specification until one is accepted by the function and the behaviour is carried out.
 
-In the above example, the human entity knows that there are no nearby zombies in sight, and that it is near an item of food. The human will attempt to pick it up if it is close enough, and if another human hasn't picked it up before him it will return to the main state machine that the human has eaten. Otherwise, the human will make an attempt to move towards the food.
+In the above example, the human entity knows that there are no nearby zombies in sight, and that it is near an item of food. The human will attempt to pick it up if it is close enough, and if another human hasn't picked it up before them it will return to the main state machine that the human has eaten. Otherwise, the human will make an attempt to move towards the food.
 
 \clearpage
 \endinput

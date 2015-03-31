@@ -15,7 +15,7 @@ The Boids Model defines a number of behaviours that allow for different entities
 	\begin{itemize}
 		\item \emph{Separation} - ensures that the entities will not overcrowd local flockmates. This prevents the flock converging on one entity and getting stuck in a localised swarm.
 		\item \emph{Alignment} - allows the flock to maintain a heading, by aligning other members of the flock to navigate to an average heading of nearby entities.
-		\item \emph{Cohesion} - the opposite of separation, this allows the independent entities to flock together by navigating towards nearby other nearby entities.
+		\item \emph{Cohesion} - the opposite of separation, this allows the independent entities to flock together by navigating towards other nearby entities.
 	\end{itemize}
 	\item Advanced navigation
 	\begin{itemize}
@@ -24,7 +24,7 @@ The Boids Model defines a number of behaviours that allow for different entities
 	\item Attractors and Repulsors
 	\begin{itemize}
 		\item \emph{Flock Attraction} - an attraction to entities of similar type. This will be used by the Cohesion and Alignment steering behaviours.
-		\item \emph{Super Attractors} - other entities considered higher priority to flock towards than others.
+		\item \emph{Super Attractors} - other entities considered higher priority to flock towards.
 		\item \emph{Super Repulsors} - other entities considered a 'threat', flocks will prioritise moving away from these.
 	\end{itemize}
 \end{itemize}
@@ -35,9 +35,9 @@ This model will need some adapting to suit our own simulation. The model is inte
 \subsubsection{Boids In Context}
 Zombies and humans will need to flock in different ways and for different reasons. We have decided that zombies are not inherently intelligent, and would tend to 'flock' through being attracted to movement and noise of other zombies. In a sense, a horde of zombies will flock together wandering reasonably aimlessly until a human entity enters the area. At this point the horde would shift behaviour and attempt to chase the human(s) that are in range.
 
-This type of relation defines that a human, to a zombies is a Super Attractor. Super Attractors are prioritised higher than other behaviours, such as collision avoidance and flock coherency, therefore allowing our horde of zombies to demonstrate the type of behaviour displayed by zombies in popular culture of getting stuck against obstacles in attempt to reach the human by the shortest path possible.
+This type of relation defines that a human, to a zombies is a Super Attractor. Super Attractors are prioritised higher than other behaviours, such as collision avoidance and flock coherency, therefore allowing our horde of zombies to demonstrate the type of behaviour displayed by zombies in popular culture of getting stuck against obstacles in an attempt to reach the human by the shortest path possible.
 
-In order to simulate a realistic situation of zombies and humans, this would mean that the zombies must be a form of Super Repulsor to a human; meaning that they will attempt to run away from the zombies. Humans, however, are inherently more intelligent than the basic motor driven zombies that we are implementing. Whilst trying to escape, they will not just pick a direction and run. Whilst the aim for the human entities would be to escape the horde of zombies chasing it, collision avoidance must still be carried out when pathfinding an escape route.
+In order to simulate a realistic situation of zombies and humans, this would mean that the zombies must be a form of Super Repulsor to a human; meaning that they will attempt to run away from the zombies. Humans, however, are inherently more intelligent than the basic instinct driven zombies that we are implementing. Whilst trying to escape, they will not just pick a direction and run. Whilst the aim for the human entities would be to escape the horde of zombies chasing it, collision avoidance must still be carried out whilst pathfinding an escape route.
 
 \clearpage
 \endinput

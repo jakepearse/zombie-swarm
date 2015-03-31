@@ -1,13 +1,19 @@
 \pagestyle{empty}
 \section{System Overview\\{\small\tt J.~Mitchard}}
-
+\label{system_overview}
 \subsection{Supervisor-Child Architecture}
+\label{otp_description}
+% another intro to OTP
+% what is a SupervisorSupervisor-Child Architecture
+% why this is useful
+    % gen-servery stuff
+The \verb+swarmer+ application has been implemented in a hierarchical process structure using Erlang Supervisor processes\footnote{http://www.erlang.org/doc/man/supervisor.html} that comes as part of the OTP\footnote{http://www.erlang.org/doc/design\_principles/des\_princ.html} \footnote{http://learnyousomeerlang.com/what-is-otp} (Open Telecom Platform). This means that all processes are children of a supervisor process within the applications' supervision tree. Supervisors are responsible for the stopping, starting and restarting of their child processes.
+%
 \label{supervisor_arch}
 The \verb+swarmer+ application has been implemented in a hierarchical process structure using Erlang Supervisor processes\footnote{http://www.erlang.org/doc/man/supervisor.html}, a behaviour that comes as part of the OTP\footnote{http://www.erlang.org/doc/design\_principles/des\_princ.html} \footnote{http://learnyousomeerlang.com/what-is-otp} (Open Telecom Platform). This means that all processes are children of a supervisor process within the applications' supervision tree. Supervisors are responsible for the stopping, starting and restarting of their child processes.
-
 \verb+Swarmer+ has one main supervisor, called the \verb+swarm_sup+, this is responsible for the \verb+tile_sup+, \verb+viewer_sup+, \verb+human_sup+, \verb+zombie_sup+, \verb+supplies_sup+ supervisor processes and the \verb+environment+ process.
 
-Apart from \verb+swarm_sup+, all of the supervisors are created with a \verb+simple-one-for-one+ restart strategy, meaning that each of the children will be identical processes using the same code, and should be researted if they crash. \verb+swarm_sup+ is using a \verb+one-for-one+ strategy, which can restart it's child processes without affecting the others\footnote{http://www.erlang.org/doc/design\_principles/sup\_princ.html\#id68643}.
+Apart from \verb+swarm_sup+, all of the supervisors are created with a \verb+simple-one-for-one+ restart strategy, meaning that each of the children will be identical processes using the same code, and should be restarted if they crash. \verb+swarm_sup+ is using a \verb+one-for-one+ strategy, which can restart its child processes without affecting the others\footnote{http://www.erlang.org/doc/design\_principles/sup\_princ.html\#id68643}.
 
 \begin{figure}[h]
   \centering
@@ -22,7 +28,7 @@ Using an Erlang and OTP application with a process supervision architecture prov
 
 The backbone of \verb+swarmer+ is created using the \verb+gen_server+\footnote{http://www.erlang.org/doc/design\_principles/gen\_server\_concepts.html} (Generic Server) behaviour. \verb+gen_server+ provides a framework for reliable and robust message passing between processes, using either synchronous requests called calls, or asynchronous request called a casts. The \verb+environment+, \verb+tile+, \verb+viewer+ and \verb+supplies+ modules have been implemented with \verb+gen_server+ behaviours.
 
-The behaviour of the human and zombie entities in the system is modelled around the \verb+gen_fsm+\footnote{http://www.erlang.org/doc/design\_principles/fsm.html} (Generic Finite State Machine) behaviour. \verb+gen_fsm+ provides a state machine for the entities to use, and incorporates synchronisation events, such as pause and unpause, for the rest of the system to call. The \verb+gen_fsm+ processes will, once started, run until told to stop. The \verb+human_fsm+ and \verb+zombie_fsm+ modules have been implemented with \verb+gen_fsm+ behaviours.
+The behaviour of the human and zombie entities in the system are modelled around the \verb+gen_fsm+\footnote{http://www.erlang.org/doc/design\_principles/fsm.html} (Generic Finite State Machine) behaviour. \verb+gen_fsm+ provides a state machine for the entities to use, and incorporates synchronisation events, such as pause and unpause, for the rest of the system to call. The \verb+gen_fsm+ processes will, once started, run until told to stop. The \verb+human_fsm+ and \verb+zombie_fsm+ modules have been implemented with \verb+gen_fsm+ behaviours.
 
 \subsection{System Architecture}
 \label{sys_overview_architecture}
@@ -59,7 +65,7 @@ Obstructions, which are covered in section \ref{los}, play a big part in the way
 \subsubsection{Making the Grid}
 When the \verb+environment+ process receives a \verb+make_grid+ request it will firstly purge the system of currently spawned processes; restarting the system from the ground up. This prevents old instances of processes remaining in the supervision tree.
 
-The process will then proceed to create a grid of given arrity by spawning \verb+tile+ instances of a given size. In order to create a grid like structure, a row of tiles is spawned, assigning each an origin coordinate and an end coordinate before creating another row of tiles. All \verb+tile+ processes are registered to Erlang as a named process of the form "tileXOYO", O being the origin point for each axis. Each of these is then has a viewer process assigned to it.
+The process will then proceed to create a grid of given arrity by spawning \verb+tile+ instances of a given size. In order to create a grid like structure, a row of tiles is spawned, assigning each an origin coordinate and an end coordinate before creating another row of tiles. All \verb+tile+ processes are registered to Erlang as a named process of the form "tileXOYO", O being the origin point for each axis. Each of these then has a viewer process assigned to it.
 
 \clearpage
 \endinput
