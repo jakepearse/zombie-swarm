@@ -1,4 +1,4 @@
-\documentclass[conference]{IEEEtran}
+\documentclass[10pt, a4paper, conference, compsocconf]{IEEEtran}
 % Some Computer Society conferences also require the compsoc mode option,
 % but others use the standard conference format.
 %
@@ -8,6 +8,7 @@
 
 % *** CITATION PACKAGES ***
 %
+\usepackage{url}
 \usepackage{cite}
 % cite.sty was written by Donald Arseneau
 % V1.6 and later of IEEEtran pre-defines the format of the cite.sty package
@@ -62,27 +63,18 @@
 
 
 \begin{document}
-%
-% paper title
-% Titles are generally capitalized except for words such as a, an, and, as,
-% at, but, by, for, in, nor, of, on, or, the, to and up, which are usually
-% not capitalized unless they are the first or last word of the title.
-% Linebreaks \\ can be used within to get better formatting as desired.
-% Do not put math or special symbols in the title.
+
+
 \title{Concurrent Zombie Swarm Simulation}
 
-
-% author names and affiliations
-% use a multiple column layout for up to three different
-% affiliations
 \author{\IEEEauthorblockN{Joseph Mitchard}
-\IEEEauthorblockA{Email: jm710@kent.ac.uk}
+\IEEEauthorblockA{University of Kent\\ Email: jm710@kent.ac.uk}
 \and
 \IEEEauthorblockN{Jake Pearse}
-\IEEEauthorblockA{Email: jakes email here}
+\IEEEauthorblockA{University of Kent\\ Email: jp480@kent.ac.uk}
 \and
-\IEEEauthorblockN{Robert Hales}
-\IEEEauthorblockA{Email: robs email here}}
+\IEEEauthorblockN{Robert S.J. Hales}
+\IEEEauthorblockA{University of Kent\\ Email: rsjh3@kent.ac.uk}}
 % make the title area
 \maketitle
 
@@ -104,7 +96,14 @@ Throughout the document we will introduce the \verb+swarmer+ application, as wel
 
 \section{Background \label{background}}
 % research into the area
-% feasibility checks and stuff
+Erlang is an open-source programming language developed by Ericsson Computer Science Laboratory; it was originally designed for telecoms systems, but over the years has become a general-use functional and concurrent language.\\
+\\
+Javascript is a dynamic general-use programming language that is mostly used for web development. It has a large number of well supported and documented librarys that cover a wide range of areas. We have chosen to use the D3\cite{d3} library because of it's built in ability to dynamically manipulate data. It is reasonably lightweight and very good at manipulating and manging large amounts of data.\\
+\\
+Before deciding to implement the simulation based around entities in the Erlang programming language, we needed to ensure that the idea was a feasible one. We have found two noteworthy implementations of a crowd swarming simulation, one in OccamPi by Fred Barnes\cite{occam_boids}, a professor the University of Kent, and a second written in Erlang by Jim Menard\cite{erlang_boids}.\\
+\\
+% boids
+The behavioural model we have implemented is based on the Boids Algorithm \cite{boids}, created by Craig Reynolds in 1986. The model focuses on steering behaviours to lead to crowd flocking, and is heavily used in animation and game development. Our modified version of the algorithm is described in section \ref{behaviours}.
 
 \section{Aims \label{aims}}
 % what we set out to achieve
@@ -136,6 +135,24 @@ tile/viewery things
 % from jake:  how obstructions work in the application
 %             system setup
 
+\section{Environment creation \label{environment_creation}}
+The creation of an environment begins with the setting of a value for the number of tiles in the grid. As all of our grids are square, there is only a single value for the dimensions of the array. The size of the tile array is determined from the size of the obstruction map selected (section: \ref{obstructions}). Once the dimensionality has been obtained, the grid is constructed through a recursive call to \verb+environment:make_row+ to create an full set of tile processes and corresponding viewer processes. Every tile process is assigned a unique dynamically generated name, which can be used to identify the column and row the tile is positioned in. Tiles can then be identified by using a pair of co-ordinates to derive a tile id. The ability to derive the appropriate tile id through a function call containing co-ordinates is one of the keys to our systems flexibility and the ease of adding new features.\footnote{Tile names are Erlang atoms registered in the supervision tree of the form tileX0Y0}The next stage involves creating a list for each tile of all it's neighbouring viewers. Finally obstructions and entitites are added to each completed tile's state. The system will now be in a paused state, ready to run the simulation.
+
+\section{Obstructions \label{obstructions}}
+Although we had always planned to include obstructions within our environment, the functionality was a late addition to the simulation. We were concerned with how the resolution would effect our planned inclusion of heuristic path planning.\footnote{Heuristic path planning was one of our unrealised stretch goals.} We decided to implement obstructions at a fraction of the resolution of our natural simulation resolution. As we had previously fixed the size of environment tiles at \(50^2\) we selected a size of \(5^2\) for each of cell of the 'obstruction grid'. Stored in the tile state are obstructed co-ordinates on the obstruction grid scale so in a grid 5 tiles by tiles in size, there are obstruction 'cells' in the range of \( (0,0) \) to \( (49,49) \). One of the primary considerations was to be able draw the environment using a paint tool. We selected mtPaint \footnote{http://mtpaint.sourceforge.net/} due to the ease of exporting images as ascii files.\\
+\\
+For a standard 5 tile environment we create a plain white image \(50^2\) pixels in size and draw in the required obstructions.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.4\textwidth]{../img/mt_paint.png}
+\caption{Mt Paint}
+    \label{fig:mtpaint}
+\end{figure}
+
+The resulting ascii file, stripped of line breaks, produces a string of 2500 characters. The string is then processed into an array of indices corresponding to characters representing obstructions. In order to convert an index back into a co-ordinate pair (on the obstruction grid scale) where \(I\) is the index obtained using \[X = I mod 10 and Y = I / 10\].
+Once the co-ordinates have been obtained the corresponding tile id can be identified using \(X / 10\) and \(Y / 10\). Each tile contains the subset of obstructions which corresponds to its own geometry. Whenever an entity wishes to perform an operation over the obstruction grid scale, the co-ordinates are simply divided by 5 and compared against the tiles record. This system provides a flexible resolution independant method of modelling obstructions. Although we haven't parameterised the scale of the obstruction grid, it would be trivial to add this functionality.
+
 \section{Behaviours and Intelligence \label{behaviours}}
 % from rob: boids
 %           what are they?
@@ -143,9 +160,6 @@ tile/viewery things
 
 \section{Client \label{client}}
 % from jake: client stuff
-
-
-
 
 
 % An example of a floating figure using the graphicx package.
@@ -268,15 +282,40 @@ The conclusion goes here.
 % H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
 %   0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
 
+  \bibitem{erlang}
+    Ericsson AB,
+    \emph{About Erlang},
+    \url{http://www.erlang.org/about.html}
+
+  \bibitem{d3}
+    Mike Bostock,
+    \emph{D3 Website},
+    \url{http://d3js.org/}
+
+  \bibitem{occam_boids}
+    Fred Barns,
+    \emph{GPU Boids},
+    \url{http://frmb.org/occam.html#gpuboids}
+
+  \bibitem{erlang_boids}
+    Jim Menard,
+    \emph{Erlang Boids Simulation Design},
+    \url{http://jimmenard.blogspot.co.uk/2007/06/erlang-boids-simulation-design.html}
+
+  \bibitem{boids}
+    Craig Reynolds,
+    \emph{Boids - Background and Update},
+    \url{http://www.red3d.com/cwr/boids/}
+
   \bibitem{otp}
-    Ericsson Computer Science Laboratory
-		\emph{Open Telecom Platform Design Principles},
-    http://www.erlang.org/doc/design\_principles/sup\_princ.html\
+    Ericsson AB,
+	\emph{Open Telecom Platform Design Principles},
+    \url{http://www.erlang.org/doc/design_principles/sup_princ.html}
 
   \bibitem{supervisors}
-    Ericsson Computer Science Laboratory
-		\emph{Erlang Supervisors},
-    http://www.erlang.org/doc/man/supervisor.html
+    Ericsson AB,
+	\emph{Erlang Supervisors},
+    \url{http://www.erlang.org/doc/man/supervisor.html}
 
 \end{thebibliography}
 
