@@ -11,65 +11,19 @@
 \usepackage{url}
 \usepackage{cite}
 \usepackage{fancyhdr}
-% cite.sty was written by Donald Arseneau
-% V1.6 and later of IEEEtran pre-defines the format of the cite.sty package
-% \cite{} output to follow that of IEEE. Loading the cite package will
-% result in citation numbers being automatically sorted and properly
-% "compressed/ranged". e.g., [1], [9], [2], [7], [5], [6] without using
-% cite.sty will become [1], [2], [5]--[7], [9] using cite.sty. cite.sty's
-% \cite will automatically add leading space, if needed. Use cite.sty's
-% noadjust option (cite.sty V3.8 and later) if you want to turn this off
-% such as if a citation ever needs to be enclosed in parenthesis.
-% cite.sty is already installed on most LaTeX systems. Be sure and use
-% version 5.0 (2009-03-20) and later if using hyperref.sty.
-% The latest version can be obtained at:
-% http://www.ctan.org/tex-archive/macros/latex/contrib/cite/
-% The documentation is contained in the cite.sty file itself.
-
 \usepackage[pdftex]{graphicx}
-% declare the path(s) where your graphic files are
-% \graphicspath{{../pdf/}{../jpeg/}}
-% and their extensions so you won't have to specify these with
-% every instance of \includegraphics
-% \DeclareGraphicsExtensions{.pdf,.jpeg,.png}
 
-% *** SPECIALIZED LIST PACKAGES ***
-%
-%\usepackage{algorithmic}
-% algorithmic.sty was written by Peter Williams and Rogerio Brito.
-% This package provides an algorithmic environment fo describing algorithms.
-% You can use the algorithmic environment in-text or within a figure
-% environment to provide for a floating algorithm. Do NOT use the algorithm
-% floating environment provided by algorithm.sty (by the same authors) or
-% algorithm2e.sty (by Christophe Fiorio) as IEEE does not use dedicated
-% algorithm float types and packages that provide these will not provide
-% correct IEEE style captions. The latest version and documentation of
-% algorithmic.sty can be obtained at:
-% http://www.ctan.org/tex-archive/macros/latex/contrib/algorithms/
-% There is also a support site at:
-% http://algorithms.berlios.de/index.html
-% Also of interest may be the (relatively newer and more customizable)
-% algorithmicx.sty package by Szasz Janos:
-% http://www.ctan.org/tex-archive/macros/latex/contrib/algorithmicx/
-
-
-
-% *** Do not adjust lengths that control margins, column widths, etc. ***
-% *** Do not use packages that alter fonts (such as pslatex).         ***
-% There should be no need to do such things with IEEEtran.cls V1.6 and later.
-% (Unless specifically asked to do so by the journal or conference you plan
-% to submit to, of course. )
-% correct bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
 \pagestyle{fancy} % fancyhdr
+\lhead{J.Mitchard, J.Pearse, R.Hales}
 \chead{Concurrent Zombie Swarm Simulation}
+\rhead{Project Supervisor - Peter Kenny}
 \cfoot{\thepage}
+\rfoot{\today}
 
 \begin{document}
 
-
 \title{Concurrent Zombie Swarm Simulation}
-
 \author{\IEEEauthorblockN{Joseph Mitchard}
 \IEEEauthorblockA{University of Kent\\ Email: jm710@kent.ac.uk}
 \and
@@ -78,6 +32,7 @@
 \and
 \IEEEauthorblockN{Robert S.J. Hales}
 \IEEEauthorblockA{University of Kent\\ Email: rsjh3@kent.ac.uk}}
+
 % make the title area
 \maketitle
 
