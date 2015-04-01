@@ -1,0 +1,338 @@
+We used github wiki to keep track of our group meetings minutes and github's issue tracker to make sure tasks were assigned
+below are extracts from the wiki pages created:
+
+------------------------------------------------------------------------
+Checklist for Iteration Two
+joemitchard1 edited this page on 16 Dec 2014 · 24 revisions 
+
+## Documentation
+
+| Document | Assigned | Check | 
+| ----- | ----- | ----- |
+| QA for all main modules | all | |
+| Architecture description | Rob | |
+| Process evaluation | Joe | | 
+
+## Code
+
+| # | Goal | Module | Assigned | Dep | Check |
+| ----- | ----- | ------ | ----- | ----- | ----- |
+| 1 | Change start_link to accept ID, timeout,speed | zombie_fsm,environment,tile | Rob |  | Done |
+| 2 | Movement needs to inplement directions (bearing and speed) | zombie_fsm, tile | Joe, Rob | | Done |
+| 3 | Zombies should be able to interact with surrounding | zombie_fsm, tile, viewer | 4 | | Done |
+| 4 | Tile neighbourhood needs to be implemented | tile, environment | Joe,Jake | | Done |
+| 5 | eunit tests | all main | all | | |
+| 6 | Zombies should be aware of surroundings | zombie_fsm | Rob | 4 | Done |
+| 7 | Zombies should be able to interact with surrounding | zombie_fsm, tile, viewer | | | Nearly |
+| 8 | Way to pause entities | Jake, Rob | | Done, not in Client |
+
+
+Notes:
+
+* Movement
+* ----update_entity needs to accept {Pid,type(atom),ID,{X,Y,},{NewX,NewY} Heading,Speed}
+* --------Return {NewX, NewY, Tile, Viewer} heading?
+* implement awareness of surroundings
+* ----(needs tile neighbourhood)
+* Way to pause the entities
+* ---- called from environment
+* Diagnostic tools
+* ---- start,stop,set params
+------------------------------------------------------------------------
+
+
+Checklist for Post Iteration Iteration
+joemitchard1 edited this page on 14 Nov 2014 · 1 revision 
+
+* Document the documents code written
+* Reflection
+* New architecture drawing
+
+* Unit tests
+* QA for documents produced AND all main modules made (tile, viewer, zombie, environment)
+  * Client excempt for this iteration
+* Tidy up code
+  * Comments
+  * General tidying
+  * Specs for functions
+
+* After all this, revise the process and specification
+    
+------------------------------------------------------------------------
+
+Documentation Review
+Joe edited this page on 2 Feb · 1 revision 
+
+Things to extend:
+* Languages research
+* Concurrent languages feasibility research
+* Coding Standards
+* Prototyping with PSO
+
+Things to rewrite:
+* The evolution of concurrent system design (break up and extend)
+* Testing and ACTUALLY DO TESTING :D
+
+Things missing:
+* More technical requirements spec? 
+* Explanation of how we got to PSO
+
+... and lots more...
+
+------------------------------------------------------------------------
+
+End of Term One
+joemitchard1 edited this page on 19 Dec 2014 · 1 revision 
+
+Currently:
+* Partly working simulation using Partical Swarm Optimisation
+    - Moving to Flocking algorithm in next term.
+* State machine (sort of)
+
+Next Term:
+* Reimplement zombie_fsm to use proper states
+* These states use Flocking algorithm states
+    - Collision avoidance, flock attraction, flock cohesion, super attractors (super repulsors?)
+* Find a way of zombies killing humans
+* define a way for obstacles to become a thing
+
+
+Over Christmas:
+* Documentation
+* Process evaluation for iteration one and two (Rob)
+    - Difference in process between iteration one and iteration two
+    - Pair programming, inability to program fully independently
+* Architecture evolution and development description (Joe)
+* Research things and problem solving explanation
+    - Concurrency bug (Joe)
+    - Initial redesign of architecture (Jake)
+    - To PSO and not to PSO (Jake)
+    - Client explanation, not that priority (Jake)
+* QA, not that big of an issue though
+
+------------------------------------------------------------------------
+
+Iteration One
+joemitchard1 edited this page on 4 Nov 2014 · 5 revisions 
+
+Modules:
+    --- zombie ---
+    tile
+    * viewer
+    * env server
+
+Zombie
+    Zombie state machine
+    Needs to be able to interface with tile
+        Send message to tile, direction and speed
+        Receive message back saying new position
+    receive message with new tile handle + viewer handle
+        Ask what zombie can see (receive message saying new tile and viewer)
+            decide what do do with it
+
+Tile
+    Needs:
+    * to receive new zombies that are on it
+        take command of it
+            take handle of new zomb
+    * call a function in zombie (updates 
+        msg{pid-tile,pid-viewer}
+    * where it's edges are
+    * list of all viewers that it can send information to
+    * receive handles for new viewers
+    * needs a handle on the envtironment server
+        msg this when a zombie moves out of tile
+   
+Viewer
+
+Environment Server
+    Spawn tiles
+        map them
+    Logic for working out tiles and viewers
+    Receive movement messages from tiles
+        work out how to deal with this
+    Report state of overall simulation back to websock
+
+------------------------------------------------------------------------
+
+Last Week: To Do
+Joe edited this page 30 may 2014 · 3 revisions 
+
+All - Cross reference documents
+
+Joe
+* Do the windows thing.
+* Pull source code into from the deps, make it usable. 
+* Make corpus thing. (Doneish)
+* QA and and Proof Read Jakes docs. (Done)
+* Write all own docs. (Done)
+
+Jake
+* Video of system
+* QA and and Proof Read Robs docs. 
+* Write all own docs.(Done)
+
+Rob
+* Make index.html
+* QA and and Proof Read Joes docs. (Done)
+* Write all own docs. (Done)
+
+------------------------------------------------------------------------
+
+Modules To Document
+Joe edited this page on 13 Feb · 2 revisions 
+
+Joe:
+* Tile DONE
+* Viewer DONE
+* Environment DONE
+
+Rob:
+* FSM's (do state diagrams)
+* Trig and Pythag
+
+Jake:
+* PSO DONEish
+* swarm_handler (mention swarm_server) < cowboy and stuff DONE
+
+------------------------------------------------------------------------
+
+Editing Term Two Team ASSEMBLE
+Joe edited this page on 9 Feb · 2 revisions 
+
+To do:
+
+Boids research and documenting (Joe)
+* Specify the boids algorithm (DONE)
+* Specify a concurrent boids algorithm (DONE)
+* Explain difference between them, and put into context of simulation (DONE)
+(Super attractors and super repelers/flocking)
+
+Intelligence - and where to draw a line (Rob)
+* How intelligent are the zombies and humans going to be? (DONE)
+* Balance between realism and possibility with time constraints (DONE)
+* base plan (what we need to achieve for the project) (DONE)
+* further plan (what we would like to achieve with the project (future and extension)) (DONE)
+
+Requirements specifications (Jakes)
+* Client (DONE)
+* Simulation 
+
+------------------------------------------------------------------------
+TO DO Final Term 1 Iteration, Part 1
+
+joemitchard1 edited this page on 16 Dec 2014 · 4 revisions 
+
+
+1. Viewer needs to have human_list, zombie_list. Pushed from tile DONE
+2. Previous best fitness&position {F,{X,Y}} DONE
+3. Get 2 lists from viewer & calculate who is the fittest individuate in your surroundings DONEISH
+4. MOVE bugged
+
+ 
+1. Unbug movement (unbreak PSO)
+2. write unit tests (joe has beautiful example(that's just a little broken))
+3. When that's done, run tests. if no pass, NO PUSH
+4. DOCUMENT PLAN
+
+
+Documentation to do:
+* Process evaluation for iteration one and two
+* Architecture evolution evaluation for iteration one and two
+* Explanation of WHY particle swarm optimisation and HOW it works (not that in depth)
+* QA all new code
+* QA all new documents
+
+------------------------------------------------------------------------
+
+The github issue tracker has pages and pages of closed issues, like those below:
+
+ Garbage Cleanup Issue bug
+#67 opened on 4 Dec 2014 by joemitchard1
+1
+Javascript not removing dead zombies bug
+#66 opened on 4 Dec 2014 by joemitchard1
+0
+Movement bug question
+#64 opened on 3 Dec 2014 by joemitchard1
+7
+Movement Between tiles question
+#60 opened on 1 Dec 2014 by joemitchard1
+3
+.bat help wanted
+#55 opened on 28 Nov 2014 by joemitchard1
+@rsjhales
+1
+Repo Cleanup invalid question
+#49 opened on 27 Nov 2014 by joemitchard1
+0
+Bugs found bug
+#48 opened on 26 Nov 2014 by joemitchard1
+2
+Week of November 24th to 30th
+#45 opened on 25 Nov 2014 by joemitchard1
+0
+Things to do...
+#44 opened on 21 Nov 2014 by joemitchard1
+0
+Rebar eunit bug
+#42 opened on 19 Nov 2014 by joemitchard1
+4
+Client enhancement question
+#41 opened on 19 Nov 2014 by joemitchard1
+3
+Qa for Joe
+#38 opened on 18 Nov 2014 by jakepearse
+0
+QA for Rob
+#37 opened on 18 Nov 2014 by jakepearse
+0
+Code QA for jake
+#36 opened on 18 Nov 2014 by jakepearse
+@jakepearse
+0
+Qa for jake
+#35 opened on 18 Nov 2014 by jakepearse
+@jakepearse
+0
+QA for Rob
+#34 opened on 18 Nov 2014 by jakepearse
+@rsjhales
+0
+Document QA for Joe
+#33 opened on 18 Nov 2014 by jakepearse
+@joemitchard1
+0
+Review
+#29 opened on 14 Nov 2014 by psytale
+1
+Repositary Cleanup!
+#27 opened on 13 Nov 2014 by joemitchard1
+Milestone 2: Iteration 1
+@rsjhales
+3
+Code review
+#13 opened on 7 Nov 2014 by joemitchard1
+@jakepearse
+2
+On Push
+#10 opened on 31 Oct 2014 by joemitchard1
+0
+Document QA for the pre-iteration help wanted
+#8 opened on 30 Oct 2014 by jakepearse
+Pre-first milestone milestone, Yay!
+@rsjhales
+2
+QA Documents
+#7 opened on 28 Oct 2014 by joemitchard1
+1
+Requirements Spec
+#6 opened on 24 Oct 2014 by joemitchard1
+Pre-first milestone milestone, Yay!
+@joemitchard1
+0
+High Level Process question
+#5 opened on 23 Oct 2014 by joemitchard1
+Pre-first milestone milestone, Yay!
+@jakepearse
+    1
