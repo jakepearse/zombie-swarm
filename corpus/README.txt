@@ -10,7 +10,8 @@ The application is compatible with any operating system that can run the Erlang
 OTP. We recommend running on a Linux/Unix based system as setting up an Erlang
 environment on Windows can be awkward.
 
-There is a video in /corpus/ext/ showing the system running, and an explanation of how it works.
+There is a video in /corpus/ext/ showing the system running, and an explanation
+of how it works.
 
 ================================================================================
 Setup - Windows
