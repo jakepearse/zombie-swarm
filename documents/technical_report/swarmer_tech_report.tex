@@ -10,6 +10,7 @@
 %
 \usepackage{url}
 \usepackage{cite}
+\usepackage{fancyhdr}
 % cite.sty was written by Donald Arseneau
 % V1.6 and later of IEEEtran pre-defines the format of the cite.sty package
 % \cite{} output to follow that of IEEE. Loading the cite package will
@@ -60,7 +61,9 @@
 % to submit to, of course. )
 % correct bad hyphenation here
 \hyphenation{op-tical net-works semi-conduc-tor}
-
+\pagestyle{fancy} % fancyhdr
+\chead{Concurrent Zombie Swarm Simulation}
+\cfoot{\thepage}
 
 \begin{document}
 
@@ -83,6 +86,9 @@
 \begin{abstract}
 The simulation of swarm intelligence is concerned with complex emergent behaviours over a population of independent entities, following simple rules. There have been many thorough investigations of swarm intelligence utilising imperitive programming techniques. Though there are successful implementations written in a highly concurrent way, this is an unusual and less common technique.
 \end{abstract}
+\begin{IEEEkeywords}
+Crowd Simulation, Flocking, Artificial Intelligence, Concurrency, Boids, Erlang, Javascript, D3
+\end{IEEEkeywords}
 
 \section{Introduction \label{intro}}
 % what is the project?
@@ -228,7 +234,7 @@ In a human, avoiding collision with other entities takes priority in order to re
 \\
 The outcome of this is that the humans and zombies are able to exhibit considerably different behaviours, with only a few changes to the order of priorities.\\
 
-\section{Obstacles \label{obstacles_b}}
+\section{Entities and Obstacles \label{obstacles_b}}
 A major factor in creating more interesting behaviours in our entities is the possibility of areas of the maps being obstructed. There are two kinds of obstacles that can affect the behaviour of an entity, other entities and built-in obstructions in the map. Once an entity has chosen a new set of coordinates. These coordinates are then checked, by the tile they wish to move onto, to ensure they unobstructed and constiture a legal move. This is shown in figure \ref{fig:obs_los}.\\
 \begin{figure}[h]
   \centering
@@ -283,16 +289,16 @@ Overall, the project has been a success. By observing the simulation running you
     \item Swarms interact with obstructions in interesting ways. When the swarm collides with an obstruction, it can disperse around the edges of the obstacle. Sometimes the swarm will regroup on the other side, however this may not happen due to the shape of the obstacle or other stimulus taking priority.
     \item Due to the effect of inertia simulated through velocity, entities can be observed acclererating, decelarating and changing direction by swerving. \item Energy levels have a noticable effect on the simulation over its lifetime. Early on in the simulation, humans have a higher survival rate because they can move faster. However, as food becomes scarce, humans will slow down over time. Humans caught early on in the simulation tend to have been cornered by a zombie, or surrounded.
     \item It is possible for a group of humans to find a 'safe-zone' in the simulation. This can allow humans to hide from the zombies behind obstacles  for an extended period of time, however they will eat all of the food in the area, and when a zombie swarm does discover them, it is likely that they will be too slow to escape.
-    \item When humans pass within range of a zombies on the edge of a swarm, somtimes only the zombies on the edge of the swarm move towards the humans initially. This can lead to just a few zombies breaking away from the main swarm, or lead to a chain reaction in which the entire swarm will follow. This depends on what stimulus other members of the swarm are able to detect.
+    \item When humans pass within range of zombies on the edge of a swarm, somtimes only the zombies on the edge move towards the humans initially. This can lead to just a few zombies breaking away from the main swarm, or lead to a chain reaction in which the entire swarm will follow. This depends on what stimulus other members of the swarm are able to detect.
     \item When there is a large population of humans, and not many obstacles to break the line of sight across the environment, this can lead to the zombies forming a line sweeping across the environment.
 \end{itemize}
 
 Unfortunately there were certain elements of the system that we were not able to create, due a combination of time preassure and the level of difficulty. The main one was a full heuristic pathfinding algorithm for humans. Though this is partially implemented as part of the submission, we did not have time fully explore and test this element of the application, we do not know to what extent it is functioning.
 
 \section{Acknowledgements}
-We would like to thank Dr. Peter Kenney for supervising this project, and providing valuable input on designing and implementing the two dimentional space simulation, as well as helping us design and understand our Boids algorithm.\\
+We would like to thank Dr. Peter Kenny for supervising this project, and providing valuable input on designing and implementing the two dimentional space simulation, as well as helping us design and understand our Boids algorithm.\\
 \\
-We would also like to thank Dr. Fred Barnes on the invaluable help with desiging our concurrent architecture.
+We would also like to thank Dr. Fred Barnes for the invaluable help with desiging our concurrent architecture.
 
 % references section
 
