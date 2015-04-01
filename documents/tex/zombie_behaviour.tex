@@ -1,22 +1,24 @@
 \pagestyle{empty}
 \section{Zombie Intelligence\\{\small\tt{R.~Hales}}}
 \label{zombie_doc}
-The zombie entities are designed to be relatively unintelligent, only interested in finding,chasing and killing humans,avoiding obstacles and following a group of other zombies to form a swarm.To achieve this zombies have had multiple behaviours implemented to enable them to act realistically and follow the rules of our system.
+The zombie entities are designed to be relatively unintelligent, only interested in finding, chasing and killing humans, avoiding obstacles and following a group of other zombies to form a swarm. To achieve this zombies have had multiple behaviours implemented to enable them to act realistically and follow the rules of our system.
 \subsection{Movement}
 \label{movement}
-Before going into specific behaviours it is important to understand how zombies move in the simulation. Each zombie contains two pairs of variables that are directly used in determining it's next position; An X co-ordinate and a Y co-ordinate, which together represent the current position of the zombie in the simulation, and an X velocity and a Y Velocity, which represent how fast the zombie is currently moving and in which direction.
-As well as these variables, whenever a zombie makes a decision two numbers are returned.These represent the change in X velocity and the change in Y velocity resulting from the decision.These numbers are naturally added to the current X velocity and current Y velocity respectively to create the new velocity of the zombie.
-	New X Velocity = Current X Velocity + Change in X Velocity
-	New Y Velocity = Current Y Velocity + Change in Y Velocity
+Before going into specific behaviours it is important to understand how zombies move in the simulation. Each zombie contains two pairs of variables that are directly used in determining it's next position; \begin{enumerate}\item{An X co-ordinate and a Y co-ordinate, which together represent the current position of the zombie in the simulation,}\item{an X velocity and a Y Velocity, which represent how fast the zombie is currently moving and in which direction.}\end{enumerate}
+As well as these variables, whenever a zombie makes a decision two numbers are returned. These represent the change in X velocity and the change in Y velocity resulting from the decision. These numbers are naturally added to the current X velocity and current Y velocity respectively; to create the new velocity of the zombie.
+\begin{itemize}\item{New X Velocity = Current X Velocity + Change in X Velocity}
+\item{New Y Velocity = Current Y Velocity + Change in Y Velocity}
+\end{itemize}
 These new velocities are then rounded down and added to their respective current co-ordinates to give the new X and new Y co-ordinate and thus the new position of the zombie.
-	New X = Current X + Rounded New X Velocity
-	New Y = Current Y + Rounded New Y Velocity
-These new co-ordinates then have checks performed on them to ensure the move is legal and if not to change it to the nearest legal move.After this the zombie is moved and is then ready to perform his next move.
+\begin{itemize}\item{New X = Current X + Rounded New X Velocity}
+\item{New Y = Current Y + Rounded New Y Velocity}
+\end{itemize}
+These new co-ordinates then have checks performed on them to ensure the move is legal and if not to change it to the nearest legal move. After this the zombie is moved and is then ready to perform his next move.
 \subsection{Velocity}
-The reason that when a zombie makes a decision it changes velocity rather than directly changing its position is that it allows the system to keep track of the zombies current speed and heading.because of this if a zombie keeps choosing to head in the same direction it will gradually speed up from moving small distances each action to moving larger distances, simulating the zombie building up momentum. This momentum also means that if a zombie suddenly decides to change direction it will not instantly move in the direction he wants, instead it will start turning gradually from its current heading towards the heading it wants to be going. The zombies therefore move in a much more natural and realistic way than without the use of velocities.
+The reason that when a zombie makes a decision it changes velocity rather than directly changing its position is that it allows the system to keep track of the zombies current speed and heading. Because of this, if a zombie keeps choosing to head in the same direction it will gradually speed up from moving small distances each action to moving larger distances, simulating the zombie building up momentum. This momentum also means that if a zombie suddenly decides to change direction it will not instantly move in the direction he wants, instead it will start turning gradually from its current heading towards the heading it wants to be going. The zombies therefore move in a much more natural and realistic way than without the use of velocities.
 
 \subsection{Decision Making}
-The way zombies decide how to change their velocity is to investigate their local area to find all the human and zombies entities it can see and then uses this information to perform the highest priority action that is possible.Priority is determined by the types of entities visible and how close those entities are.In particular entities will be considered either in reach of the zombie or within sight of the zombie based on distance.
+The way zombies decide how to change their velocity is to investigate their local area to find all the human and zombies entities it can see and then uses this information to perform the highest priority action that is possible. Priority is determined by the types of entities visible and how close those entities are. In particular, entities will be considered either in reach of the zombie or within sight of the zombie based on distance.
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.3\textwidth]{img/zombie_range.png}
@@ -24,7 +26,7 @@ The way zombies decide how to change their velocity is to investigate their loca
     \label{fig:Illustration of a zombies sight and reach ranges}
 \end{figure}
 \subsubsection{Priorities}
-The zombies priorities are very simple.Zombies prioritise killing humans above all else, if a human is within reach of the zombie it will try and kill and eat the human.The next priority is not being too close to another zombie, if another zombie is within reach then the zombies will attempt to move away from each other to prevent clustering together, this is to ensure that zombies form swarms rather than clustering together too closely and being unable to move away from each other due to getting surrounded by other entities.Next if a human is within sight of a zombie then the zombie will attempt to chase after the human, this allows zombies to break from swarming and attempt to kill humans.The next priority is forming a swarm with other zombies, this allows the zombies to form groups and combined with the previous priority will cause whole swarms of zombies to chase after humans even if not all of them can see the human. Finally if there is no other entities to interact with the zombies will move in an attempt to locate something to interact with.
+The zombies priorities are very simple.	\begin{description}\item[Eating]{Zombies prioritise killing humans above all else, if a human is within reach of the zombie it will try and kill and eat the human.}\item[Collision avoidance]{The next priority is not being too close to another zombie, if another zombie is within reach then the zombies will attempt to move away from each other to prevent clustering together, this is to ensure that zombies form swarms rather than clustering together too closely and being unable to move away from each other due to getting surrounded by other entities.}\item[Hunting]{Next if a human is within sight of a zombie then the zombie will attempt to chase after the human, this allows zombies to break from swarming and attempt to kill humans.}\item[Flocking]{The next priority is forming a swarm with other zombies, this allows the zombies to form groups and combined with the previous priority will cause whole swarms of zombies to chase after humans even if not all of them can see the human.}\item[Random search]{Finally if there is no other entities to interact with the zombies will move in an attempt to locate something to interact with.} \end{description}
 \begin{figure}[h]
   \centering
   \includegraphics[width=0.3\textwidth]{img/zombie_decision_tree.png}
