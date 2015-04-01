@@ -2,7 +2,7 @@
 Swarmer
 ================================================================================
 System Requirements
-  Erlang OTP 17.4-Downloadable for all systems here
+  Erlang OTP 17+-Downloadable for all systems here
                   https://www.erlang-solutions.com/downloads/download-erlang-otp
 
  A browser      -We recommend using Mozilla Firefox or Google Chrome
