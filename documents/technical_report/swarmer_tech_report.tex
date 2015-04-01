@@ -90,81 +90,86 @@ The abstract goes here.
 % what have we done?
 % why have we done it? maybe
 % what is in the rest of the document
-zsxfcghadgbadfgbadfghba
-
+Artificial Intelligence and Concurrent Systems are areas that we have considerable interest in as a group. For our project we wanted to build something that incorporates both of these technologies. We set out to create a crowd behaviour simulation application that represents believable behaviours of the entities running concurrently within it.\\ % This probably needs rewriting. also zombies... where from? BRAAAIINSSS
+\\
 Throughout the document we will introduce the \verb+swarmer+ application, as well as the client we have built to visualise the simulation, explaining how we have implemented the integral parts of the application. We will also introduce the behaviour models that we have created in order to make the different entitiy types within the simulation behave the way they do.\\
-\\
-% team stuff
+\\% team stuff
 In order to realsie our goals for the project, we had to learn a lot of new things. So as to achieve this, we had to take a diciplined and systematic approach to familiarise ourselves with these new concepts and libraries. Responsibility for researching and learning these technologies had to be deligated amongst the team members, and then regular updates to other members on the findings. This allowed us to familiarise ourselves with the new concepts as a group, within a limited space of time.\\
-\\
+\\% soft-eng stuff
 The majority of development was carried out as a group, using techniques that are part of the extreme programming practice, and a large amount of pair programming.\\
 \\
+
 \section{Background \label{background}}
-% research into the area
 Erlang is an open-source programming language developed by Ericsson Computer Science Laboratory; it was originally designed for telecoms systems, but over the years has become a general-use functional and concurrent language.\\
 \\
 Javascript is a dynamic general-use programming language that is mostly used for web development. It has a large number of well supported and documented librarys that cover a wide range of areas. We have chosen to use the D3\cite{d3} library because of it's built in ability to dynamically manipulate data. It is reasonably lightweight and very good at manipulating and manging large amounts of data.\\
-\\
+\\% research
 Before deciding to implement the simulation based around entities in the Erlang programming language, we needed to ensure that the idea was a feasible one. We have found two noteworthy implementations of a crowd swarming simulation, one in OccamPi by Fred Barnes\cite{occam_boids}, a professor the University of Kent, and a second written in Erlang by Jim Menard\cite{erlang_boids}.\\
-\\
-% boids
+\\% boids
 The behavioural model we have implemented is based on the Boids Algorithm \cite{boids}, created by Craig Reynolds in 1986. The model focuses on steering behaviours to lead to crowd flocking, and is heavily used in animation and game development. Our modified version of the algorithm is described in section \ref{behaviours}.\\
 \\
+
 \section{Aims \label{aims}}
 % what we set out to achieve
-Our goal was to create a plausible simulation of a dynamic environment containing zombie and human entities. We wanted zombies to exhibit flocking behaviour and to hunt down humans within the environment, turning them into zombies when they are caught. \\
+Our goal was to create a plausible simulation of a dynamic environment containing zombie and human entities. We wanted zombies to exhibit flocking behaviour and to hunt down humans within the environment, turning them into zombies when they are caught.\\
 \\
-In order to make the system more believeable, we wanted to implement certain behaviours
-\\
-\\
-% humans, food, higher levels of intelligence
+In order to make the simulation more believeable, we wanted to implement certain behaviours for the humans that seperate them from the zombies, making them more intelligent beings. These behaviours included being able to make a calculated desicion based on their surroundings, foraging for and remembering the location of food sources and pathfinding. We wanted humans to get hungry over time, and in return lose energy and eventually slow down; this meant that humans must find food in order to stand a chance of survival. An introduction to the behaviours that we have implemented to the system is found in section \ref{behaviours}.\\
 \\
 In contrast to the classic simulation approach of an imperitive language, such as C or Java, where continuous time is simulated in discrete steps; we thought it would be both interesting and challenging to model the system in a highly concurrent way. This approach would allow entitiys to act independently of synchronised time steps and hopefully provide an interesting dynamic and fluid simulated environment.\\
 \\
 
-\section{System Architecture \label{architecture}}
+\section{Swarmer System Architecture \label{architecture}}
 % overall architecture, include one/two of my arch diagrams
 % tile-viewer system, why it's awesome (because it's awesome)
 
-Using Erlang and the Open Telecom Platform\cite{otp} (OTP) provides us with a unique set of tools perfectly suited to creating a highly concurrent, message passing system. Included in this is the Supervisor-Child process architecture that allows you to create a robust system in which a supervisor process maintains a number of child processes. As part of the OTP, certain module behaviours are defined, providing a number of useful functions to allow for cross process communication. Of this, we have used the Gen-Server and Gen-Fsm behaviours. Gen-Server provides useful functions for passing messages between processes, and Gen-Fsm is used to implement a finite state machine in Erlang.
+Using Erlang and the Open Telecom Platform\cite{otp} (OTP) provides us with a unique set of tools perfectly suited to creating a highly concurrent, message passing system. Included in this is the Supervisor-Child process architecture that allows you to create a robust system in which a supervisor process maintains a number of child processes. As part of the OTP, certain module behaviours are defined, providing a number of useful functions to allow for cross process communication. Of this, we have used the Gen-Server\cite{gen_server} and Gen-Fsm\cite{gen_fsm} behaviours. Gen-Server provides useful functions for passing messages between processes, and Gen-Fsm is used to implement a finite state machine in Erlang.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.4\textwidth]{../img/supervisor.png}
+  \includegraphics[width=3in]{../img/supervisor.png}
 \caption{Supervision Tree for Swarmer}
     \label{fig:sup_tree}
 \end{figure}
 
-The system is built a Cowboy HTTP Server
-
+When launched, the \verb+swarmer+ application creates an instance of the \verb+swarm_server+ module. This is the reponsible process for spawning an instance of \verb+swarm_sup+, the systems main supervisor process, and an instance of \verb+swarm_handler+, a Cowboy HTTP server \cite{cowboy} controller module, to manage communication between the the simulation and the client. \verb+swarm_handler+ and the Cowboy Server are covered in more detail in section \ref{client}.\\
+\\
+The \verb+swarm_sup+ process will create the applications Supervision Tree, shown in figure \ref{fig:sup_tree}, spawning an instance of the \verb+environment+ module and the \verb+tile_sup+, \verb+viewer_sup+, \verb+human_sup+, \verb+zombie_sup+, \verb+supplies_sup+ supervisor processes.\\
+\\
+The \verb+environment+ module has two main central roles within the application, firstly its job is to set the simulation environment up, covered in section \ref{environment_creation}, and secondly to deal with the regular report requests from the \verb+swarm_handler+ process.\\
+\\
+The \verb+tile+ and \verb+viewer+ processes will be spawned from their respective superviror prosesses on request from the \verb+environment+. The \verb+tile+ processes act as space in which the entities can move in, and the \verb+viewer+ processes act as a means to request data regarding their surroundings for the entities. The way in which this has been set up and an explanation of how entities use the processes will be covered in section \ref{tile_viewer}.\\
+\\
+Once the simulation environment has been created, the \verb+environment+ process will then spawn a number of zombies, humans and supplies based on the setup parameters received from the \verb+swarm_handler+ process.\\
+\\
+After initial setup, the full systems' supervision tree would look something like figure \ref{fig:system_ws}, however there would be considerably more children processes in a typical setup of the application.
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.4\textwidth]{../img/final_system_ws.png}
+  \includegraphics[width=4in]{../img/final_system_ws.png}
 \caption{System Architecture}
     \label{fig:system_ws}
 \end{figure}
 
+\section{The Tile-Viewer System \label{tile_viewer}}
 tile/viewery things
 
-% from jake:  how obstructions work in the application
-%             system setup
-
 \section{Environment creation \label{environment_creation}}
-The creation of an environment begins with the setting of a value for the number of tiles in the grid. As all of our grids are square, there is only a single value for the dimensions of the array. The size of the tile array is determined from the size of the obstruction map selected (section: \ref{obstructions}). Once the dimensionality has been obtained, the grid is constructed through a recursive call to \verb+environment:make_row+ to create an full set of tile processes and corresponding viewer processes. Every tile process is assigned a unique dynamically generated name, which can be used to identify the column and row the tile is positioned in. Tiles can then be identified by using a pair of co-ordinates to derive a tile id. The ability to derive the appropriate tile id through a function call containing co-ordinates is one of the keys to our systems flexibility and the ease of adding new features.\footnote{Tile names are Erlang atoms registered in the supervision tree of the form tileX0Y0}The next stage involves creating a list for each tile of all it's neighbouring viewers. Finally obstructions and entitites are added to each completed tile's state. The system will now be in a paused state, ready to run the simulation.\\
+The creation of an environment begins with the setting of a value for the number of tiles in the grid. As all of our grids are square, there is only a single value for the dimensions of the array. The size of the tile array is determined from the size of the obstruction map selected (section: \ref{obstructions}). Once the dimensionality has been obtained, the grid is constructed through a recursive call to \verb+environment:make_row+ to create a full set of tile processes and corresponding viewer processes. Every tile process is assigned a unique dynamically generated name, which can be used to identify the column and row the tile is positioned in. Tiles can then be identified by using a pair of co-ordinates to derive a tile id. The ability to derive the appropriate tile id through a function call containing co-ordinates is one of the keys to our systems flexibility and the ease of adding new features.\footnote{Tile names are Erlang atoms registered in the supervision tree of the form tileX0Y0}\\
+\\
+The next stage involves creating a list for each tile of all it's neighbouring viewers. Finally obstructions and entitites are added to each completed tile's state. The system will now be in a paused state, ready to run the simulation.\\
 \\
 \section{Obstructions \label{obstructions}}
-Although we had always planned to include obstructions within our environment, the functionality was a late addition to the simulation. We were concerned with how the resolution would effect our planned inclusion of heuristic path planning.\footnote{Heuristic path planning was one of our unrealised stretch goals.} We decided to implement obstructions at a fraction of the resolution of our natural simulation resolution. As we had previously fixed the size of environment tiles at \(50^2\) we selected a size of \(5^2\) for each of cell of the 'obstruction grid'. Stored in the tile state are obstructed co-ordinates on the obstruction grid scale so in a grid 5 tiles by tiles in size, there are obstruction 'cells' in the range of \( (0,0) \) to \( (49,49) \). One of the primary considerations was to be able draw the environment using a paint tool. We selected mtPaint \footnote{http://mtpaint.sourceforge.net/} due to the ease of exporting images as ascii files.\\
+Although we had always planned to include obstructions within our environment, the functionality was a late addition to the simulation. We were concerned with how the resolution would effect our planned inclusion of heuristic path planning.\footnote{Heuristic path planning was one of our unrealised stretch goals.} We decided to implement obstructions at a fraction of the resolution of our natural simulation resolution. As we had previously fixed the size of environment tiles at \(50^2\) we selected a size of \(5^2\) for each of cell of the 'obstruction grid'. Stored in the tile state are obstructed co-ordinates on the obstruction grid scale; so in a 5x5 tile grid there are obstruction 'cells' in the range of \( (0,0) \) to \( (49,49) \). One of the primary considerations was to be able to draw the environment using a paint tool. We selected mtPaint \footnote{http://mtpaint.sourceforge.net/} due to the ease of exporting images as ascii files.\\
 \\
-For a standard 5 tile environment we create a plain white image \(50^2\) pixels in size and draw in the required obstructions.
+For a standard 5x5 tile environment we create a plain white image \(50^2\) pixels in size and draw in the required obstructions.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.4\textwidth]{../img/mt_paint.png}
+  \includegraphics[width=2.5in]{../img/mt_paint.png}
 \caption{Mt Paint}
     \label{fig:mtpaint}
 \end{figure}
 
-The resulting ascii file, stripped of line breaks, produces a string of 2500 characters. The string is then processed into an array of indices corresponding to characters representing obstructions. In order to convert an index back into a co-ordinate pair (on the obstruction grid scale) where \(I\) is the index obtained using \[X = I mod 10 and Y = I / 10\].
+The resulting ascii file, stripped of line breaks, produces a string of 2500 characters. The string is then processed into an array of indices corresponding to characters representing obstructions. In order to convert an index back into a co-ordinate pair (on the obstruction grid scale) where \(I\) is the index obtained using the formula: \[X = I mod 10 and Y = I / 10\]
 Once the co-ordinates have been obtained the corresponding tile id can be identified using \(X / 10\) and \(Y / 10\). Each tile contains the subset of obstructions which corresponds to its own geometry. Whenever an entity wishes to perform an operation over the obstruction grid scale, the co-ordinates are simply divided by 5 and compared against the tiles record. This system provides a flexible resolution independant method of modelling obstructions. Although we haven't parameterised the scale of the obstruction grid, it would be trivial to add this functionality.\\
 \\
 \section{Behaviours and Intelligence \label{behaviours}}
@@ -292,10 +297,6 @@ The conclusion goes here.
 % (used to reserve space for the reference number labels box)
 \begin{thebibliography}{1}
 
-% \bibitem{IEEEhowto:kopka}
-% H.~Kopka and P.~W. Daly, \emph{A Guide to \LaTeX}, 3rd~ed.\hskip 1em plus
-%   0.5em minus 0.4em\relax Harlow, England: Addison-Wesley, 1999.
-
   \bibitem{erlang}
     Ericsson AB,
     \emph{About Erlang},
@@ -313,8 +314,7 @@ The conclusion goes here.
 
   \bibitem{erlang_boids}
     Jim Menard,
-    \emph{Erlang Boids Simulation Design},
-    \url{http://jimmenard.blogspot.co.uk/2007/06/erlang-boids-simulation-design.html}
+    \emph{Erlang Boids Simulation Design},  \url{http://jimmenard.blogspot.co.uk/2007/06/erlang-boids-simulation-design.html}
 
   \bibitem{boids}
     Craig Reynolds,
@@ -323,13 +323,28 @@ The conclusion goes here.
 
   \bibitem{otp}
     Ericsson AB,
-	\emph{Open Telecom Platform Design Principles},
+	  \emph{Open Telecom Platform Design Principles},
     \url{http://www.erlang.org/doc/design_principles/sup_princ.html}
 
   \bibitem{supervisors}
     Ericsson AB,
-	\emph{Erlang Supervisors},
+	  \emph{Erlang Supervisors},
     \url{http://www.erlang.org/doc/man/supervisor.html}
+
+  \bibitem{gen_server}
+    Ericsson AB,
+	  \emph{Erlang Generic Servers},
+    \url{http://www.erlang.org/doc/Design_principles/gen_server_concepts.html}
+
+  \bibitem{gen_fsm}
+    Ericsson AB,
+	  \emph{Erlang Generic Finite State Machines},
+    \url{http://www.erlang.org/doc/design_principles/fsm.html}
+
+  \bibitem{cowboy}
+    Nine Nines,
+    \emph{An Introduction to Cowboy},
+    \url{http://ninenines.eu/docs/en/cowboy/1.0/guide/introduction/}
 
 \end{thebibliography}
 
