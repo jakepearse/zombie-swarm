@@ -61,7 +61,7 @@ Running the Simulation
       In Windows         -  run swarmer.bat from local_path_to_corpus\swarmer\
 
       Unix like systems  -  run swarmer from local_path_to_corpus/swarmer/
-      
+
 2)  Open client.html from local_path_to_corpus/client/
 
 ================================================================================
