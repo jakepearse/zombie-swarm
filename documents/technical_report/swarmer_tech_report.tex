@@ -39,7 +39,7 @@
 % As a general rule, do not put math, special symbols or citations
 % in the abstract
 \begin{abstract}
-The simulation of swarm intelligence is concerned with complex emergent behaviours over a population of independent entities, following simple rules. There have been many thorough investigations of swarm intelligence utilising imperitive programming techniques. Though there are successful implementations written in a highly concurrent way, this is an unusual and less common technique.
+The simulation of swarm intelligence is concerned with complex emergent behaviours over a population of independent entities, following simple rules. There have been many thorough investigations of swarm intelligence utilising imperative programming techniques. Though there are successful implementations written in a highly concurrent way, this is an unusual and less common technique.
 \end{abstract}
 \begin{IEEEkeywords}
 Crowd Simulation, Flocking, Artificial Intelligence, Concurrency, Boids, Erlang, Javascript, D3
@@ -48,23 +48,23 @@ Crowd Simulation, Flocking, Artificial Intelligence, Concurrency, Boids, Erlang,
 \section{Introduction \label{intro}}
 % what is the project?
 % why have we done it? maybe
-The aim of the project was to create an application to simulate swarm intelligence. We decided to use a zombie outbreak as the basis for the program. After research into the area, we decided to model the environent and behaviour simulation in a highly concurrent way.\\
+The aim of the project was to create an application to simulate swarm intelligence. We decided to use a zombie outbreak as the basis for the program. After research into the area, we decided to model the environment and behaviour simulation in a highly concurrent way.\\
 \\
-This document will introduce the application that we have developed to forfill our main goal, the program consists of into two distinct parts:
+This document will introduce the application that we have developed to for-fill our main goal, the program consists of into two distinct parts:
 \begin{itemize}
     \item \verb+swarmer+ - The Erlang application which provides the simulation.
     \item \verb+client+ - The web application built to visualise the simulation.
 \end{itemize}
-By explaining how we have implemented the integral parts of the application, we will also introduce the behaviour models that we have created in order to make the different entitiy types within the simulation behave in the way that they do.\\
+By explaining how we have implemented the integral parts of the application, we will also introduce the behaviour models that we have created in order to make the different entity types within the simulation behave in the way that they do.\\
 \\% team stuff
-In order to realise our goals for the project, we had to learn a lot of new things. We had to take a diciplined and systematic approach to familiarise ourselves with these new concepts and libraries. Responsibility for researching and learning these technologies and providing regular reports to other members on the findings had to be deligated amongst the team members. This allowed us to familiarise ourselves with the new concepts as a group, within a limited space of time.\\
+In order to realise our goals for the project, we had to learn a lot of new things. We had to take a disciplined and systematic approach to familiarise ourselves with these new concepts and libraries. Responsibility for researching and learning these technologies and providing regular reports to other members on the findings had to be delegated amongst the team members. This allowed us to familiarise ourselves with the new concepts as a group, within a limited space of time.\\
 \\% soft-eng stuff
 The majority of development was carried out as a group, borrowing techniques that are part of the Extreme Programming practice, and a large amount of pair programming.\\
 
 \section{Background \label{background}}
 Erlang is an open-source programming language developed by Ericsson Computer Science Laboratory; it was originally designed for telecoms systems, but over the years has evolved into a fully fledged, general-use functional and concurrent language.\\
 \\
-Javascript is a dynamic general-use programming language that is mostly used for web development. It has a large number of well supported and documented librarys that cover a wide range of areas. We have chosen to use the D3\cite{d3} JavaScript library because of it's built in ability to dynamically manipulate data. It is reasonably lightweight and very good at manipulating and managing large amounts of data.\\
+Javascript is a dynamic general-use programming language that is mostly used for web development. It has a large number of well supported and documented library’s that cover a wide range of areas. We have chosen to use the D3\cite{d3} JavaScript library because of it's built in ability to dynamically manipulate data. It is reasonably lightweight and very good at manipulating and managing large amounts of data.\\
 \\% research
 Before deciding to implement the simulation in the Erlang programming language, we needed to ensure that the idea was a feasible one. We have found two noteworthy implementations of concurrent crowd swarming simulations, one in OccamPi by Fred Barnes\cite{occam_boids}, a professor the University of Kent, and a second written in Erlang by Jim Menard\cite{erlang_boids}.\\
 \\% boids
@@ -74,15 +74,12 @@ The behavioural model we have implemented is based on the Boids Algorithm \cite{
 % what we set out to achieve
 Our goal was to create a plausible simulation of a dynamic environment containing zombie and human entities. We wanted zombies to exhibit flocking behaviour and to hunt down humans within the environment. Humans should try to escape, but turn into zombies when they are caught.\\
 \\
-In order to make the simulation more believeable, we wanted to implement certain behaviours for the humans, distinguising them from their zombie counterparts. For example, behaviours such as, being able to make a calculated desicion based on their surroundings, foraging for and remembering the location of food sources and pathfinding. We wanted humans to get hungry over time, losing energy and eventually slowing down; this meant that humans must find food in order to stand a chance of survival. Further descriptions of these behaviours can be found in section \ref{behaviours}.\\
+In order to make the simulation more believable, we wanted to implement certain behaviours for the humans, distinguishing them from their zombie counterparts. For example, behaviours such as, being able to make a calculated decision based on their surroundings, foraging for and remembering the location of food sources and path-finding. We wanted humans to get hungry over time, losing energy and eventually slowing down; this meant that humans must find food in order to stand a chance of survival. Further descriptions of these behaviours can be found in section \ref{behaviours}.\\
 \\
-In contrast to the classic approach to simulation development using imperitive languages, such as C or Java, where continuous time is simulated in discrete steps; we thought it would be both interesting and challenging to model the system in a highly concurrent way. This would allow entities to act independently of synchronised time steps and hopefully provide an interesting, dynamic, and fluid simulated environment.\\
+In contrast to the classic approach to simulation development using imperative languages, such as C or Java, where continuous time is simulated in discrete steps; we thought it would be both interesting and challenging to model the system in a highly concurrent way. This would allow entities to act independently of synchronised time steps and hopefully provide an interesting, dynamic, and fluid simulated environment.\\
 \\
 
 \section{Swarmer System Architecture \label{architecture}}
-% overall architecture, include one/two of my arch diagrams
-% tile-viewer system, why it's awesome (because it's awesome)
-
 Using Erlang and the Open Telecom Platform\cite{otp} (OTP) provides us with a unique set of tools perfectly suited to creating a highly concurrent, message passing system. Included in this is the Supervisor-Child process architecture that allows you to create a robust system, in which a supervisor process maintains a number of child processes. As part of the OTP, certain module behaviours are defined, providing a number of useful functions that allows for cross-process communication. Of this, we have used the Gen-Server\cite{gen_server} and Gen-FSM\cite{gen_fsm} behaviours. Gen-Server provides useful functions for passing messages between processes, and Gen-FSM is used to implement a finite state machine in Erlang.
 
 \begin{figure}[h]
@@ -92,17 +89,17 @@ Using Erlang and the Open Telecom Platform\cite{otp} (OTP) provides us with a un
     \label{fig:sup_tree}
 \end{figure}
 
-When launched, the \verb+swarmer+ application creates an instance of the \verb+swarm_server+ module. This is the process reponsible for spawning an instance of \verb+swarm_sup+, the systems main supervisor process, and an instance of \verb+swarm_handler+, a Cowboy WebSocket server \cite{cowboy} controller module that manages communication between the the simulation and the client. \verb+swarm_handler+ and the Cowboy Server are covered in more detail in section \ref{client}.\\
+When launched, the \verb+swarmer+ application creates an instance of the \verb+swarm_server+ module. This is the process responsible for spawning an instance of \verb+swarm_sup+, the systems main supervisor process, and an instance of \verb+swarm_handler+, a Cowboy WebSocket server \cite{cowboy} controller module that manages communication between the the simulation and the client. \verb+swarm_handler+ and the Cowboy Server are covered in more detail in section \ref{client}.\\
 \\
 The \verb+swarm_sup+ process will create the applications Supervision Tree, shown in figure \ref{fig:sup_tree}. The supervisor spawns an instance of the \verb+environment+ module and the \verb+tile_sup+, \verb+viewer_sup+, \verb+human_sup+, \verb+zombie_sup+, and \verb+supplies_sup+ supervisor processes.\\
 \\
 The \verb+environment+ module has two main roles within the application. Firstly its job is to set the simulation environment up, covered in section \ref{environment_creation}, and secondly to deal with the regular report requests from the \verb+swarm_handler+ process.\\
 \\
-The \verb+tile+ and \verb+viewer+ processes will be spawned by their respective supervisors on request from the \verb+environment+. The \verb+tile+ processes provide a two dimensional space in which the entities can move. The \verb+viewer+ processes provide a method for requesting data regarding an entities surroundings. The way this is set up and an explanation of how entities use these facilities will be covered in section \ref{tile_viewer}.\\
+The \verb+tile+ and \verb+viewer+ processes will be spawned by their respective supervisors on request from the \verb+environment+. The \verb+tile+ processes provide a two dimensional space in which the entities can move. The \verb+viewer+ processes provide a method for requesting data regarding an entities surroundings. The way this is set-up and an explanation of how entities use these facilities will be covered in section \ref{tile_viewer}.\\
 \\
-Once the simulation environment has been created, the \verb+environment+ process will then spawn a number of zombies, humans and supplies based on the setup parameters received from the \verb+swarm_handler+ process.\\
+Once the simulation environment has been created, the \verb+environment+ process will then spawn a number of zombies, humans and supplies based on the set-up parameters received from the \verb+swarm_handler+ process.\\
 \\
-After initial setup, the full systems' supervision tree would look something like figure \ref{fig:system_ws}, however there would be considerably more child processes in a typical setup of the application.
+After initial setup, the full systems' supervision tree would look something like figure \ref{fig:system_ws}, however there would be considerably more child processes in a typical set-up of the application.
 \begin{figure}[h]
   \centering
   \includegraphics[width=4in]{../img/final_system_ws.png}
@@ -119,7 +116,7 @@ One of the main features of the concurrent system is the tile-viewer mechanism t
   \label{fig:tile_viewer_rel}
 \end{figure}
 
-A \verb+viewer+ process provides a means for entities to look into neighbouring tiles. The \verb+viewer+ has functions which return lists containing information about entities and obstructions. The main reason for seperating the \verb+tile+ and \verb+viewer+ processes is to allow for a more efficient concurrent design. One of the problems we came across early on in the project arose because initially we had entities requesting both new positions from the tile and requesting information from it at another time. This lead to, too many messages being passed between the tiles and entities. This resulted in deadlocks. Having a seperate \verb+viewer+ and \verb+tile+ allows for position requests and information requests to be handled independently, limiting the amount of data held in the \verb+tile+ and removing the chance of a deadlock.
+A \verb+viewer+ process provides a means for entities to look into neighbouring tiles. The \verb+viewer+ has functions which return lists containing information about entities and obstructions. The main reason for separating the \verb+tile+ and \verb+viewer+ processes is to allow for a more efficient concurrent design. One of the problems we came across early on in the project arose because initially we had entities requesting both new positions from the tile and requesting information from it at another time. This lead to, too many messages being passed between the tiles and entities. This resulted in deadlocks. Having a separate \verb+viewer+ and \verb+tile+ allows for position requests and information requests to be handled independently, limiting the amount of data held in the \verb+tile+ and removing the chance of a deadlock.
 
 \section{Environment creation \label{environment_creation}}
 The creation of an environment begins with the setting of a value for the number of tiles in the grid. As all of our grids are square, there is only a single value for the dimensions of the array. The size of the tile array is determined from the size of the obstruction map selected (section: \ref{obstructions}). Once the dimensionality has been obtained, the grid is constructed through a recursive call to \verb+environment:make_row+ to create an full set of tile processes and corresponding viewer processes. Every tile process is assigned a unique dynamically generated name, which can be used to identify the column and row the tile is positioned in. Tiles can then be identified by using a pair of coordinates to derive a tile id. The ability to derive the appropriate tile id through a function call containing coordinates is one of the keys to our systems flexibility and the ease of adding new features.\footnote{Tile names are Erlang atoms registered in the supervision tree of the form tileX0Y0}\\
@@ -129,7 +126,7 @@ The next stage involves creating a list for each tile of all its neighbouring vi
 \section{Obstructions \label{obstructions}}
 Although we had always planned to include obstructions within our environment, the functionality was a late addition to the simulation. We were concerned with how the resolution would affect our planned inclusion of heuristic path planning.\footnote{Heuristic path planning was one of our unrealised stretch goals.} We decided to implement obstructions at a fraction of the natural simulation resolution. As we had previously fixed the size of environment tiles at \(50^2\) we selected a size of \(5^2\) for each cell of the \emph{obstruction grid}. Obstructed coordinates stored in the tiles state, are on the obstruction grid scale. In a grid 5 tiles by 5 tiles in size, there are \emph{obstruction cells} in the range of \( (0,0) \) to \( (49,49) \).\\
 \\
-One of our primary considerations was being able draw the environment using a paint tool. We selected mtPaint \footnote{http://mtpaint.sourceforge.net/} due to the ease of exporting images as ascii files.\\
+One of our primary considerations was being able draw the environment using a paint tool. We selected mtPaint \footnote{http://mtpaint.sourceforge.net/} due to the ease of exporting images as ASCII files.\\
 \\
 For a standard 5x5 tile environment, we create a plain white image \(50^2\) pixels in size and draw in the required obstructions. See figure \ref{fig:mtpaint}.\\
 
@@ -140,12 +137,12 @@ For a standard 5x5 tile environment, we create a plain white image \(50^2\) pixe
     \label{fig:mtpaint}
 \end{figure}
 
-The resulting ascii file, stripped of line breaks, produces a string of 2500 characters. The string is then processed into an array of indices corresponding to the positions of obstructions. In order to convert an index back into a coordinate pair (on the obstruction grid scale) where \(I\) is the index obtained using \(X = I mod 10\) and \(Y = I / 10\).\\
+The resulting ASCII file, stripped of line breaks, produces a string of 2500 characters. The string is then processed into an array of indices corresponding to the positions of obstructions. In order to convert an index back into a coordinate pair (on the obstruction grid scale) where \(I\) is the index obtained using \(X = I mod 10\) and \(Y = I / 10\).\\
 \\
-Once the coordinates have been obtained, the corresponding tile id can be identified using \(X / 10\) and \(Y / 10\). Each tile contains the subset of obstructions which corresponds to its own geometry. Whenever an entity wishes to perform an operation over the obstruction grid scale, the coordinates are simply divided by 5 and compared against the tiles record. This system provides a flexible resolution independant method of modelling obstructions. Although we haven't parameterised the scale of the obstruction grid, it would be trivial to add this functionality.
+Once the coordinates have been obtained, the corresponding tile id can be identified using \(X / 10\) and \(Y / 10\). Each tile contains the subset of obstructions which corresponds to its own geometry. Whenever an entity wishes to perform an operation over the obstruction grid scale, the coordinates are simply divided by 5 and compared against the tiles record. This system provides a flexible resolution independent method of modelling obstructions. Although we haven't parametrised the scale of the obstruction grid, it would be trivial to add this functionality.
 
 \section{Entity Intelligence \label{behaviours}}
-Both the human and zombie entities are modelled using algorithms based on the Boids flocking model. Although both algorithms are heavily modified from the basic definition of a Boids model and from each other they, both share a certain amounts of functionality. For instance, both entities share movement methods, flocking functions, obstacle evasion, and elements of the descision making process.\\
+Both the human and zombie entities are modelled using algorithms based on the Boids flocking model. Although both algorithms are heavily modified from the basic definition of a Boids model and from each other they, both share a certain amounts of functionality. For instance, both entities share movement methods, flocking functions, obstacle evasion, and elements of the decision making process.\\
 
 \subsection{PSO \label{pso}}
 Before settling on our current Boids-based implementation for zombie intelligence, we implemented behaviours based on Particle Swarm Optimisation\cite{pso} (PSO). PSO is a population based algorithm which optimises a populations mean fitness, in this case towards the shortest distance to target entities.\\
@@ -190,7 +187,7 @@ In a human, avoiding collision with other entities takes priority in order to re
 The outcome of this is that the humans and zombies are able to exhibit considerably different behaviours, with only a few changes to the order of priorities.\\
 
 \section{Entities and Obstacles \label{obstacles_b}}
-A major factor in creating more interesting behaviours in our entities is the possibility of areas of the maps being obstructed. There are two kinds of obstacles that can affect the behaviour of an entity, other entities and built-in obstructions in the map. Once an entity has chosen a new set of coordinates. These coordinates are then checked, by the tile they wish to move onto, to ensure they unobstructed and constiture a legal move. This is shown in figure \ref{fig:obs_los}.\\
+A major factor in creating more interesting behaviours in our entities is the possibility of areas of the maps being obstructed. There are two kinds of obstacles that can affect the behaviour of an entity, other entities and built-in obstructions in the map. Once an entity has chosen a new set of coordinates. These coordinates are then checked, by the tile they wish to move onto, to ensure they unobstructed and constitute a legal move. This is shown in figure \ref{fig:obs_los}.\\
 \begin{figure}[h]
   \centering
   \includegraphics[width=2in]{../img/los_demo.png}
@@ -200,7 +197,7 @@ A major factor in creating more interesting behaviours in our entities is the po
 \\
 Due to the concurrent nature of our simulation, it is possible for two entities to want to occupy the same coordinate. If this happens then the second entity will bounce off of the first entity. The bouncing entity, calculates its new position using its current velocities to work out the angle of collision and then moving to a coordinate 1 space away from its target, at either the opposite angle or 45 degrees from that. eg. If an entity collides with another from below, it will end up one space below the target, one space below and right or one space below and left.\\
 \\
-Obstructions work a little differently from entity obstacles, The entity will again calculate the angle of collison, but instead of bouncing off the obstruction, the entity will reset its velocity along the axis in which it hit the obstruction causing it to start moving in the opposite direction while staying on its original course in the other axis. This allows the entities to maintain velocity in one axis, while obstructed in another.\\
+Obstructions work a little differently from entity obstacles, the entity will again calculate the angle of collision, but instead of bouncing off the obstruction, the entity will reset its velocity along the axis in which it hit the obstruction causing it to start moving in the opposite direction while staying on its original course in the other axis. This allows the entities to maintain velocity in one axis, while obstructed in another.\\
 \\
 Obstructions also have another effect on the entities, they can block line of sight. What this means is, although entities may be within range to see each other, if there is an obstruction somewhere along the direct line between them, neither entity can be aware of the others presence. In effect obstructions act as walls that block both the movement and the sight of entities.\\
 
@@ -209,7 +206,7 @@ There is one other main difference between zombie and human entities. Both types
 \\
 For a zombie, eating happens by killing and converting a human entity into a zombie, zombies have no changes in behaviour caused by hunger as they always want to kill humans and lack the intelligence to consider saving meals until they are hungry.\\
 \\
-Humans on the other hand have a much more interesting relationship with food, there are several food items placed on the map at the beginning of the simulation which humans can pick up to recover energy. However humans do not seek this food out until they have become very hungry. Once they have become very hungry the human behaviour changes to actively seek out food, while they will continue to avoid zombies and other humans that are close to, they will also start trying collect food that they have previously discovered the location of, to restore thier energy.\\
+Humans on the other hand have a much more interesting relationship with food, there are several food items placed on the map at the beginning of the simulation which humans can pick up to recover energy. However humans do not seek this food out until they have become very hungry. Once they have become very hungry the human behaviour changes to actively seek out food, while they will continue to avoid zombies and other humans that are close to, they will also start trying collect food that they have previously discovered the location of, to restore their energy.\\
 
 \section{Zombifying Humans \label{zombifying}}
 When a zombie manages to get close enough to a human then the zombie will attempt to attack the human. There is a chance that the zombie will succeed in his attack, if this happens then the zombie passes a message to the human causing it to terminate and spawning a new zombie process in humans previous position.\\
@@ -220,7 +217,7 @@ The use of a decoupled client to visualise the state of the simulation was one o
 \\
 The first stage in establishing a client/server model was passing environmental data over the network. We chose to use a WebSocket based approach early on due to it duplex functionality, although with hindsight, plain HTTP requests would have more than likely sufficed.\\
 \\
-The development of the client required the learning of new JavaScript libraries (Angular.js and D3.js) and research into WebSockets. On the Erlang side we utilised the Cowboy WebSocket\cite{cowboy} server and JSX, JSON encoder libraries. JSON objects are decoded and the \verb+type+ attribute is matched against a case statement in the WebSocket handler. In this way various types of control messages can be recognised and appropriate actions propagated throughout the environment. When the client HTML page loads, a setup - typed, JSON message is fired off to create a default environment, populated with randomly placed entities. Each time a user alters a parameter a new JSON setup object is submitted and the returned environmental data visualised. New environments are created with all entities paused.\\
+The development of the client required the learning of new JavaScript libraries (Angular.js and D3.js) and research into WebSockets. On the Erlang side we utilised the Cowboy WebSocket\cite{cowboy} server and JSX, JSON encoder libraries. JSON objects are decoded and the \verb+type+ attribute is matched against a case statement in the WebSocket handler. In this way various types of control messages can be recognised and appropriate actions propagated throughout the environment. When the client HTML page loads, a set-up - typed, JSON message is fired off to create a default environment, populated with randomly placed entities. Each time a user alters a parameter a new JSON set-up object is submitted and the returned environmental data visualised. New environments are created with all entities paused.\\
 \\
 By ensuring only data returned over the WebSocket connection is visualised, we ensure that what we see in the visualisation is actually being represented in the simulation. The use the D3.js library as the basis for mapping simulation data to visual elements enforced the use of a Scalable Vector Graphic (SVG) as the main component of visualisation. This worked out very well as SVG images are entirely specified in XML, allowing the mapping of arbitrary attributes to elements. For example Zombies visualised in the SVG are \verb+<image>+ elements but have attributes such as \verb+x_vel+, unused in the visualisation but very helpful in debugging and testing the system. Other niceties of the SVG format include facilities such as mapping Erlang process ids to element \verb+id+ attributes as in fig \ref{fig:svg_elements}
 
@@ -231,29 +228,26 @@ By ensuring only data returned over the WebSocket connection is visualised, we e
     \label{fig:svg_elements}
 \end{figure}
 
-The main event loop is entered by clicking on a "start" button in the client, causing an unpause message to be propagated through the simulation, one unusal effect arising from the pausing and unpausing of the system in this way (by pausing individual entities) is a slight delay in the propagation of pause/unpause messages resulting in a staggered pause rather than a 'hard' pause. While the main loop is running the client repeatedly sends a \verb+report+ type message over the WebSocket and updates the SVG with the returned data. There are some interesting effects of attempting to visualise a highly concurrent system in necessarily discrete steps such as discrepancies between entity states and tile states. These type of discrepancies are inherent in the design of the system and naturally resolve themselves but they are captured at the instant of visualisation.
+The main event loop is entered by clicking on a "start" button in the client, causing an unpause message to be propagated through the simulation, one unusual effect arising from the pausing and unpausing of the system in this way (by pausing individual entities) is a slight delay in the propagation of pause/unpause messages resulting in a staggered pause rather than a 'hard' pause. While the main loop is running the client repeatedly sends a \verb+report+ type message over the WebSocket and updates the SVG with the returned data. There are some interesting effects of attempting to visualise a highly concurrent system in necessarily discrete steps such as discrepancies between entity states and tile states. These type of discrepancies are inherent in the design of the system and naturally resolve themselves but they are captured at the instant of visualisation.
 
 \section{Conclusion}
-
-% what we have not managed to implement
-
 The aim of the project was to create a highly concurrent simulation of swarm intelligence, in which zombie and human entities interact within an environment. We wanted the simulation to exhibit complex, emergent behaviours arising from simple sets of instructions.\\
 \\
 Overall, the project has been a success. By observing the simulation running you can see a number of interesting situational behaviours. Behaviours that we have observed are:
 \begin{itemize}
     \item Swarms interact with obstructions in interesting ways. When the swarm collides with an obstruction, it can disperse around the edges of the obstacle. Sometimes the swarm will regroup on the other side, however this may not happen due to the shape of the obstacle or other stimulus taking priority.
-    \item Due to the effect of inertia simulated through velocity, entities can be observed acclererating, decelarating and changing direction by swerving. \item Energy levels have a noticable effect on the simulation over its lifetime. Early on in the simulation, humans have a higher survival rate because they can move faster. However, as food becomes scarce, humans will slow down over time. Humans caught early on in the simulation tend to have been cornered by a zombie, or surrounded.
+    \item Due to the effect of inertia simulated through velocity, entities can be observed accelerating, decelerating and changing direction by swerving. \item Energy levels have a noticeable effect on the simulation over its lifetime. Early on in the simulation, humans have a higher survival rate because they can move faster. However, as food becomes scarce, humans will slow down over time. Humans caught early on in the simulation tend to have been cornered by a zombie, or surrounded.
     \item It is possible for a group of humans to find a 'safe-zone' in the simulation. This can allow humans to hide from the zombies behind obstacles  for an extended period of time, however they will eat all of the food in the area, and when a zombie swarm does discover them, it is likely that they will be too slow to escape.
-    \item When humans pass within range of zombies on the edge of a swarm, somtimes only the zombies on the edge move towards the humans initially. This can lead to just a few zombies breaking away from the main swarm, or lead to a chain reaction in which the entire swarm will follow. This depends on what stimulus other members of the swarm are able to detect.
+    \item When humans pass within range of zombies on the edge of a swarm, sometimes only the zombies on the edge move towards the humans initially. This can lead to just a few zombies breaking away from the main swarm, or lead to a chain reaction in which the entire swarm will follow. This depends on what stimulus other members of the swarm are able to detect.
     \item When there is a large population of humans, and not many obstacles to break the line of sight across the environment, this can lead to the zombies forming a line sweeping across the environment.
 \end{itemize}
 
-Unfortunately there were certain elements of the system that we were not able to create, due a combination of time preassure and the level of difficulty. The main one was a full heuristic pathfinding algorithm for humans. Though this is partially implemented as part of the submission, we did not have time fully explore and test this element of the application, we do not know to what extent it is functioning.
+Unfortunately there were certain elements of the system that we were not able to create, due a combination of time pressure and the level of difficulty. The main one was a full heuristic path-finding algorithm for humans. Though this is partially implemented as part of the submission, we did not have time fully explore and test this element of the application, we do not know to what extent it is functioning.
 
 \section{Acknowledgements}
-We would like to thank Dr. Peter Kenny for supervising this project, and providing valuable input on designing and implementing the two dimentional space simulation, as well as helping us design and understand our Boids algorithm.\\
+We would like to thank Dr. Peter Kenny for supervising this project, and providing valuable input on designing and implementing the two dimensional space simulation, as well as helping us design and understand our Boids algorithm.\\
 \\
-We would also like to thank Dr. Fred Barnes for the invaluable help with desiging our concurrent architecture.
+We would also like to thank Dr. Fred Barnes for the invaluable help with designing our concurrent architecture.
 
 % references section
 
